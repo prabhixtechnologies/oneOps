@@ -115,9 +115,12 @@ jobs:
           context: ./web
           file: ./web/Dockerfile
           push: true
+          # Vite inlines these at build time; each must also be declared as an ARG in web/Dockerfile
+          # or it is silently discarded.
           build-args: |
             VITE_API_URL=https://api.prabhixtechnologies.com
-            VITE_USE_MOCKS=false
+            VITE_RAZORPAY_KEY_ID=${{ vars.RAZORPAY_KEY_ID }}
+            VITE_GOOGLE_SSO_ENABLED=false
           tags: |
             prabhixtechnologies/prabhix-web:latest
             prabhixtechnologies/prabhix-web:${{ steps.meta.outputs.sha }}
