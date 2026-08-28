@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -59,8 +60,8 @@ async function fetchOrganization(id: string): Promise<OrganizationView> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [refreshToken, setRefreshToken] = useState<string | null>(() =>
+  const [accessToken, setAccessTokenState] = useState<string | null>(null);
+  const [refreshToken, setRefreshTokenState] = useState<string | null>(() =>
     localStorage.getItem(REFRESH_KEY),
   );
   const [me, setMe] = useState<AuthMe | null>(null);
@@ -68,8 +69,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [organization, setOrganization] = useState<OrganizationView | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Tokens live in refs as well as state. The refs are what the callbacks below read; the state
+  // exists only so the tree re-renders. Reading a token from state inside a callback would change
+  // that callback's identity on every rotation, and since one of those callbacks is a dependency
+  // of the bootstrap effect, rotating a token would re-trigger the bootstrap and refresh again.
+  const accessTokenRef = useRef<string | null>(null);
+  const refreshTokenRef = useRef<string | null>(localStorage.getItem(REFRESH_KEY));
+  const orgIdRef = useRef<string | null>(null);
+
+  const setTokens = useCallback((access: string | null, refresh: string | null) => {
+    accessTokenRef.current = access;
+    refreshTokenRef.current = refresh;
+    setAccessTokenState(access);
+    setRefreshTokenState(refresh);
+    if (refresh) {
+      localStorage.setItem(REFRESH_KEY, refresh);
+    } else {
+      localStorage.removeItem(REFRESH_KEY);
+    }
+  }, []);
+
   const loadSession = useCallback(async () => {
     const authMe = await fetchMe();
+    // Set before the parallel fetches so they carry the org header on their first attempt.
+    orgIdRef.current = authMe.organizationId;
     setMe(authMe);
     const [userProfile, org] = await Promise.all([
       fetchProfile().catch(() => null),
@@ -82,54 +105,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const applyTokens = useCallback(
     async (access: string, refresh: string) => {
-      setAccessToken(access);
-      setRefreshToken(refresh);
-      localStorage.setItem(REFRESH_KEY, refresh);
+      setTokens(access, refresh);
       await loadSession();
     },
-    [loadSession],
+    [loadSession, setTokens],
   );
 
   const logout = useCallback(async () => {
     try {
-      if (accessToken) {
+      if (accessTokenRef.current) {
         await apiRequest("/auth/logout", { parse: () => undefined }, { method: "POST" });
       }
     } catch {
       // ignore logout errors
     }
-    setAccessToken(null);
-    setRefreshToken(null);
+    setTokens(null, null);
     setMe(null);
     setProfile(null);
     setOrganization(null);
-    localStorage.removeItem(REFRESH_KEY);
+    orgIdRef.current = null;
     queryClient.clear();
-  }, [accessToken, queryClient]);
+  }, [queryClient, setTokens]);
+
+  // A refresh token is single-use: the server rotates it and treats a second presentation of the
+  // same token as theft, revoking every session the user has. loadSession() fans out three
+  // requests at once, so without this guard one expired access token yields three simultaneous
+  // 401s, three refreshes spending the same token, and an immediate forced logout.
+  const refreshInFlight = useRef<Promise<boolean> | null>(null);
 
   const refreshSession = useCallback(async (): Promise<boolean> => {
-    const token = refreshToken ?? localStorage.getItem(REFRESH_KEY);
+    const existing = refreshInFlight.current;
+    if (existing) return existing;
+
+    // localStorage wins over the ref so that a second tab picks up a token rotated by the first
+    // instead of replaying the one it captured when it mounted.
+    const token = localStorage.getItem(REFRESH_KEY) ?? refreshTokenRef.current;
     if (!token) return false;
-    try {
-      const tokens = await apiRequest(
-        "/auth/refresh",
-        authTokensSchema,
-        {
-          method: "POST",
-          body: { refreshToken: token },
-          skipAuth: true,
-          skipOrg: true,
-        },
-      );
-      setAccessToken(tokens.accessToken);
-      setRefreshToken(tokens.refreshToken);
-      localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
-      await loadSession();
-      return true;
-    } catch {
-      return false;
-    }
-  }, [refreshToken, loadSession]);
+
+    const attempt = (async () => {
+      try {
+        const tokens = await apiRequest(
+          "/auth/refresh",
+          authTokensSchema,
+          {
+            method: "POST",
+            body: { refreshToken: token },
+            skipAuth: true,
+            skipOrg: true,
+          },
+        );
+        setTokens(tokens.accessToken, tokens.refreshToken);
+        await loadSession();
+        return true;
+      } catch {
+        return false;
+      } finally {
+        refreshInFlight.current = null;
+      }
+    })();
+
+    refreshInFlight.current = attempt;
+    return attempt;
+  }, [loadSession, setTokens]);
 
   const loginWithTokens = useCallback(
     async (access: string, refresh: string) => {
@@ -169,33 +206,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     configureApiClient({
-      getAccessToken: () => accessToken,
-      getOrgId: () => me?.organizationId ?? null,
+      getAccessToken: () => accessTokenRef.current,
+      getOrgId: () => orgIdRef.current,
       refreshTokens: refreshSession,
       onUnauthorized: () => {
         void logout();
       },
     });
-  }, [accessToken, me?.organizationId, refreshSession, logout]);
+  }, [refreshSession, logout]);
+
+  const didBootstrap = useRef(false);
 
   useEffect(() => {
+    if (didBootstrap.current) return;
+    didBootstrap.current = true;
     const init = async () => {
       setIsLoading(true);
       try {
         const stored = localStorage.getItem(REFRESH_KEY);
         if (stored) {
-          setRefreshToken(stored);
+          refreshTokenRef.current = stored;
           const ok = await refreshSession();
-          if (!ok) {
-            localStorage.removeItem(REFRESH_KEY);
-          }
+          if (!ok) setTokens(null, null);
         }
       } finally {
         setIsLoading(false);
       }
     };
     void init();
-  }, [refreshSession]);
+  }, [refreshSession, setTokens]);
 
   const permissions = me?.permissions ?? [];
 
