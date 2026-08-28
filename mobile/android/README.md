@@ -46,6 +46,62 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`
 
 Open the `mobile/android` folder in Android Studio and Run on a device/emulator.
 
+## Release build (installable APK)
+
+The `release` build type already points at `https://api.prabhixtechnologies.com/api/v1`, so a
+release APK is what you install on a real phone — the debug one targets `10.0.2.2`, which only
+resolves inside the emulator.
+
+Release builds are signed from `keystore.properties` in `mobile/android/` (git-ignored, as is the
+`.jks` it references):
+
+```properties
+storeFile=prabhix-release.jks
+storePassword=<store password>
+keyAlias=prabhix
+keyPassword=<key password>
+```
+
+To create the keystore if you do not have it:
+
+```bash
+keytool -genkeypair -v -keystore prabhix-release.jks -alias prabhix \
+  -keyalg RSA -keysize 4096 -validity 10000 \
+  -dname "CN=Prabhix Technologies, O=Prabhix Technologies, C=IN"
+```
+
+> **Back the keystore up somewhere durable.** Android identifies an app by its signature, so
+> losing this file means you can never update an installed app in place — users would have to
+> uninstall first, and Play Store updates become impossible under the same package name.
+
+```bash
+./gradlew :app:assembleRelease
+```
+
+Output: `app/build/outputs/apk/release/app-release.apk`
+
+Without `keystore.properties` the build still succeeds but the APK is **unsigned** and Android
+refuses to install it. That is deliberate: it keeps CI and fresh clones building without the
+private key, instead of silently shipping something signed by a throwaway debug key.
+
+### Sideloading
+
+Transfer the APK to the phone (USB, Drive, or email), tap it, and allow *Install unknown apps*
+for whichever app is doing the transferring. Play Protect may warn that the developer is
+unrecognised — expected for a self-signed internal build.
+
+### R8 / ProGuard
+
+`isMinifyEnabled = true` on release. The keep rules in `app/proguard-rules.pro` are
+release-blocking: Kotlinx Serialization generates `Companion.serializer()` members that nothing
+calls directly, so without those rules R8 strips them and the APK installs fine and then fails to
+parse every API response. After changing dependencies or the rules, verify the serializers
+survived:
+
+```bash
+unzip -p app/build/outputs/apk/release/app-release.apk classes.dex | strings | grep '$$serializer' | head
+```
+
 ## Push notifications (FCM)
 
 1. Create a Firebase project and add an Android app (`com.prabhix.operator`).
@@ -54,6 +110,11 @@ Open the `mobile/android` folder in Android Studio and Run on a device/emulator.
 4. Backend must implement `POST /api/v1/devices/push-tokens` (documented in `docs/mobile-api-contract.md`).
 
 Until the backend endpoint exists, the app logs a warning and continues without push registration. Rotated FCM tokens are re-registered via `onNewToken`.
+
+With no `google-services.json` the app is fully usable — `FirebaseMessaging.getInstance()` throws
+`Default FirebaseApp is not initialized`, which `PushTokenManager` catches and logs. Everything
+served over the API keeps working, including live chat and mail via SSE; only background push
+notifications are missing, so you get updates while the app is open but not when it is closed.
 
 ## Architecture
 

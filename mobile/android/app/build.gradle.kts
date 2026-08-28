@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +7,16 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+}
+
+// Release signing comes from keystore.properties, which is gitignored along with the .jks it
+// points at. When the file is absent (CI, a fresh clone) the release build is left unsigned
+// rather than failing, so debug builds and tests still work without the private key.
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) {
+        keystorePropsFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -23,8 +35,23 @@ android {
         buildConfigField("String", "DEVICE_HEADER", "\"mobile-android\"")
     }
 
+    signingConfigs {
+        if (keystorePropsFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Null without keystore.properties, which yields an unsigned APK. That is intentional:
+            // it keeps the build green for anyone without the key, and an unsigned APK simply
+            // refuses to install rather than shipping something signed by a throwaway debug key.
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
