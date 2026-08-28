@@ -8,6 +8,7 @@ import com.prabhix.platform.auth.repository.RefreshTokenRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
 import com.prabhix.platform.org.service.OrganizationService;
 import com.prabhix.platform.org.service.PermissionResolver;
@@ -35,9 +36,9 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,6 +56,9 @@ class RefreshTokenRotationTest {
     @Mock private JwtService jwtService;
     @Mock private TokenDenyList tokenDenyList;
     @Mock private ApplicationEventPublisher events;
+    @Mock private StructuredEventLogger eventLogger;
+
+    private static final String STOLEN = "stolen-token";
 
     private AuthService authService;
 
@@ -70,7 +74,7 @@ class RefreshTokenRotationTest {
         authService = new AuthService(
                 userService, organizationService, membershipRepository, permissionResolver,
                 deviceSessionRepository, refreshTokenRepository, passwordEncoder,
-                jwtService, tokenDenyList, properties, events);
+                jwtService, tokenDenyList, properties, events, eventLogger);
     }
 
     @Test
@@ -112,17 +116,40 @@ class RefreshTokenRotationTest {
     }
 
     @Test
-    void reusedRefreshTokenRevokesSessionsAndThrows() {
-        String raw = "stolen-token";
-        String hash = AuthService.sha256(raw);
-        UUID userId = UUID.randomUUID();
+    void reusedRefreshTokenRevokesTheCompromisedSessionAndThrows() {
         UUID sessionId = UUID.randomUUID();
+        DeviceSession compromised = stubReusedToken(UUID.randomUUID(), sessionId);
 
+        ApiException ex = assertThrows(ApiException.class, () -> authService.refresh(STOLEN));
+
+        assertEquals(ErrorCode.TOKEN_REVOKED, ex.getCode());
+        assertNotNull(compromised.getRevokedAt());
+        assertEquals("token_theft", compromised.getRevokedReason());
+        verify(tokenDenyList).revokeSession(sessionId);
+        verify(jwtService, never()).issue(any());
+    }
+
+    /**
+     * The blast radius matters as much as the revocation itself: a client that races itself into
+     * sending one token twice must not sign the user out on their other devices.
+     */
+    @Test
+    void reusedRefreshTokenLeavesTheUsersOtherDevicesSignedIn() {
+        stubReusedToken(UUID.randomUUID(), UUID.randomUUID());
+
+        assertThrows(ApiException.class, () -> authService.refresh(STOLEN));
+
+        verify(tokenDenyList, never()).revokeUser(any());
+        verify(deviceSessionRepository, never())
+                .findByUserIdAndRevokedAtIsNullOrderByLastSeenAtDesc(any());
+    }
+
+    private DeviceSession stubReusedToken(UUID userId, UUID sessionId) {
         RefreshToken reused = new RefreshToken();
         reused.setId(UUID.randomUUID());
         reused.setUserId(userId);
         reused.setSessionId(sessionId);
-        reused.setTokenHash(hash);
+        reused.setTokenHash(AuthService.sha256(STOLEN));
         reused.setUsedAt(Instant.now().minusSeconds(60));
         reused.setExpiresAt(Instant.now().plus(Duration.ofDays(1)));
 
@@ -130,14 +157,10 @@ class RefreshTokenRotationTest {
         session.setId(sessionId);
         session.setUserId(userId);
 
-        when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(reused));
+        when(refreshTokenRepository.findByTokenHash(reused.getTokenHash()))
+                .thenReturn(Optional.of(reused));
         when(refreshTokenRepository.findById(reused.getId())).thenReturn(Optional.of(reused));
-        when(deviceSessionRepository.findByUserIdAndRevokedAtIsNullOrderByLastSeenAtDesc(userId))
-                .thenReturn(List.of(session));
-
-        ApiException ex = assertThrows(ApiException.class, () -> authService.refresh(raw));
-        assertEquals(ErrorCode.TOKEN_REVOKED, ex.getCode());
-        verify(tokenDenyList).revokeUser(userId);
-        verify(jwtService, never()).issue(any());
+        when(deviceSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        return session;
     }
 }

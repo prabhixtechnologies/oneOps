@@ -64,7 +64,7 @@ public interface EventLogRepository extends JpaRepository<EventLog, EventLog.Eve
             SELECT date_trunc('hour', occurred_at) AS bucket,
                    count(*) FILTER (WHERE severity IN ('ERROR', 'FATAL')) AS errors
             FROM event_logs
-            WHERE organization_id = :orgId
+            WHERE (:orgId IS NULL OR organization_id = :orgId)
               AND occurred_at >= :from
               AND occurred_at <= :to
             GROUP BY 1
@@ -74,10 +74,29 @@ public interface EventLogRepository extends JpaRepository<EventLog, EventLog.Eve
                                      @Param("from") Instant from,
                                      @Param("to") Instant to);
 
+    /**
+     * Platform-wide severity counts for the ops hub. Deliberately not org-filtered, unlike
+     * {@link #countErrorsByHour}: an operator needs the total across every tenant, including the
+     * rows written with no organization at all (background jobs, pre-tenant auth failures).
+     */
+    @Query("""
+            SELECT COUNT(e) FROM EventLog e
+            WHERE e.id.occurredAt >= :since
+              AND e.severity IN ('ERROR', 'FATAL')
+            """)
+    long countErrorsSince(@Param("since") Instant since);
+
+    @Query("""
+            SELECT COUNT(e) FROM EventLog e
+            WHERE e.id.occurredAt >= :since
+              AND e.securityEvent = true
+            """)
+    long countSecurityEventsSince(@Param("since") Instant since);
+
     @Query(value = """
             SELECT event_code, count(*) AS cnt
             FROM event_logs
-            WHERE organization_id = :orgId
+            WHERE (:orgId IS NULL OR organization_id = :orgId)
               AND occurred_at >= :from
               AND occurred_at <= :to
             GROUP BY event_code

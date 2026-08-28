@@ -45,7 +45,7 @@ const FilesPage = lazy(() => import("@/features/files/FilesPage"));
 const FlagsPage = lazy(() => import("@/features/flags/FlagsPage"));
 const TagsPage = lazy(() => import("@/features/tags/TagsPage"));
 const CannedRepliesPage = lazy(() => import("@/features/canned-replies/CannedRepliesPage"));
-const SiteAdminPage = lazy(() => import("@/features/site/SiteAdminPage"));
+const OpsHubPage = lazy(() => import("@/features/ops/OpsHubPage"));
 const CommerceDashboardPage = lazy(() => import("@/features/commerce/CommerceDashboardPage"));
 const CommerceProductsPage = lazy(() => import("@/features/commerce/CommerceProductsPage"));
 const ProductEditPage = lazy(() => import("@/features/commerce/ProductEditPage"));
@@ -87,6 +87,18 @@ function PublicRoute() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <PageLoader />;
   if (isAuthenticated) return <Navigate to="/" replace />;
+  return <Outlet />;
+}
+
+/**
+ * Staff-only routes. The sidebar already hides these links, but hiding a link is not access
+ * control: the path was reachable by typing it. The server rejects the underlying calls either
+ * way, so this only decides whether a non-admin sees an empty page or gets sent home.
+ */
+function PlatformAdminRoute() {
+  const { me, isLoading } = useAuth();
+  if (isLoading) return <PageLoader />;
+  if (!me?.platformAdmin) return <Navigate to="/" replace />;
   return <Outlet />;
 }
 
@@ -135,7 +147,14 @@ export const router = createBrowserRouter([
           { path: "audit", element: <SuspenseWrap><AuditPage /></SuspenseWrap> },
           { path: "logs", element: <SuspenseWrap><LogsPage /></SuspenseWrap> },
           { path: "flags", element: <SuspenseWrap><FlagsPage /></SuspenseWrap> },
-          { path: "site", element: <SuspenseWrap><SiteAdminPage /></SuspenseWrap> },
+          {
+            element: <PlatformAdminRoute />,
+            children: [
+              { path: "ops", element: <SuspenseWrap><OpsHubPage /></SuspenseWrap> },
+            ],
+          },
+          // The hub used to live here; keep old bookmarks working.
+          { path: "site", element: <Navigate to="/ops" replace /> },
           { path: "commerce", element: <SuspenseWrap><CommerceDashboardPage /></SuspenseWrap> },
           { path: "commerce/products", element: <SuspenseWrap><CommerceProductsPage /></SuspenseWrap> },
           { path: "commerce/products/:id", element: <SuspenseWrap><ProductEditPage /></SuspenseWrap> },

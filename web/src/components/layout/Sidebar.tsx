@@ -60,7 +60,7 @@ const navItems = [
   { to: "/audit", icon: FileText, label: "Audit Log", permission: PERMISSIONS.AUDIT_READ },
   { to: "/logs", icon: ScrollText, label: "Event Logs", permission: PERMISSIONS.LOG_READ },
   { to: "/flags", icon: Flag, label: "Feature flags" },
-  { to: "/site", icon: Briefcase, label: "Site admin" },
+  { to: "/ops", icon: Briefcase, label: "Ops Hub" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
@@ -108,7 +108,7 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-2" aria-label="Main navigation">
           {navItems.map((item) => {
-            if (item.to === "/site" && !me?.platformAdmin) return null;
+            if (item.to === "/ops" && !me?.platformAdmin) return null;
             const link = navLink(item);
             if (item.permission) {
               return (

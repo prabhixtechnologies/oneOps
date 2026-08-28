@@ -7,6 +7,7 @@ import com.prabhix.platform.auth.repository.RefreshTokenRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
 import com.prabhix.platform.org.service.OrganizationService;
 import com.prabhix.platform.org.service.PermissionResolver;
@@ -48,6 +49,7 @@ class AccountLockoutTest {
     @Mock private JwtService jwtService;
     @Mock private TokenDenyList tokenDenyList;
     @Mock private ApplicationEventPublisher events;
+    @Mock private StructuredEventLogger eventLogger;
 
     private AuthService authService;
 
@@ -63,7 +65,7 @@ class AccountLockoutTest {
         authService = new AuthService(
                 userService, organizationService, membershipRepository, permissionResolver,
                 deviceSessionRepository, refreshTokenRepository, passwordEncoder,
-                jwtService, tokenDenyList, properties, events);
+                jwtService, tokenDenyList, properties, events, eventLogger);
     }
 
     @Test

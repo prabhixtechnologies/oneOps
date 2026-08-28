@@ -12,4 +12,7 @@ public interface DeviceSessionRepository extends JpaRepository<DeviceSession, UU
     List<DeviceSession> findByUserIdAndRevokedAtIsNullOrderByLastSeenAtDesc(UUID userId);
 
     Optional<DeviceSession> findByUserIdAndDeviceIdAndRevokedAtIsNull(UUID userId, String deviceId);
+
+    /** Live sessions across every tenant, for the ops hub. */
+    long countByRevokedAtIsNull();
 }

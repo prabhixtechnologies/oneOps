@@ -1,11 +1,13 @@
 package com.prabhix.platform.mail.repository;
 
+import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.domain.MailOutbox;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,6 +18,9 @@ public interface MailOutboxRepository extends JpaRepository<MailOutbox, UUID> {
     Optional<MailOutbox> findByDedupeKey(String dedupeKey);
 
     Optional<MailOutbox> findFirstByProviderMessageId(String providerMessageId);
+
+    /** Queue depth for the ops hub. Counts across every tenant, so it is platform-admin only. */
+    long countByStatusIn(Collection<MailEnums.OutboxStatus> statuses);
 
     @Query(value = """
             SELECT * FROM mail_outbox

@@ -24,6 +24,23 @@ public class EventLogWriter {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onEventLogRequested(EventLogRequested event) {
+        persist(event);
+    }
+
+    /**
+     * Writes an event without waiting for the caller's transaction to commit.
+     *
+     * <p>Needed by events that describe a rejection: the transaction that produced them is
+     * already doomed, so an AFTER_COMMIT listener would silently drop exactly the failed
+     * logins and token replays an operator most wants to see. REQUIRES_NEW suspends the
+     * doomed transaction and commits this row on its own.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void writeNow(EventLogRequested event) {
+        persist(event);
+    }
+
+    private void persist(EventLogRequested event) {
         try {
             EventLog row = new EventLog();
             EventLog.EventLogId id = new EventLog.EventLogId();

@@ -1,0 +1,249 @@
+import { useState } from "react";
+import {
+  AlertTriangle,
+  Building2,
+  Mail,
+  RefreshCw,
+  ShieldAlert,
+  Users,
+} from "lucide-react";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { RelativeTime } from "@/components/shared/RelativeTime";
+import { ErrorState } from "@/components/shared/states";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePlatformOverview } from "@/features/ops/api";
+import { ApplicationsTab, LeadsTab, SubscribersTab } from "@/features/ops/SitePipeline";
+import { TenantsTab } from "@/features/ops/TenantsTab";
+import { cn } from "@/lib/utils";
+
+export default function OpsHubPage() {
+  const [tab, setTab] = useState("overview");
+
+  return (
+    <div className="space-y-6 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-6">
+      <PageHeader
+        title="Ops Hub"
+        description="Platform-wide operations across every tenant — counts, backlogs and the marketing pipeline"
+      />
+
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="tenants">Tenants</TabsTrigger>
+          <TabsTrigger value="leads">Leads</TabsTrigger>
+          <TabsTrigger value="subscribers">Subscribers</TabsTrigger>
+          <TabsTrigger value="applications">Applications</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-6">
+          <OverviewTab />
+        </TabsContent>
+        <TabsContent value="tenants" className="mt-6">
+          <TenantsTab />
+        </TabsContent>
+        <TabsContent value="leads" className="mt-6">
+          <LeadsTab />
+        </TabsContent>
+        <TabsContent value="subscribers" className="mt-6">
+          <SubscribersTab />
+        </TabsContent>
+        <TabsContent value="applications" className="mt-6">
+          <ApplicationsTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function OverviewTab() {
+  const { data, isLoading, isError, refetch, isFetching } = usePlatformOverview();
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} className="h-24" />
+        ))}
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return <ErrorState message="Failed to load the platform overview" onRetry={() => void refetch()} />;
+  }
+
+  const { tenants, accounts, queues, activity } = data;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-text-muted">
+          Measured <RelativeTime date={data.generatedAt} />
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => void refetch()}
+          disabled={isFetching}
+        >
+          <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+          Refresh
+        </Button>
+      </div>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
+          Needs attention
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="Mail failed"
+            value={queues.mailFailed}
+            sub="Attempts exhausted — needs a human"
+            icon={Mail}
+            alert={queues.mailFailed > 0}
+          />
+          <StatCard
+            label="Mail queued"
+            value={queues.mailPending}
+            sub="Waiting on a transport"
+            icon={Mail}
+            alert={queues.mailPending > 50}
+          />
+          <StatCard
+            label="Errors (24h)"
+            value={activity.errorsLast24h}
+            sub="ERROR and FATAL events"
+            icon={AlertTriangle}
+            alert={activity.errorsLast24h > 0}
+          />
+          <StatCard
+            label="Security events (24h)"
+            value={activity.securityEventsLast24h}
+            sub="Sign-in failures, revocations, reuse"
+            icon={ShieldAlert}
+            alert={activity.securityEventsLast24h > 0}
+          />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
+          Tenants
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Total" value={tenants.total} icon={Building2} />
+          <StatCard label="Active" value={tenants.active} icon={Building2} />
+          <StatCard label="On trial" value={tenants.trial} icon={Building2} />
+          <StatCard
+            label="Suspended"
+            value={tenants.suspended}
+            icon={Building2}
+            alert={tenants.suspended > 0}
+          />
+        </div>
+        <p className="mt-3 text-xs text-text-muted">
+          {tenants.createdLast30Days} created in the last 30 days · {tenants.cancelled} cancelled
+        </p>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
+          Accounts
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Total" value={accounts.total} icon={Users} />
+          <StatCard label="Active" value={accounts.active} icon={Users} />
+          <StatCard
+            label="Locked out"
+            value={accounts.lockedOut}
+            sub="Too many failed sign-ins"
+            icon={Users}
+            alert={accounts.lockedOut > 0}
+          />
+          <StatCard label="Live sessions" value={queues.activeSessions} icon={Users} />
+        </div>
+        <p className="mt-3 text-xs text-text-muted">
+          {accounts.platformAdmins} platform admin{accounts.platformAdmins === 1 ? "" : "s"} ·{" "}
+          {accounts.invited} invited · {accounts.disabled} disabled ·{" "}
+          {accounts.createdLast30Days} joined in the last 30 days
+        </p>
+      </section>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  alert,
+}: {
+  label: string;
+  value: number;
+  sub?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  alert?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-lg border bg-surface p-4",
+        alert ? "border-destructive/40" : "border-border",
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-text-muted">{label}</span>
+        <Icon
+          className={cn("h-4 w-4", alert ? "text-destructive" : "text-text-muted")}
+          aria-hidden="true"
+        />
+      </div>
+      <div className={cn("mt-2 text-2xl font-semibold", alert && "text-destructive")}>
+        {value.toLocaleString()}
+      </div>
+      {sub && <p className="mt-1 text-xs text-text-muted">{sub}</p>}
+    </div>
+  );
+}
+
+/** Shared by the tenant directory and the three pipeline lists. */
+export function StatusBadge({ status }: { status: string }) {
+  return (
+    <Badge variant="outline" className={statusClass(status)}>
+      {status.replace(/_/g, " ")}
+    </Badge>
+  );
+}
+
+function statusClass(status: string) {
+  switch (status) {
+    case "ACTIVE":
+    case "CONFIRMED":
+    case "WON":
+    case "HIRED":
+      return "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400";
+    case "SUSPENDED":
+    case "BOUNCED":
+    case "LOST":
+    case "SPAM":
+    case "REJECTED":
+      return "border-destructive/30 bg-destructive/15 text-destructive";
+    case "TRIAL":
+    case "PENDING":
+    case "NEW":
+    case "RECEIVED":
+      return "border-primary/20 bg-primary/10 text-primary";
+    case "CANCELLED":
+    case "UNSUBSCRIBED":
+    case "WITHDRAWN":
+      return "border-border bg-muted text-text-muted";
+    default:
+      return "border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-400";
+  }
+}

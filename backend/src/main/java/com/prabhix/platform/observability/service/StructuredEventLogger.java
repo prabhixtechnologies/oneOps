@@ -28,12 +28,35 @@ public class StructuredEventLogger {
 
     private final ApplicationEventPublisher events;
     private final ObservabilityMetrics metrics;
+    private final EventLogWriter writer;
 
     public void log(LogEventCode code, Map<String, Object> payload) {
         log(code, payload, true);
     }
 
     public void log(LogEventCode code, Map<String, Object> payload, boolean persist) {
+        Map<String, Object> safe = emit(code, payload);
+        if (persist) {
+            events.publishEvent(buildEvent(code, safe));
+        }
+    }
+
+    /**
+     * Persists immediately instead of on commit. Use for events raised on a path that is about
+     * to throw, where the surrounding transaction will roll back and take a deferred write
+     * with it.
+     */
+    public void logNow(LogEventCode code, Map<String, Object> payload) {
+        Map<String, Object> safe = emit(code, payload);
+        try {
+            writer.writeNow(buildEvent(code, safe));
+        } catch (Exception ex) {
+            // An observability failure must never replace the caller's own outcome.
+            log.error("Failed to write {} immediately: {}", code.code(), ex.getMessage(), ex);
+        }
+    }
+
+    private Map<String, Object> emit(LogEventCode code, Map<String, Object> payload) {
         Map<String, Object> safe = LogRedactor.redactMap(payload);
         MDC.put(MdcKeys.EVENT_CODE, code.code());
 
@@ -44,10 +67,7 @@ public class StructuredEventLogger {
             case ERROR, FATAL -> log.error("{} {}", code.code(), safe);
         }
         metrics.incrementEvent(code);
-
-        if (persist) {
-            events.publishEvent(buildEvent(code, safe));
-        }
+        return safe;
     }
 
     private EventLogRequested buildEvent(LogEventCode code, Map<String, Object> payload) {

@@ -13,6 +13,8 @@ import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.event.AuditRequested;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.org.domain.OrganizationMembership;
 import com.prabhix.platform.org.domain.OrganizationMembership.MembershipStatus;
 import com.prabhix.platform.org.dto.OrgDtos.CreateOrganizationRequest;
@@ -39,6 +41,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -59,6 +62,7 @@ public class AuthService {
     private final TokenDenyList tokenDenyList;
     private final PrabhixProperties properties;
     private final ApplicationEventPublisher events;
+    private final StructuredEventLogger eventLogger;
 
     @Transactional
     public TokenResponse register(RegisterRequest request) {
@@ -76,14 +80,21 @@ public class AuthService {
         if (optionalUser.isEmpty()) {
             events.publishEvent(AuditRequested.failure(null, null, "auth.login.failed",
                     "unknown email"));
+            // No email in the payload: AUTH_LOGIN_FAILED is declared as carrying no PII, and an
+            // address typed at a login form is often a real one belonging to someone else.
+            eventLogger.logNow(LogEventCode.AUTH_LOGIN_FAILED, Map.of("reason", "unknown_email"));
             throw ApiException.of(ErrorCode.INVALID_CREDENTIALS, "Email or password is not correct");
         }
 
         User user = optionalUser.get();
         if (user.getStatus() == UserStatus.DISABLED) {
+            eventLogger.logNow(LogEventCode.AUTH_LOGIN_FAILED,
+                    Map.of("reason", "account_disabled", "userId", user.getId()));
             throw ApiException.of(ErrorCode.ACCOUNT_DISABLED, "This account has been disabled");
         }
         if (user.isLockedNow()) {
+            eventLogger.logNow(LogEventCode.AUTH_ACCOUNT_LOCKED,
+                    Map.of("userId", user.getId(), "lockedUntil", user.getLockedUntil()));
             throw ApiException.of(ErrorCode.ACCOUNT_LOCKED,
                     "This account is temporarily locked. Try again later.");
         }
@@ -92,12 +103,15 @@ public class AuthService {
             userService.recordLoginFailure(user);
             events.publishEvent(AuditRequested.failure(null, user.getId(), "auth.login.failed",
                     "bad password"));
+            eventLogger.logNow(LogEventCode.AUTH_LOGIN_FAILED,
+                    Map.of("reason", "bad_password", "userId", user.getId()));
             throw ApiException.of(ErrorCode.INVALID_CREDENTIALS, "Email or password is not correct");
         }
 
         userService.resetLoginFailures(user);
         events.publishEvent(AuditRequested.of(null, user.getId(), "auth.login.success",
                 "user", user.getId()));
+        eventLogger.log(LogEventCode.AUTH_LOGIN_SUCCEEDED, Map.of("userId", user.getId()));
 
         DeviceType deviceType = parseDeviceType(request.deviceType());
         DeviceSession session = resolveSession(user.getId(), request.deviceId(), request.deviceName(),
@@ -147,6 +161,12 @@ public class AuthService {
                 orgId, permissions, session.getId(), user.isPlatformAdmin());
         IssuedToken access = jwtService.issue(principal);
 
+        // Not persisted: every session refreshes on the access-token interval, so writing a row
+        // each time would bury the events an operator actually reads. It still reaches the
+        // application log and the event counter.
+        eventLogger.log(LogEventCode.AUTH_TOKEN_REFRESHED,
+                Map.of("userId", user.getId(), "sessionId", session.getId()), false);
+
         return new TokenResponse(
                 access.token(),
                 newRaw,
@@ -174,6 +194,7 @@ public class AuthService {
             });
         }
         events.publishEvent(AuditRequested.of(null, userId, "auth.logout", "user", userId));
+        eventLogger.log(LogEventCode.AUTH_LOGOUT, Map.of("userId", userId));
     }
 
     @Transactional
@@ -312,11 +333,37 @@ public class AuthService {
         return null;
     }
 
+    /**
+     * A replayed refresh token is either a genuine attacker holding a stolen token or a client that
+     * raced itself into sending the same token twice. Both are answered by revoking the affected
+     * token family and the one session it belongs to.
+     *
+     * <p>This deliberately leaves the user's other devices signed in. Revoking everything used to
+     * mean a race in one browser tab also signed the user out on their phone, and it handed anyone
+     * able to replay a single token a cheap way to lock the real owner out of every device at once.
+     * Confining the damage to the compromised family is what RFC 9700 asks for.
+     */
     private void handleTokenTheft(RefreshToken reused) {
-        UUID chainId = reused.getId();
-        revokeTokenChain(chainId);
-        revokeAllUserSessions(reused.getUserId());
-        tokenDenyList.revokeUser(reused.getUserId());
+        revokeTokenChain(reused.getId());
+        revokeCompromisedSession(reused.getSessionId());
+        events.publishEvent(AuditRequested.of(null, reused.getUserId(),
+                LogEventCode.AUTH_TOKEN_REUSED.code(), "session", reused.getSessionId()));
+        eventLogger.logNow(LogEventCode.AUTH_TOKEN_REUSED, Map.of(
+                "userId", reused.getUserId(),
+                "sessionId", reused.getSessionId()));
+    }
+
+    private void revokeCompromisedSession(UUID sessionId) {
+        deviceSessionRepository.findById(sessionId).ifPresent(session -> {
+            if (session.getRevokedAt() == null) {
+                session.setRevokedAt(Instant.now());
+                session.setRevokedReason("token_theft");
+                deviceSessionRepository.save(session);
+            }
+        });
+        // Unconditional, and after the session update: access tokens already minted for this
+        // session remain valid until they expire unless the deny list is told about it.
+        tokenDenyList.revokeSession(sessionId);
     }
 
     private void revokeTokenChain(UUID tokenId) {
@@ -327,17 +374,6 @@ public class AuthService {
                 revokeTokenChain(token.getReplacedBy());
             }
         });
-    }
-
-    private void revokeAllUserSessions(UUID userId) {
-        Instant now = Instant.now();
-        deviceSessionRepository.findByUserIdAndRevokedAtIsNullOrderByLastSeenAtDesc(userId)
-                .forEach(session -> {
-                    session.setRevokedAt(now);
-                    session.setRevokedReason("token_theft");
-                    deviceSessionRepository.save(session);
-                    tokenDenyList.revokeSession(session.getId());
-                });
     }
 
     private DeviceType parseDeviceType(String value) {

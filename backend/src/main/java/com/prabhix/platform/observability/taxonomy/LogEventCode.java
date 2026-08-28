@@ -19,6 +19,7 @@ public enum LogEventCode {
     AUTH_LOGOUT("auth.logout", LogCategory.AUTH, LogSeverity.INFO, false, false),
     AUTH_TOKEN_REFRESHED("auth.token.refreshed", LogCategory.AUTH, LogSeverity.DEBUG, false, false),
     AUTH_TOKEN_REVOKED("auth.token.revoked", LogCategory.AUTH, LogSeverity.INFO, true, false),
+    AUTH_TOKEN_REUSED("auth.token.reused", LogCategory.AUTH, LogSeverity.WARN, true, false),
     AUTH_MAGIC_LINK_SENT("auth.magic_link.sent", LogCategory.AUTH, LogSeverity.INFO, false, true),
     AUTH_MAGIC_LINK_CONSUMED("auth.magic_link.consumed", LogCategory.AUTH, LogSeverity.INFO, false, false),
     AUTH_OTP_SENT("auth.otp.sent", LogCategory.AUTH, LogSeverity.INFO, false, true),
