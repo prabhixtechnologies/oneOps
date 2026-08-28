@@ -1,0 +1,117 @@
+package com.prabhix.platform.common.error;
+
+import org.springframework.http.HttpStatus;
+
+/**
+ * The complete set of machine-readable error codes the API can return.
+ *
+ * <p>Clients switch on {@code code}, never on the human-readable message, so codes are part
+ * of the public contract: rename one and you break every consumer.
+ */
+public enum ErrorCode {
+
+    // --- Authentication / authorization ---
+    UNAUTHENTICATED(HttpStatus.UNAUTHORIZED),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED),
+    TOKEN_INVALID(HttpStatus.UNAUTHORIZED),
+    TOKEN_REVOKED(HttpStatus.UNAUTHORIZED),
+    FORBIDDEN(HttpStatus.FORBIDDEN),
+    PERMISSION_DENIED(HttpStatus.FORBIDDEN),
+    ACCOUNT_LOCKED(HttpStatus.FORBIDDEN),
+    ACCOUNT_DISABLED(HttpStatus.FORBIDDEN),
+    EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN),
+    OTP_INVALID(HttpStatus.BAD_REQUEST),
+    OTP_EXPIRED(HttpStatus.BAD_REQUEST),
+    OTP_ATTEMPTS_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS),
+    EMAIL_ALREADY_VERIFIED(HttpStatus.CONFLICT),
+    API_KEY_INVALID(HttpStatus.UNAUTHORIZED),
+    API_KEY_EXPIRED(HttpStatus.UNAUTHORIZED),
+
+    // --- Tenancy ---
+    ORGANIZATION_REQUIRED(HttpStatus.BAD_REQUEST),
+    ORGANIZATION_NOT_FOUND(HttpStatus.NOT_FOUND),
+    NOT_A_MEMBER(HttpStatus.FORBIDDEN),
+    MEMBERSHIP_PENDING(HttpStatus.FORBIDDEN),
+    MEMBERSHIP_SUSPENDED(HttpStatus.FORBIDDEN),
+    CROSS_TENANT_ACCESS(HttpStatus.FORBIDDEN),
+
+    // --- Validation / request shape ---
+    VALIDATION_FAILED(HttpStatus.BAD_REQUEST),
+    MALFORMED_REQUEST(HttpStatus.BAD_REQUEST),
+    UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE),
+    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED),
+    INVALID_CURSOR(HttpStatus.BAD_REQUEST),
+
+    // --- Resources ---
+    NOT_FOUND(HttpStatus.NOT_FOUND),
+    ALREADY_EXISTS(HttpStatus.CONFLICT),
+    CONFLICT(HttpStatus.CONFLICT),
+    STALE_RESOURCE(HttpStatus.CONFLICT),
+    LIMIT_EXCEEDED(HttpStatus.UNPROCESSABLE_ENTITY),
+    INVALID_STATE(HttpStatus.UNPROCESSABLE_ENTITY),
+
+    // --- Mail ---
+    MAILBOX_NOT_FOUND(HttpStatus.NOT_FOUND),
+    MAIL_DOMAIN_NOT_VERIFIED(HttpStatus.UNPROCESSABLE_ENTITY),
+    MAIL_SEND_FAILED(HttpStatus.BAD_GATEWAY),
+    MAIL_ADDRESS_SUPPRESSED(HttpStatus.UNPROCESSABLE_ENTITY),
+    MAIL_TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND),
+    MAIL_TEMPLATE_RENDER_FAILED(HttpStatus.UNPROCESSABLE_ENTITY),
+    MAIL_THREAD_LOCKED(HttpStatus.CONFLICT),
+    IMAP_CONNECTION_FAILED(HttpStatus.BAD_GATEWAY),
+    MAIL_CREDENTIALS_UNREADABLE(HttpStatus.INTERNAL_SERVER_ERROR),
+
+    // --- Visitor ---
+    VISITOR_NOT_FOUND(HttpStatus.NOT_FOUND),
+
+    // --- Chat ---
+    CHAT_CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND),
+    CHAT_TOKEN_INVALID(HttpStatus.FORBIDDEN),
+
+    // --- Billing ---
+    PAYMENT_GATEWAY_ERROR(HttpStatus.BAD_GATEWAY),
+    PAYMENT_SIGNATURE_MISMATCH(HttpStatus.BAD_REQUEST),
+    PAYMENT_ALREADY_CAPTURED(HttpStatus.CONFLICT),
+    SUBSCRIPTION_INACTIVE(HttpStatus.PAYMENT_REQUIRED),
+    PLAN_NOT_FOUND(HttpStatus.NOT_FOUND),
+    SEAT_LIMIT_REACHED(HttpStatus.UNPROCESSABLE_ENTITY),
+    BILLING_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE),
+
+    // --- Commerce ---
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND),
+    PRODUCT_UNAVAILABLE(HttpStatus.UNPROCESSABLE_ENTITY),
+    VARIANT_NOT_FOUND(HttpStatus.NOT_FOUND),
+    CART_NOT_FOUND(HttpStatus.NOT_FOUND),
+    CART_EMPTY(HttpStatus.UNPROCESSABLE_ENTITY),
+    OUT_OF_STOCK(HttpStatus.UNPROCESSABLE_ENTITY),
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND),
+    ORDER_NOT_PAYABLE(HttpStatus.UNPROCESSABLE_ENTITY),
+    ORDER_ALREADY_PAID(HttpStatus.CONFLICT),
+    DISCOUNT_INVALID(HttpStatus.UNPROCESSABLE_ENTITY),
+    DOWNLOAD_LINK_EXPIRED(HttpStatus.GONE),
+
+    // --- AI ---
+    AI_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE),
+    AI_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY),
+    AI_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS),
+    AI_CONTENT_BLOCKED(HttpStatus.UNPROCESSABLE_ENTITY),
+    AI_MODEL_NOT_SUPPORTED(HttpStatus.UNPROCESSABLE_ENTITY),
+
+    // --- Platform ---
+    RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS),
+    FEATURE_DISABLED(HttpStatus.FORBIDDEN),
+    STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
+    DEPENDENCY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
+
+    private final HttpStatus status;
+
+    ErrorCode(HttpStatus status) {
+        this.status = status;
+    }
+
+    public HttpStatus status() {
+        return status;
+    }
+}

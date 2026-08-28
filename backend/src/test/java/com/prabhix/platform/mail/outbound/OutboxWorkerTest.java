@@ -1,0 +1,101 @@
+package com.prabhix.platform.mail.outbound;
+
+import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.support.TestProperties;
+import com.prabhix.platform.mail.domain.MailOutbox;
+import com.prabhix.platform.mail.domain.MailEnums;
+import com.prabhix.platform.mail.repository.MailDeliveryEventRepository;
+import com.prabhix.platform.mail.repository.MailOutboxRepository;
+import com.prabhix.platform.mail.outbound.transport.LoggingTransport;
+import com.prabhix.platform.mail.outbound.transport.MailTransportRouter;
+import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.mail.util.OutboxBackoff;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class OutboxWorkerTest {
+
+    @Mock
+    MailOutboxRepository outboxRepository;
+    @Mock
+    MailDeliveryEventRepository deliveryEventRepository;
+    @Mock
+    TemplateRenderer templateRenderer;
+    @Mock
+    SuppressionService suppressionService;
+    @Mock
+    MailTransportRouter transportRouter;
+    @Mock
+    MailTrackingInjector trackingInjector;
+    @Mock
+    OutboundAttachmentResolver attachmentResolver;
+
+    OutboxWorker worker;
+
+    @BeforeEach
+    void setUp() {
+        PrabhixProperties props = TestProperties.defaults();
+        worker = new OutboxWorker(props, outboxRepository, deliveryEventRepository,
+                templateRenderer, suppressionService, transportRouter, trackingInjector,
+                attachmentResolver);
+    }
+
+    @Test
+    void backoffIncreasesWithAttempts() {
+        Duration d1 = OutboxBackoff.nextDelay(1);
+        Duration d3 = OutboxBackoff.nextDelay(3);
+        assertTrue(d3.compareTo(d1) >= 0);
+    }
+
+    @Test
+    void suppressedAddressSkipsSend() {
+        MailOutbox row = outbox();
+        when(suppressionService.isSuppressed("blocked@example.com", row.getOrganizationId())).thenReturn(true);
+
+        worker.processRow(row);
+
+        assertEquals(MailEnums.OutboxStatus.SUPPRESSED, row.getStatus());
+    }
+
+    @Test
+    void sendsWhenNotSuppressed() {
+        MailOutbox row = outbox();
+        when(suppressionService.isSuppressed(any(), any())).thenReturn(false);
+        when(transportRouter.select()).thenReturn(new LoggingTransport());
+
+        worker.processRow(row);
+
+        assertEquals(MailEnums.OutboxStatus.SENT, row.getStatus());
+        verify(deliveryEventRepository).save(any());
+    }
+
+    private MailOutbox outbox() {
+        MailOutbox row = new MailOutbox();
+        row.setId(UUID.randomUUID());
+        row.setOrganizationId(UUID.randomUUID());
+        row.setFromAddress("noreply@example.com");
+        row.setToAddresses(MailJson.toJson(List.of("blocked@example.com")));
+        row.setSubject("Test");
+        row.setBodyHtml("<p>Hi</p>");
+        row.setBodyText("Hi");
+        row.setMaxAttempts(6);
+        row.setAttempts(0);
+        row.setScheduledAt(Instant.now());
+        return row;
+    }
+}

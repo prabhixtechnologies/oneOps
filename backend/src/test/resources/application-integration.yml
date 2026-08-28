@@ -1,0 +1,31 @@
+# The "integration" profile is deliberately not one of the profiles the startup validators treat
+# as local, so this file has to supply production-shaped configuration. That is the point: the
+# test then also proves the production startup checks pass, not just that the schema matches.
+spring:
+  task:
+    scheduling:
+      enabled: false
+
+prabhix:
+  security:
+    jwt:
+      # Must clear the 64-character production minimum, which this profile is subject to.
+      secret: integration-test-signing-key-not-the-shipped-default-0123456789abcdef
+    rate-limit:
+      enabled: false
+  mail:
+    # Real delivery is out of scope here, and LOGGING would trip the transport validator, so
+    # point at a transport that is structurally valid but never dials out (the outbox is off).
+    transport: SELF_HOSTED_SMTP
+    outbox:
+      enabled: false
+    inbound:
+      imap-enabled: false
+  push:
+    outbox:
+      enabled: false
+  ai:
+    enabled: false
+  audit:
+    archive:
+      enabled: false

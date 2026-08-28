@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.6</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.prabhix</groupId>
+    <artifactId>platform</artifactId>
+    <version>1.0.0</version>
+    <name>prabhix-platform</name>
+    <description>Prabhix Technologies enterprise platform API</description>
+
+    <properties>
+        <!-- Production builds target 21 (virtual threads). Local JDK 17 users can
+             build with -Djava.version=17; nothing in the codebase requires 21 to compile. -->
+        <java.version>21</java.version>
+        <build.dir>${project.basedir}/target</build.dir>
+        <jjwt.version>0.12.6</jjwt.version>
+        <springdoc.version>2.8.9</springdoc.version>
+        <!-- 1.20.x bundles a docker-java that Docker Engine 29 rejects with HTTP 400 on /info. -->
+        <testcontainers.version>1.21.4</testcontainers.version>
+        <jsoup.version>1.18.3</jsoup.version>
+        <ognl.version>3.3.4</ognl.version>
+        <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
+        <awssdk.version>2.29.52</awssdk.version>
+        <logstash.encoder.version>8.0</logstash.encoder.version>
+    </properties>
+
+    <dependencies>
+        <!-- Web / API -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Persistence -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Cache / coordination -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Security -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Mail: SMTP send + IMAP fetch + MIME parsing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-mail</artifactId>
+        </dependency>
+
+        <!-- HTML email templating -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <!-- Mail bodies are rendered by a plain Thymeleaf TemplateEngine over template strings
+             held in the database, which evaluates expressions with OGNL. thymeleaf-spring6
+             excludes OGNL because Spring's own view layer uses SpEL, so declare it here. -->
+        <dependency>
+            <groupId>ognl</groupId>
+            <artifactId>ognl</artifactId>
+            <version>${ognl.version}</version>
+        </dependency>
+
+        <!-- HTML sanitisation for inbound mail bodies rendered in the console -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
+        </dependency>
+
+        <!-- Renders the XHTML invoice to a PDF. Tax invoices have to be a fixed-layout
+             document, not a web page the recipient's browser may reflow. -->
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>${openhtmltopdf.version}</version>
+        </dependency>
+
+        <!-- One JSON object per log line, so a log shipper can index fields instead of
+             regex-parsing a human-formatted message. -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>${logstash.encoder.version}</version>
+        </dependency>
+
+        <!-- Object storage for attachments and raw MIME -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>${awssdk.version}</version>
+        </dependency>
+
+        <!-- Bulk transactional mail transport -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sesv2</artifactId>
+            <version>${awssdk.version}</version>
+        </dependency>
+
+        <!-- API docs -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- Boilerplate -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>prabhix-platform</finalName>
+        <!-- Overridable so concurrent builds (parallel CI jobs, several agents working the
+             same checkout) do not fight over one target/classes: mvn -Dbuild.dir=target-x -->
+        <directory>${build.dir}</directory>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>${java.version}</release>
+                    <parameters>true</parameters>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludedGroups>integration</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- mvn test -Pintegration  → also runs Testcontainers-backed tests -->
+        <profile>
+            <id>integration</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration combine.self="override">
+                            <excludedGroups combine.self="override"/>
+                            <environmentVariables>
+                                <DOCKER_HOST>${testcontainers.docker.host}</DOCKER_HOST>
+                                <!--
+                                  Ryuk bind-mounts the daemon socket from inside a Linux container,
+                                  so this is the in-container path. Without it Ryuk tries to mount
+                                  the Windows pipe path and Docker rejects it as an invalid path.
+                                -->
+                                <TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE>/var/run/docker.sock</TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+          Docker Desktop on Windows publishes several named pipes and Testcontainers' auto-detection
+          picks docker_engine, which answers HTTP 400. The Linux engine pipe is the working one.
+          Testcontainers only honours docker.host from ~/.testcontainers.properties, not from the
+          classpath, so it has to arrive as an environment variable instead.
+        -->
+        <profile>
+            <id>docker-host-windows</id>
+            <activation>
+                <os><family>windows</family></os>
+            </activation>
+            <properties>
+                <testcontainers.docker.host>npipe:////./pipe/dockerDesktopLinuxEngine</testcontainers.docker.host>
+            </properties>
+        </profile>
+        <profile>
+            <id>docker-host-unix</id>
+            <activation>
+                <os><family>unix</family></os>
+            </activation>
+            <properties>
+                <testcontainers.docker.host>unix:///var/run/docker.sock</testcontainers.docker.host>
+            </properties>
+        </profile>
+    </profiles>
+</project>

@@ -1,0 +1,386 @@
+spring:
+  application:
+    name: prabhix-platform
+
+  profiles:
+    default: dev
+
+  threads:
+    # Requires a Java 21 runtime. Left off by default so the app still boots on JDK 17.
+    virtual:
+      enabled: ${VIRTUAL_THREADS:false}
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/prabhix}
+    username: ${DB_USERNAME:prabhix}
+    password: ${DB_PASSWORD:prabhix}
+    hikari:
+      # Sized for many app instances behind PgBouncer rather than a few fat pools.
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN:5}
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      pool-name: prabhix-pool
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema. Hibernate only verifies that it matches the entities.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+          time_zone: UTC
+        order_inserts: true
+        order_updates: true
+        query:
+          in_clause_parameter_padding: true
+        format_sql: false
+    show-sql: false
+
+  flyway:
+    enabled: true
+    # Migrations must reach Postgres directly. PgBouncer runs in transaction pooling mode, where
+    # a session-level advisory lock cannot be held across statements, so Flyway's migration lock
+    # would not protect concurrent deploys.
+    url: ${FLYWAY_URL:${DB_URL:jdbc:postgresql://localhost:5432/prabhix}}
+    user: ${FLYWAY_USER:${DB_USERNAME:prabhix}}
+    password: ${FLYWAY_PASSWORD:${DB_PASSWORD:prabhix}}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    # Migrations seed Thymeleaf email templates whose bodies contain ${...} variables.
+    # Flyway would try to resolve those as its own placeholders and fail the migration.
+    placeholder-replacement: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:false}
+          connectiontimeout: 10000
+          timeout: 20000
+          writetimeout: 20000
+
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 30MB
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 32
+        queue-capacity: 500
+      thread-name-prefix: pbx-task-
+    scheduling:
+      pool:
+        size: 8
+      thread-name-prefix: pbx-sched-
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  forward-headers-strategy: framework
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/css,application/javascript
+  error:
+    include-message: never
+    include-stacktrace: never
+  tomcat:
+    max-swallow-size: 30MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
+  api-docs:
+    path: /v3/api-docs
+    # Gated by the same flag as the UI. Turning off only the UI while still serving the raw
+    # document publishes every endpoint, schema and auth requirement to anyone who asks, which
+    # defeats the point of disabling the UI in production. Generate mobile and TypeScript clients
+    # from a local or CI instance, where this is on.
+    enabled: ${SWAGGER_ENABLED:true}
+
+logging:
+  level:
+    root: INFO
+    com.prabhix.platform: ${LOG_LEVEL:INFO}
+    org.hibernate.SQL: WARN
+
+# ---------------------------------------------------------------------------
+# Platform configuration
+# ---------------------------------------------------------------------------
+prabhix:
+  # Public URLs, used to build links inside emails and CORS allow-lists.
+  urls:
+    marketing: ${MARKETING_URL:http://localhost:3000}
+    console: ${CONSOLE_URL:http://localhost:5173}
+    api: ${API_URL:http://localhost:8080}
+
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173}
+
+  security:
+    jwt:
+      # MUST be overridden outside dev. Startup fails if it is short or default in prod.
+      secret: ${JWT_SECRET:dev-only-insecure-secret-change-me-0123456789abcdefghijklmnop}
+      issuer: ${JWT_ISSUER:prabhix-platform}
+      access-token-ttl: ${JWT_ACCESS_TTL:PT15M}
+      refresh-token-ttl: ${JWT_REFRESH_TTL:P30D}
+    # Sliding-window limits enforced in Redis, per IP and per organization.
+    rate-limit:
+      enabled: ${RATE_LIMIT_ENABLED:true}
+      auth-attempts-per-minute: 10
+      api-requests-per-minute: 600
+    password:
+      min-length: 10
+      bcrypt-strength: 12
+
+  otp:
+    length: 6
+    ttl: PT10M
+    max-attempts: 5
+
+  mail:
+    # Identity used for platform-generated mail (auth, billing, notifications).
+    from-address: ${MAIL_FROM:no-reply@prabhixtechnologies.com}
+    from-name: ${MAIL_FROM_NAME:Prabhix Technologies}
+    reply-to: ${MAIL_REPLY_TO:support@prabhixtechnologies.com}
+    # LOGGING | SELF_HOSTED_SMTP | SES | SMTP_RELAY
+    transport: ${MAIL_TRANSPORT:LOGGING}
+    outbox:
+      enabled: ${MAIL_OUTBOX_ENABLED:true}
+      batch-size: 50
+      poll-interval: PT5S
+      max-attempts: 6
+    inbound:
+      # IMAP polling. Disabled by default so local dev does not need a mail server.
+      imap-enabled: ${MAIL_IMAP_ENABLED:false}
+      poll-interval: PT60S
+      fetch-batch-size: 50
+      # Shared secret Postfix/Dovecot use to push mail in over LMTP/HTTP.
+      lmtp-token: ${MAIL_LMTP_TOKEN:}
+    tracking:
+      enabled: ${MAIL_TRACKING_ENABLED:false}
+      secret: ${MAIL_TRACKING_SECRET:dev-tracking-secret}
+    threading:
+      # Subject token that lets replies rejoin a thread when References is stripped.
+      token-prefix: PBX
+      subject-fallback-window: P30D
+    ses:
+      region: ${SES_REGION:ap-south-1}
+      # Leave blank on EC2 so the instance role supplies credentials instead of static keys.
+      access-key: ${SES_ACCESS_KEY:}
+      secret-key: ${SES_SECRET_KEY:}
+      # Needed for SES to publish bounce and complaint events back to us.
+      configuration-set: ${SES_CONFIGURATION_SET:}
+    credentials:
+      # Rotating this makes stored mailbox passwords unreadable; they must be re-entered.
+      secret: ${MAIL_CREDENTIAL_SECRET:dev-only-mailbox-credential-key-change-me}
+    domain-verification:
+      recheck-enabled: ${MAIL_DOMAIN_RECHECK_ENABLED:true}
+      recheck-cron: ${MAIL_DOMAIN_RECHECK_CRON:0 20 4 * * *}
+      recheck-interval: ${MAIL_DOMAIN_RECHECK_INTERVAL:P1D}
+      recheck-batch-size: ${MAIL_DOMAIN_RECHECK_BATCH:50}
+
+  billing:
+    razorpay:
+      key-id: ${RAZORPAY_KEY_ID:}
+      key-secret: ${RAZORPAY_KEY_SECRET:}
+      webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
+      api-base: https://api.razorpay.com/v1
+    currency: INR
+    # GST-compliant sequential invoice numbering.
+    invoice:
+      prefix: ${INVOICE_PREFIX:PBX}
+      gst-percent: 18
+      # Our registered state. Decides CGST+SGST (intra-state) vs IGST (inter-state).
+      place-of-supply: ${INVOICE_PLACE_OF_SUPPLY:Karnataka}
+      # Printed on every tax invoice. GSTIN and address are legally required on a GST
+      # invoice, so set both before charging a real customer.
+      supplier-name: ${INVOICE_SUPPLIER_NAME:Prabhix Technologies Pvt Ltd}
+      supplier-gstin: ${INVOICE_SUPPLIER_GSTIN:}
+      supplier-address: ${INVOICE_SUPPLIER_ADDRESS:}
+    trial-days: 14
+
+  site:
+    # Marketing-site submissions are not tenant-scoped, but file uploads are. Set this to
+    # the UUID of the Prabhix-owned organization so candidate resumes have somewhere to
+    # live. While it is blank, applications are still saved and only the upload is skipped.
+    internal-organization-id: ${SITE_INTERNAL_ORG_ID:}
+
+  visitor:
+    raw-retention: ${VISITOR_RAW_RETENTION:P90D}
+    ingest-batch-max-events: ${VISITOR_INGEST_BATCH_MAX:50}
+    ingest-max-payload-bytes: ${VISITOR_INGEST_MAX_BYTES:65536}
+    presence-ttl-seconds: ${VISITOR_PRESENCE_TTL:120}
+    ingest-rate-limit-per-minute: ${VISITOR_INGEST_RL_IP:60}
+    ingest-rate-limit-per-visitor-per-minute: ${VISITOR_INGEST_RL_VISITOR:120}
+    allowed-origins: ${VISITOR_ALLOWED_ORIGINS:http://localhost:3000}
+    retention-batch-size: ${VISITOR_RETENTION_BATCH:500}
+    retention-cron: ${VISITOR_RETENTION_CRON:0 15 2 * * *}
+
+  chat:
+    conversation-token-ttl: ${CHAT_TOKEN_TTL:PT24H}
+    public-rate-limit-per-minute: ${CHAT_PUBLIC_RL:30}
+    allowed-origins: ${CHAT_ALLOWED_ORIGINS:http://localhost:3000}
+    business-hours:
+      start: ${CHAT_BH_START:09:00}
+      end: ${CHAT_BH_END:18:00}
+      timezone: ${CHAT_BH_TZ:Asia/Kolkata}
+
+  commerce:
+    # Storefront currency is fixed per deployment; Razorpay settles in one currency.
+    currency: ${COMMERCE_CURRENCY:INR}
+    # Digital goods are delivered as short-lived signed links, re-issuable from the order.
+    download-link-ttl: ${COMMERCE_DOWNLOAD_TTL:PT24H}
+    max-download-count: ${COMMERCE_MAX_DOWNLOADS:5}
+    cart-ttl: ${COMMERCE_CART_TTL:P14D}
+    # Reservation held between "checkout started" and "payment captured".
+    stock-hold-ttl: ${COMMERCE_STOCK_HOLD_TTL:PT15M}
+    allowed-origins: ${COMMERCE_ALLOWED_ORIGINS:http://localhost:3000}
+    public-rate-limit-per-minute: ${COMMERCE_PUBLIC_RL:60}
+
+  ai:
+    # Provider-agnostic by design: swapping models is configuration, not code.
+    enabled: ${AI_ENABLED:true}
+    default-provider: ${AI_PROVIDER:gemini}
+    request-timeout: ${AI_TIMEOUT:PT30S}
+    max-output-tokens: ${AI_MAX_OUTPUT_TOKENS:2048}
+    # Per-organization ceiling so one tenant cannot spend the whole AI budget.
+    monthly-token-quota: ${AI_MONTHLY_TOKEN_QUOTA:2000000}
+    redact-pii: ${AI_REDACT_PII:true}
+    providers:
+      gemini:
+        api-key: ${GEMINI_API_KEY:}
+        base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+        chat-model: ${GEMINI_CHAT_MODEL:gemini-2.0-flash}
+        reasoning-model: ${GEMINI_REASONING_MODEL:gemini-2.0-flash-thinking-exp}
+        embedding-model: ${GEMINI_EMBEDDING_MODEL:text-embedding-004}
+      openai:
+        api-key: ${OPENAI_API_KEY:}
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+        chat-model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+        reasoning-model: ${OPENAI_REASONING_MODEL:gpt-4o}
+        embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+      anthropic:
+        api-key: ${ANTHROPIC_API_KEY:}
+        base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com/v1}
+        chat-model: ${ANTHROPIC_CHAT_MODEL:claude-3-5-haiku-latest}
+        reasoning-model: ${ANTHROPIC_REASONING_MODEL:claude-3-5-sonnet-latest}
+
+  audit:
+    # Creates next month's audit_logs partition ahead of time.
+    partition-cron: ${AUDIT_PARTITION_CRON:0 30 0 * * *}
+    archive:
+      # Audit history is compliance data, so old partitions are exported to object storage
+      # before being dropped. Off by default: enabling it deletes local partitions.
+      enabled: ${AUDIT_ARCHIVE_ENABLED:false}
+      # Logs what it would archive without uploading or dropping anything.
+      dry-run: ${AUDIT_ARCHIVE_DRY_RUN:true}
+      retention: ${AUDIT_ARCHIVE_RETENTION:P730D}
+      cron: ${AUDIT_ARCHIVE_CRON:0 0 3 1 * *}
+
+  observability:
+    # "json" for shipping to a log platform, "console" for readable local development.
+    log-format: ${LOG_FORMAT:console}
+    # Business-event logs kept queryable in Postgres; app logs go to the shipper.
+    event-log-retention: ${LOG_EVENT_RETENTION:P90D}
+    event-log-retention-cron: ${LOG_EVENT_RETENTION_CRON:0 45 2 * * *}
+    slow-request-threshold: ${LOG_SLOW_REQUEST_THRESHOLD:PT1S}
+    sample-rate: ${LOG_SAMPLE_RATE:1.0}
+
+  storage:
+    # S3-compatible. MinIO locally, AWS S3 in production.
+    endpoint: ${S3_ENDPOINT:}
+    region: ${S3_REGION:ap-south-1}
+    bucket: ${S3_BUCKET:prabhix-local}
+    access-key: ${S3_ACCESS_KEY:}
+    secret-key: ${S3_SECRET_KEY:}
+    path-style-access: ${S3_PATH_STYLE:true}
+    signed-url-ttl: PT15M
+
+  limits:
+    # Guard rails that keep a single tenant from starving the cluster.
+    max-members-per-organization: 100000
+    max-mailboxes-per-organization: 200
+    max-attachment-size-bytes: 26214400
+    default-page-size: 25
+    max-page-size: 200
+
+  files:
+    scan:
+      # NOOP | CLAMAV
+      provider: ${FILES_SCAN_PROVIDER:NOOP}
+      fail-closed-on-error: ${FILES_SCAN_FAIL_CLOSED:true}
+      clamav:
+        host: ${CLAMAV_HOST:localhost}
+        port: ${CLAMAV_PORT:3310}
+        connect-timeout-millis: ${CLAMAV_CONNECT_TIMEOUT_MS:60000}
+        scan-timeout-millis: ${CLAMAV_SCAN_TIMEOUT_MS:120000}
+        chunk-size: ${CLAMAV_CHUNK_SIZE:2048}
+
+  push:
+    # LOGGING | FCM | APNS
+    provider: ${PUSH_PROVIDER:LOGGING}
+    outbox:
+      enabled: ${PUSH_OUTBOX_ENABLED:true}
+      batch-size: 50
+      poll-interval: PT5S
+      max-attempts: 6
+    fcm:
+      project-id: ${FCM_PROJECT_ID:}
+      # Inline JSON or base64-encoded service account JSON.
+      service-account-json: ${FCM_SERVICE_ACCOUNT_JSON:}
+    apns:
+      team-id: ${APNS_TEAM_ID:}
+      key-id: ${APNS_KEY_ID:}
+      bundle-id: ${APNS_BUNDLE_ID:}
+      private-key: ${APNS_PRIVATE_KEY:}
+      host: ${APNS_HOST:https://api.push.apple.com}

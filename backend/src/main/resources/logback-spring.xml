@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="prabhix-platform"/>
+
+    <!--
+      The two appenders below are named to match the two legal values of
+      prabhix.observability.log-format so the root logger can pick one by plain
+      substitution. Logback has no expression language in attributes: a ternary such as
+      ref="${fmt == 'json' ? 'JSON' : 'CONSOLE'}" resolves to nothing, which leaves the
+      application with no appenders and no way to see why it failed to start.
+    -->
+    <springProperty scope="context" name="logFormat"
+                    source="prabhix.observability.log-format" defaultValue="console"/>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{36}) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>requestId</includeMdcKeyName>
+            <includeMdcKeyName>correlationId</includeMdcKeyName>
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>orgId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+            <includeMdcKeyName>sessionId</includeMdcKeyName>
+            <includeMdcKeyName>clientIp</includeMdcKeyName>
+            <includeMdcKeyName>httpMethod</includeMdcKeyName>
+            <includeMdcKeyName>httpPath</includeMdcKeyName>
+            <includeMdcKeyName>routeTemplate</includeMdcKeyName>
+            <includeMdcKeyName>userAgent</includeMdcKeyName>
+            <includeMdcKeyName>eventCode</includeMdcKeyName>
+            <customFields>{"service":"${appName}"}</customFields>
+            <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                <maxDepthPerThrowable>30</maxDepthPerThrowable>
+                <rootCauseFirst>true</rootCauseFirst>
+            </throwableConverter>
+        </encoder>
+    </appender>
+
+    <root level="${logging.level.root:-INFO}">
+        <appender-ref ref="${logFormat}"/>
+    </root>
+
+    <logger name="com.prabhix.platform" level="${logging.level.com.prabhix.platform:-INFO}"/>
+</configuration>
