@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -16,6 +17,17 @@ import java.util.UUID;
  * as long as the access-token TTL, so the list stays small — it holds "recently revoked",
  * not "all revoked ever".
  *
+ * <p>Two scopes, deliberately different:
+ *
+ * <ul>
+ *   <li><b>Session</b> entries deny outright. A session id is fixed for the life of that session
+ *       and a new sign-in mints a new one, so there is no way for a legitimate later token to
+ *       carry a revoked session id.
+ *   <li><b>User</b> entries deny only tokens issued <em>before</em> the revocation. They must not
+ *       deny outright: signing in again is the expected response to a password change, and the
+ *       new token would otherwise be rejected for the rest of the TTL.
+ * </ul>
+ *
  * <p>Redis being unavailable must not lock everyone out, so lookups fail open and log. The
  * exposure is bounded by the 15-minute TTL, which is a better trade than a total outage.
  */
@@ -25,6 +37,9 @@ public class TokenDenyList {
 
     private static final String SESSION_KEY = "pbx:deny:session:";
     private static final String USER_KEY = "pbx:deny:user:";
+
+    /** 2001-09-09. Below this a stored value is a marker from an older build, not a timestamp. */
+    private static final long MIN_PLAUSIBLE_EPOCH_MILLIS = 1_000_000_000_000L;
 
     private final StringRedisTemplate redis;
     private final Duration ttl;
@@ -39,35 +54,73 @@ public class TokenDenyList {
         if (sessionId == null) {
             return;
         }
-        write(SESSION_KEY + sessionId);
+        write(SESSION_KEY + sessionId, "1");
     }
 
     /**
      * Revokes every session for a user: password change, role change, or being removed from
      * an organization. Cheaper and safer than enumerating their sessions.
+     *
+     * <p>Stores the revocation instant rather than a marker, so {@link #isRevoked} can let a
+     * subsequent sign-in through. Storing a marker made a password change lock the user out of
+     * their own new session until the entry expired.
      */
     public void revokeUser(UUID userId) {
         if (userId == null) {
             return;
         }
-        write(USER_KEY + userId);
+        write(USER_KEY + userId, Long.toString(Instant.now().toEpochMilli()));
     }
 
-    public boolean isRevoked(UUID userId, UUID sessionId) {
+    /**
+     * @param issuedAt the token's {@code iat}. A null value is treated as "older than any
+     *                 revocation", because a token we cannot date is not one to trust against a
+     *                 pending revocation.
+     */
+    public boolean isRevoked(UUID userId, UUID sessionId, Instant issuedAt) {
         try {
             if (sessionId != null && Boolean.TRUE.equals(redis.hasKey(SESSION_KEY + sessionId))) {
                 return true;
             }
-            return userId != null && Boolean.TRUE.equals(redis.hasKey(USER_KEY + userId));
+            if (userId == null) {
+                return false;
+            }
+            String revokedAt = redis.opsForValue().get(USER_KEY + userId);
+            if (revokedAt == null) {
+                return false;
+            }
+            return issuedBefore(issuedAt, revokedAt);
         } catch (RuntimeException ex) {
             log.warn("Deny-list check failed, allowing the request through: {}", ex.getMessage());
             return false;
         }
     }
 
-    private void write(String key) {
+    private boolean issuedBefore(Instant issuedAt, String revokedAt) {
+        if (issuedAt == null) {
+            return true;
+        }
+        long revokedAtMillis;
         try {
-            redis.opsForValue().set(key, "1", ttl);
+            revokedAtMillis = Long.parseLong(revokedAt);
+        } catch (NumberFormatException ex) {
+            return true;
+        }
+        // An older build stored the marker "1", which parses as an instant in 1970 and would
+        // therefore deny nothing. Anything below the floor is such a marker, not a revocation this
+        // build wrote, so deny — matching the previous behaviour until the entry ages out.
+        if (revokedAtMillis < MIN_PLAUSIBLE_EPOCH_MILLIS) {
+            return true;
+        }
+        // Not strictly before: iat has second precision, so a token minted in the same second as
+        // the revocation cannot be ordered against it. Denying is the fail-safe direction, and
+        // costs at most a retry one second later.
+        return issuedAt.toEpochMilli() <= revokedAtMillis;
+    }
+
+    private void write(String key, String value) {
+        try {
+            redis.opsForValue().set(key, value, ttl);
         } catch (RuntimeException ex) {
             // Logged loudly: a dropped revocation is a real security event, not noise.
             log.error("Could not write deny-list entry {}. Revocation will lag until the token expires.",

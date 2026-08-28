@@ -113,13 +113,25 @@ public class JwtService {
      *         {@link ErrorCode#TOKEN_INVALID}; never returns null
      */
     public PrabhixPrincipal parse(String token) {
+        return parseDetailed(token).principal();
+    }
+
+    /**
+     * Like {@link #parse(String)} but also returns the issued-at claim, which
+     * {@link TokenDenyList} needs to tell a token minted before a user-wide revocation from one
+     * minted after it. Kept separate so the signature is verified once per request rather than
+     * twice, which re-parsing for the claim would cost on the hot path.
+     *
+     * @throws ApiException with {@link ErrorCode#TOKEN_EXPIRED} or {@link ErrorCode#TOKEN_INVALID}
+     */
+    public ParsedToken parseDetailed(String token) {
         Claims claims = parseClaims(token);
 
         if (!TYPE_ACCESS.equals(claims.get(CLAIM_TYPE, String.class))) {
             throw ApiException.of(ErrorCode.TOKEN_INVALID, "Wrong token type for this endpoint");
         }
 
-        return new PrabhixPrincipal(
+        PrabhixPrincipal principal = new PrabhixPrincipal(
                 uuid(claims.getSubject()),
                 claims.get(CLAIM_EMAIL, String.class),
                 claims.get(CLAIM_NAME, String.class),
@@ -127,6 +139,9 @@ public class JwtService {
                 readPermissions(claims),
                 uuid(claims.get(CLAIM_SESSION, String.class)),
                 Boolean.TRUE.equals(claims.get(CLAIM_PLATFORM_ADMIN, Boolean.class)));
+
+        Date issuedAt = claims.getIssuedAt();
+        return new ParsedToken(principal, issuedAt == null ? null : issuedAt.toInstant());
     }
 
     /** The JWT id, used as the deny-list key when a session is revoked mid-TTL. */
@@ -177,5 +192,12 @@ public class JwtService {
 
     /** @param expiresInSeconds relative TTL, which browsers find easier to act on than an instant */
     public record IssuedToken(String token, Instant expiresAt, long expiresInSeconds) {
+    }
+
+    /**
+     * @param issuedAt the {@code iat} claim, or null for a token minted without one. JWT dates
+     *                 carry second precision, so this is truncated relative to the real issue time.
+     */
+    public record ParsedToken(PrabhixPrincipal principal, Instant issuedAt) {
     }
 }

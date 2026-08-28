@@ -21,11 +21,28 @@ public final class TestProperties {
     }
 
     public static PrabhixProperties withMail(PrabhixProperties.Mail mail) {
+        return build(null, mail);
+    }
+
+    public static PrabhixProperties withSecurity(PrabhixProperties.Security security) {
+        return build(security, mail("LOGGING"));
+    }
+
+    private static PrabhixProperties build(PrabhixProperties.Security security,
+                                           PrabhixProperties.Mail mail) {
         return new PrabhixProperties(
                 new PrabhixProperties.Urls("http://localhost:3000", "http://localhost:5173",
                         "http://localhost:8080"),
                 new PrabhixProperties.Cors(java.util.List.of()),
-                null, null, mail, null, null, limits());
+                security, null, mail, null, null, limits());
+    }
+
+    public static PrabhixProperties.Security security(Duration accessTokenTtl) {
+        return new PrabhixProperties.Security(
+                new PrabhixProperties.Security.Jwt(
+                        "test-jwt-secret-long-enough-for-hmac-sha256-0123456789abcdefgh",
+                        "prabhix-platform", accessTokenTtl, Duration.ofDays(30)),
+                null, null);
     }
 
     public static PrabhixProperties.Limits limits() {

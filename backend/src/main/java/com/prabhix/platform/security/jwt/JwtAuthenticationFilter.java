@@ -56,9 +56,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            PrabhixPrincipal principal = jwtService.parse(token);
+            JwtService.ParsedToken parsed = jwtService.parseDetailed(token);
+            PrabhixPrincipal principal = parsed.principal();
 
-            if (denyList.isRevoked(principal.userId(), principal.sessionId())) {
+            if (denyList.isRevoked(principal.userId(), principal.sessionId(), parsed.issuedAt())) {
                 throw ApiException.of(ErrorCode.TOKEN_REVOKED,
                         "This session was signed out. Sign in again.");
             }
