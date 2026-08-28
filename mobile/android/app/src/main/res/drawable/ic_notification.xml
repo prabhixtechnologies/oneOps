@@ -1,9 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Status bar icon for FCM notifications (PrabhixFirebaseMessagingService.setSmallIcon).
+  Previously the stock Material "error" glyph — a circle with an exclamation mark — so every
+  notification looked like a failure alert, and the same drawable was doubling as the launcher
+  icon foreground.
+
+  Android ignores colour here and uses only the alpha channel, tinting the result, so this is a
+  flat white silhouette of the monogram rather than the two-tone brand mark.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM13,17h-2v-2h2v2zM13,13h-2L11,7h2v6z" />
+    android:viewportWidth="36"
+    android:viewportHeight="36">
+    <group
+        android:scaleX="1.35"
+        android:scaleY="1.35"
+        android:translateX="-9.675"
+        android:translateY="-6.3">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M10,24V12h4.2c3.2,0 5,1.8 5,3.7 0,1.9 -1.9,3.8 -5,3.8v4.5H10zm4.2,-6.5h2c1.1,0 1.8,-0.6 1.8,-1.5 0,-0.9 -0.7,-1.5 -1.8,-1.5h-2z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M22.5,12h3.5l5,12h-3.7l-0.9,-2.3h-4.5l-0.9,2.3H17l5.5,-12zm2.2,7.1l-1.5,-3.8 -1.5,3.8h3z" />
+    </group>
 </vector>

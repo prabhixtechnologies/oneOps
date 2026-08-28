@@ -27,6 +27,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
+import { LogoMark } from "@/components/brand/LogoMark";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -101,9 +102,7 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
         )}
       >
         <div className="flex h-14 items-center gap-2 border-b border-border px-3 lg:px-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
-            P
-          </div>
+          <LogoMark className="h-8 w-8 shrink-0" />
           <span className="text-sm font-semibold">Prabhix</span>
         </div>
 
