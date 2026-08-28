@@ -77,6 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshTokenRef = useRef<string | null>(localStorage.getItem(REFRESH_KEY));
   const orgIdRef = useRef<string | null>(null);
 
+  // The refresh token the server last rejected. Without this, every query that 401s starts its
+  // own refresh with a token already known to be dead: the single-flight guard below only
+  // collapses *concurrent* attempts, so a page with several queries walks through them one at a
+  // time and earns a 429 for the trouble.
+  const deadRefreshToken = useRef<string | null>(null);
+
   const setTokens = useCallback((access: string | null, refresh: string | null) => {
     accessTokenRef.current = access;
     refreshTokenRef.current = refresh;
@@ -84,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRefreshTokenState(refresh);
     if (refresh) {
       localStorage.setItem(REFRESH_KEY, refresh);
+      deadRefreshToken.current = null;
     } else {
       localStorage.removeItem(REFRESH_KEY);
     }
@@ -111,14 +118,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [loadSession, setTokens],
   );
 
-  const logout = useCallback(async () => {
-    try {
-      if (accessTokenRef.current) {
-        await apiRequest("/auth/logout", { parse: () => undefined }, { method: "POST" });
-      }
-    } catch {
-      // ignore logout errors
-    }
+  /** Drops local credentials without touching the network. */
+  const clearSession = useCallback(() => {
     setTokens(null, null);
     setMe(null);
     setProfile(null);
@@ -127,12 +128,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
   }, [queryClient, setTokens]);
 
+  const logout = useCallback(async () => {
+    try {
+      if (accessTokenRef.current) {
+        await apiRequest("/auth/logout", { parse: () => undefined }, { method: "POST" });
+      }
+    } catch {
+      // ignore logout errors
+    }
+    clearSession();
+  }, [clearSession]);
+
   // A refresh token is single-use: the server rotates it and treats a second presentation of the
   // same token as theft, revoking every session the user has. loadSession() fans out three
   // requests at once, so without this guard one expired access token yields three simultaneous
   // 401s, three refreshes spending the same token, and an immediate forced logout.
   const refreshInFlight = useRef<Promise<boolean> | null>(null);
 
+  // Exchanges the stored refresh token for a new pair. Deliberately does not reload the session:
+  // doing that inside the single-flight promise meant a 401 from /auth/me would ask for a refresh,
+  // be handed back the very promise that was waiting on it, and deadlock — leaving refreshInFlight
+  // set forever so no later refresh could run either.
   const refreshSession = useCallback(async (): Promise<boolean> => {
     const existing = refreshInFlight.current;
     if (existing) return existing;
@@ -140,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // localStorage wins over the ref so that a second tab picks up a token rotated by the first
     // instead of replaying the one it captured when it mounted.
     const token = localStorage.getItem(REFRESH_KEY) ?? refreshTokenRef.current;
-    if (!token) return false;
+    if (!token || token === deadRefreshToken.current) return false;
 
     const attempt = (async () => {
       try {
@@ -155,9 +171,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         );
         setTokens(tokens.accessToken, tokens.refreshToken);
-        await loadSession();
         return true;
       } catch {
+        // Remember the failure so siblings stop presenting the same token. Replaying it reads as
+        // theft to the server, which revokes the chain it belongs to.
+        deadRefreshToken.current = token;
         return false;
       } finally {
         refreshInFlight.current = null;
@@ -166,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     refreshInFlight.current = attempt;
     return attempt;
-  }, [loadSession, setTokens]);
+  }, [setTokens]);
 
   const loginWithTokens = useCallback(
     async (access: string, refresh: string) => {
@@ -209,11 +227,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       getAccessToken: () => accessTokenRef.current,
       getOrgId: () => orgIdRef.current,
       refreshTokens: refreshSession,
-      onUnauthorized: () => {
-        void logout();
-      },
+      // Local teardown only. Calling the logout endpoint here would POST the very access token the
+      // server just refused, which is what produced a run of 401s from /auth/logout.
+      onUnauthorized: clearSession,
     });
-  }, [refreshSession, logout]);
+  }, [refreshSession, clearSession]);
 
   const didBootstrap = useRef(false);
 
@@ -224,17 +242,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       try {
         const stored = localStorage.getItem(REFRESH_KEY);
-        if (stored) {
-          refreshTokenRef.current = stored;
-          const ok = await refreshSession();
-          if (!ok) setTokens(null, null);
+        if (!stored) return;
+        refreshTokenRef.current = stored;
+        if (!(await refreshSession())) {
+          // A leftover token from a previous deploy or a revoked session is not an error worth
+          // reporting; the visitor simply is not signed in.
+          clearSession();
+          return;
+        }
+        try {
+          await loadSession();
+        } catch {
+          clearSession();
         }
       } finally {
         setIsLoading(false);
       }
     };
     void init();
-  }, [refreshSession, setTokens]);
+  }, [refreshSession, loadSession, clearSession]);
 
   const permissions = me?.permissions ?? [];
 
