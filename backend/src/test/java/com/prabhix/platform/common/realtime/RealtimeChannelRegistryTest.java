@@ -116,6 +116,29 @@ class RealtimeChannelRegistryTest {
     }
 
     @Test
+    void subscribe_sendsHeartbeatImmediatelyNotAfterAnInterval() throws Exception {
+        String channel = "mail:stream:" + UUID.randomUUID();
+
+        RecordingSseEmitter emitter = (RecordingSseEmitter) registry.subscribe(channel);
+
+        // The first write is what commits the HTTP response, so it decides how long the client waits
+        // before its fetch() resolves and the stream counts as connected. Deferring it by one
+        // interval left the console showing "connecting" for fifteen seconds after every open.
+        boolean beat = false;
+        for (int i = 0; i < 40 && !beat; i++) {
+            synchronized (emitter) {
+                beat = !emitter.heartbeats.isEmpty();
+            }
+            if (!beat) {
+                Thread.sleep(50);
+            }
+        }
+
+        assertThat(beat).as("heartbeat within 2s of subscribing").isTrue();
+        assertThat(emitter.messages).isEmpty();
+    }
+
+    @Test
     void redisMessage_reachesAllLocalEmitters() {
         String channel = "chat:stream:org:" + UUID.randomUUID();
         registry.subscribe(channel);
@@ -198,8 +221,15 @@ class RealtimeChannelRegistryTest {
         return listenerCaptor.getValue();
     }
 
+    /**
+     * Records what was sent rather than merely that something was, and keeps heartbeats apart from
+     * messages. The registry schedules a heartbeat on subscribe that now fires immediately, so a fake
+     * that counts every send alike reports two events where the test means one, and the fan-out
+     * assertions fail for a reason that has nothing to do with fan-out.
+     */
     static final class RecordingSseEmitter extends SseEmitter {
         final List<String> messages = new ArrayList<>();
+        final List<String> heartbeats = new ArrayList<>();
         final AtomicInteger failOnSend = new AtomicInteger();
 
         RecordingSseEmitter() {
@@ -212,7 +242,18 @@ class RealtimeChannelRegistryTest {
                 failOnSend.decrementAndGet();
                 throw new IOException("simulated disconnect");
             }
-            messages.add("event");
+            StringBuilder rendered = new StringBuilder();
+            for (DataWithMediaType chunk : builder.build()) {
+                if (chunk.getData() instanceof String text) {
+                    rendered.append(text);
+                }
+            }
+            String event = rendered.toString();
+            if (event.startsWith("event:heartbeat")) {
+                heartbeats.add(event);
+            } else {
+                messages.add(event);
+            }
         }
     }
 }

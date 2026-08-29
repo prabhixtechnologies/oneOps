@@ -31,7 +31,11 @@ class SseHeartbeatScheduler {
                 onDead.run();
                 cancel(emitter);
             }
-        }, INTERVAL_SECONDS, INTERVAL_SECONDS, TimeUnit.SECONDS);
+            // Fires immediately, then on the interval. The first beat is what commits the response:
+            // until something is written, the client's fetch() has no headers to resolve against, so
+            // an idle stream looked like a stalled connection for a full interval after every open
+            // and every reconnect — and the console reported "connecting" for that whole time.
+        }, 0, INTERVAL_SECONDS, TimeUnit.SECONDS);
         tasks.put(emitter, future);
     }
 

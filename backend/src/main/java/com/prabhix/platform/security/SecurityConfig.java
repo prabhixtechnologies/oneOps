@@ -12,6 +12,7 @@ import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.security.apikey.ApiKeyAuthenticationFilter;
 import com.prabhix.platform.security.jwt.JwtAuthenticationFilter;
 import com.prabhix.platform.security.ratelimit.RateLimitFilter;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -102,6 +103,22 @@ public class SecurityConfig {
                                 org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter
                                         .ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
                 .authorizeHttpRequests(auth -> auth
+                        // Authorize the REQUEST dispatch only. Since Spring Security 6 this filter
+                        // runs on every dispatch type, but our authentication filters extend
+                        // OncePerRequestFilter, which by default skips ASYNC — so on the async
+                        // dispatch there is no Authentication left and the request is denied.
+                        //
+                        // That silently broke every SSE endpoint (mail, chat and AI streams return
+                        // SseEmitter). The emitter commits the response, the async dispatch is then
+                        // refused, and Spring cannot even write the 403 because the headers have
+                        // gone; the client receives no bytes, reconnects five seconds later, and
+                        // the server logs a stack trace each time. Realtime updates never arrived.
+                        //
+                        // Permitting these dispatches is safe: both are continuations of a request
+                        // the container already ran through the REQUEST dispatch, where the rules
+                        // below applied in full. ERROR is included for the same reason, so a failed
+                        // request renders its error body instead of turning into a second denial.
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers("/actuator/**").hasAuthority("PLATFORM_ADMIN")
