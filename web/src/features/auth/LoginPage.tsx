@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,6 +12,8 @@ import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { ackResponseSchema, authTokensSchema } from "@/lib/schemas/common";
 import { useAuth } from "@/lib/auth";
 import { GOOGLE_SSO_ENABLED } from "@/lib/config";
+import { beginLogin, isOidcEnabled } from "@/lib/oidc";
+import { Skeleton } from "@/components/ui/skeleton";
 import { passwordSchema as password } from "@/lib/password";
 
 const emailSchema = z.object({ email: z.string().email("Enter a valid email") });
@@ -22,6 +25,23 @@ const otpSchema = emailSchema.extend({
 export function LoginPage() {
   const { login, loginWithTokens } = useAuth();
   const navigate = useNavigate();
+
+  // With identity configured, this page is a redirect and nothing else: credentials belong on the
+  // hosted login page, on identity's origin, because that is the origin whose session cookie makes
+  // signing in here carry over to the admin console and every future Prabhix site. The forms below
+  // remain for deployments that have not cut over yet, and stop being reachable once one has.
+  useEffect(() => {
+    if (isOidcEnabled()) void beginLogin(window.location.pathname === "/login" ? "/" : undefined);
+  }, []);
+
+  if (isOidcEnabled()) {
+    return (
+      <div className="space-y-4 text-center">
+        <Skeleton className="mx-auto h-8 w-48" />
+        <p className="text-sm text-text-muted">Taking you to sign in…</p>
+      </div>
+    );
+  }
 
   const passwordForm = useForm<z.infer<typeof passwordSchema>>({
     resolver: zodResolver(passwordSchema),

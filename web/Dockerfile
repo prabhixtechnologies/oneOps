@@ -16,10 +16,15 @@ ARG VITE_GOOGLE_SSO_ENABLED=false
 # Admin build only: where "View as" sends staff. Unused by the OneOps build, which is the place
 # being sent to.
 ARG VITE_ONEOPS_URL=
+# Blank until identity is the auth upstream. Set, this app stops rendering a password form at all and
+# redirects to the hosted login page instead — so setting it before identity is actually serving
+# /oauth2/authorize makes signing in impossible rather than merely different.
+ARG VITE_IDENTITY_ISSUER=
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_RAZORPAY_KEY_ID=$VITE_RAZORPAY_KEY_ID
 ENV VITE_GOOGLE_SSO_ENABLED=$VITE_GOOGLE_SSO_ENABLED
 ENV VITE_ONEOPS_URL=$VITE_ONEOPS_URL
+ENV VITE_IDENTITY_ISSUER=$VITE_IDENTITY_ISSUER
 RUN npm run build
 # The CSP names a hash for each inline script, and the hash has to come from the minified artifact
 # rather than the source, so it is computed here and not checked in.

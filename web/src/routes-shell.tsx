@@ -38,6 +38,9 @@ const MagicLinkPage = lazy(() =>
 const VerifyEmailPage = lazy(() =>
   import("@/features/auth/VerifyEmailPage").then((m) => ({ default: m.VerifyEmailPage })),
 );
+const OidcCallbackPage = lazy(() =>
+  import("@/features/auth/OidcCallbackPage").then((m) => ({ default: m.OidcCallbackPage })),
+);
 
 export function PageLoader() {
   return (
@@ -122,6 +125,7 @@ export const unguardedRoutes: RouteObject = {
       element: <AuthShell />,
       children: [
         { path: "/verify-email", element: <SuspenseWrap><VerifyEmailPage /></SuspenseWrap> },
+        { path: "/auth/callback", element: <SuspenseWrap><OidcCallbackPage /></SuspenseWrap> },
       ],
     },
   ],
