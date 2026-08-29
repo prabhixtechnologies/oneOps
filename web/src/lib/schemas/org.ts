@@ -92,9 +92,11 @@ export const auditLogPageSchema = cursorPageSchema(auditLogSchema);
 
 export const sessionSchema = z.object({
   id: z.string(),
-  deviceName: z.string(),
+  // The API reports deviceType ("WEB", "ANDROID") and only sometimes a friendlier deviceName, and
+  // ipAddress is absent for sessions created without a forwarded address.
+  deviceName: z.string().nullish(),
   deviceType: z.string().nullable().optional(),
-  ipAddress: z.string(),
+  ipAddress: z.string().nullish(),
   lastSeenAt: z.string(),
   createdAt: z.string(),
   current: z.boolean(),
@@ -107,9 +109,9 @@ export const apiKeySchema = z.object({
   id: z.string(),
   name: z.string(),
   prefix: z.string(),
-  lastUsedAt: z.string().nullable(),
+  lastUsedAt: z.string().nullish(),
   createdAt: z.string(),
-  expiresAt: z.string().nullable(),
+  expiresAt: z.string().nullish(),
 });
 
 export const createdApiKeySchema = z.object({
@@ -118,7 +120,7 @@ export const createdApiKeySchema = z.object({
   prefix: z.string(),
   key: z.string(),
   createdAt: z.string(),
-  expiresAt: z.string().nullable(),
+  expiresAt: z.string().nullish(),
 });
 
 export type ApiKey = z.infer<typeof apiKeySchema>;

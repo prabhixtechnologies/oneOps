@@ -22,6 +22,7 @@ import {
   teamSchema,
 } from "@/lib/schemas/org";
 import {
+  billingAddressInputSchema,
   billingAddressSchema,
   entitlementsSchema,
   invoiceListPageSchema,
@@ -291,7 +292,7 @@ export function useBillingAddress() {
 export function useUpdateBillingAddress() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: z.infer<typeof billingAddressSchema>) =>
+    mutationFn: (data: z.infer<typeof billingAddressInputSchema>) =>
       apiRequest("/billing/address", billingAddressSchema, { method: "PUT", body: data }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["billing-address"] }),
   });

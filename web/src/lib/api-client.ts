@@ -47,12 +47,25 @@ export function configureApiClient(config: {
   onUnauthorized = config.onUnauthorized;
 }
 
-function parseSchema<T>(schema: { parse: (data: unknown) => T }, data: unknown): T {
+function parseSchema<T>(
+  schema: { parse: (data: unknown) => T },
+  data: unknown,
+  endpoint: string,
+): T {
   try {
     return schema.parse(data);
   } catch (err) {
     if (err instanceof ZodError) {
       const fields = err.errors.map((e) => e.path.join(".") || "root").join(", ");
+      // Pages render a generic "failed to load" for this, which makes a rejected-but-valid response
+      // look exactly like an outage: the request is a 200 in the server log and the network tab, yet
+      // the screen is an error with a retry button that can never succeed. The dashboard died this
+      // way over one absent key. Naming the endpoint and the offending paths costs nothing and turns
+      // an afternoon of guessing into a glance at the console.
+      console.error(
+        `[api] ${endpoint} returned a response that does not match its schema:`,
+        err.errors.map((e) => `${e.path.join(".") || "root"}: ${e.message}`),
+      );
       throw new ApiClientError(200, {
         code: "SCHEMA_MISMATCH",
         message: `Unexpected API response shape (${fields})`,
@@ -132,16 +145,16 @@ export async function apiRequest<T>(
     }
 
     if (response.status === 204 || response.headers.get("content-length") === "0") {
-      return parseSchema(schema, null);
+      return parseSchema(schema, null, path);
     }
 
     const contentType = response.headers.get("content-type");
     if (!contentType?.includes("application/json")) {
-      return parseSchema(schema, null);
+      return parseSchema(schema, null, path);
     }
 
     const json: unknown = await response.json();
-    return parseSchema(schema, json);
+    return parseSchema(schema, json, path);
   };
 
   return execute(false);
@@ -191,7 +204,7 @@ export async function apiUpload<T>(
     }
 
     const json: unknown = await response.json();
-    return parseSchema(schema, json);
+    return parseSchema(schema, json, path);
   };
 
   return execute(false);

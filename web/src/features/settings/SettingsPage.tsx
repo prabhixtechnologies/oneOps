@@ -58,7 +58,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (profileQuery.data) {
-      setDisplayName(profileQuery.data.displayName);
+      setDisplayName(profileQuery.data.displayName ?? "");
       setFullName(profileQuery.data.fullName);
       const prefs = profileQuery.data.notificationPrefs ?? {};
       setEmailNotif(prefs.email !== false);
@@ -215,8 +215,10 @@ export default function SettingsPage() {
                 {(sessionsQuery.data ?? []).map((s) => (
                   <li key={s.id} className="flex flex-col gap-2 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="font-medium">{s.deviceName}</p>
-                      <p className="text-text-muted">{s.ipAddress}</p>
+                      <p className="font-medium">
+                        {s.deviceName ?? s.deviceType ?? "Unknown device"}
+                      </p>
+                      <p className="text-text-muted">{s.ipAddress ?? "IP not recorded"}</p>
                       <RelativeTime date={s.lastSeenAt} className="text-xs" />
                     </div>
                     <div className="flex items-center gap-2">

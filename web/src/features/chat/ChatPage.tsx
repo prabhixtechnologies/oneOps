@@ -142,7 +142,9 @@ function ConversationRow({
       <p className="truncate text-xs text-text-muted">{conversation.lastMessagePreview}</p>
       <div className="mt-1 flex items-center gap-2">
         <Badge variant="secondary" className="text-[10px]">{conversation.status}</Badge>
-        <RelativeTime date={conversation.lastMessageAt} className="text-[10px]" />
+        {conversation.lastMessageAt && (
+          <RelativeTime date={conversation.lastMessageAt} className="text-[10px]" />
+        )}
       </div>
     </div>
   );
@@ -291,7 +293,7 @@ export default function ChatPage() {
       const q = search.toLowerCase();
       list = list.filter(
         (c) =>
-          c.subject.toLowerCase().includes(q) ||
+          (c.subject?.toLowerCase().includes(q) ?? false) ||
           (c.visitorName?.toLowerCase().includes(q) ?? false) ||
           (c.visitorEmail?.toLowerCase().includes(q) ?? false),
       );

@@ -10,13 +10,15 @@ export const conversationSummarySchema = z.object({
   id: z.string(),
   status: conversationStatusSchema,
   priority: conversationPrioritySchema,
-  subject: z.string(),
+  // A visitor-initiated chat has no subject, and a conversation with no messages yet has no
+  // lastMessageAt. Both are the normal case, and requiring them broke the whole inbox list.
+  subject: z.string().nullish(),
   visitorName: z.string().optional(),
   visitorEmail: z.string().optional(),
   assignedAgentId: z.string().nullable().optional(),
   tags: z.array(z.string()).optional(),
   unreadAgentCount: z.number().optional(),
-  lastMessageAt: z.string(),
+  lastMessageAt: z.string().nullish(),
   lastMessagePreview: z.string().optional(),
   visitorId: z.string().nullable().optional(),
 });

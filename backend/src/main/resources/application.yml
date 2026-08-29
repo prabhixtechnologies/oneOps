@@ -88,6 +88,12 @@ spring:
       max-request-size: 30MB
 
   jackson:
+    # Null fields are omitted from responses entirely. Clients must therefore treat an absent key and
+    # a null value as the same thing — in Zod that means nullish(), not nullable(), and in Kotlin a
+    # nullable property. Do not switch this to `always` to satisfy one strict schema: roughly a
+    # hundred client fields are declared optional-but-not-nullable, and they reject an explicit null,
+    # so emitting nulls breaks far more than it fixes. CursorPage.nextCursor opts out locally because
+    # it is a protocol field clients branch on.
     default-property-inclusion: non_null
     serialization:
       write-dates-as-timestamps: false

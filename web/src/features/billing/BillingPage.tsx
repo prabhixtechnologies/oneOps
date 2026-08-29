@@ -81,12 +81,12 @@ export default function BillingPage() {
   useEffect(() => {
     if (addressQuery.data) {
       setAddressForm({
-        line1: addressQuery.data.line1,
+        line1: addressQuery.data.line1 ?? "",
         line2: addressQuery.data.line2 ?? "",
-        city: addressQuery.data.city,
-        state: addressQuery.data.state,
-        pincode: addressQuery.data.pincode,
-        country: addressQuery.data.country,
+        city: addressQuery.data.city ?? "",
+        state: addressQuery.data.state ?? "",
+        pincode: addressQuery.data.pincode ?? "",
+        country: addressQuery.data.country ?? "IN",
         gstin: addressQuery.data.gstin ?? "",
         billingEmail: addressQuery.data.billingEmail ?? "",
       });

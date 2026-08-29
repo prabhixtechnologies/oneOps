@@ -1,5 +1,22 @@
 import { z } from "zod";
 
+/**
+ * Schema conventions for this directory.
+ *
+ * The API is configured with Jackson's `non_null` inclusion, so a field that is null is left out of
+ * the JSON rather than sent as `"field": null`. Response schemas must therefore accept both forms:
+ *
+ *   - use `.nullish()` for anything the server may leave unset — it allows absent *and* null
+ *   - `.nullable()` alone is wrong here: it demands the key, so it fails on the exact rows where the
+ *     value is missing, which are usually the ordinary ones (unassigned thread, unused API key,
+ *     system activity with no actor, an org that is not on trial)
+ *   - `.optional()` alone is also risky, because it rejects an explicit null
+ *
+ * These bugs stay invisible until real data shows up and then present as a blank error page, so
+ * prefer `.nullish()` unless the field is genuinely always present. Request schemas are exempt:
+ * there `.optional()` means "leave unchanged" and `.nullable()` means "clear it", and the difference
+ * matters.
+ */
 export const apiErrorSchema = z.object({
   code: z.string(),
   message: z.string(),
@@ -63,7 +80,8 @@ export const userProfileSchema = z.object({
   email: z.string(),
   emailVerified: z.boolean(),
   fullName: z.string(),
-  displayName: z.string(),
+  // Optional in the DTO and unset for most accounts — fall back to fullName when showing a name.
+  displayName: z.string().nullish(),
   avatarUrl: z.string().nullable().optional(),
   jobTitle: z.string().nullable().optional(),
   timezone: z.string().nullable().optional(),
@@ -82,7 +100,7 @@ export const organizationViewSchema = z.object({
   status: z.string(),
   memberCount: z.number(),
   seatLimit: z.number(),
-  trialEndsAt: z.string().nullable(),
+  trialEndsAt: z.string().nullish(),
   timezone: z.string().nullable().optional(),
   locale: z.string().nullable().optional(),
   currency: z.string().nullable().optional(),

@@ -11,8 +11,8 @@ export const aiAvailabilitySchema = z.object({
 export const aiDraftSuggestionSchema = z.object({
   available: z.boolean(),
   draft: z.string(),
-  provider: z.string().nullable(),
-  model: z.string().nullable(),
+  provider: z.string().nullish(),
+  model: z.string().nullish(),
   piiRedacted: z.boolean().optional(),
   unavailableBecauseNotConfigured: z.boolean().optional(),
 });
@@ -20,16 +20,16 @@ export const aiDraftSuggestionSchema = z.object({
 export const aiTextResultSchema = z.object({
   available: z.boolean(),
   text: z.string(),
-  provider: z.string().nullable(),
-  model: z.string().nullable(),
+  provider: z.string().nullish(),
+  model: z.string().nullish(),
   unavailableBecauseNotConfigured: z.boolean().optional(),
 });
 
 export const aiTriageSuggestionSchema = z.object({
   available: z.boolean(),
   suggestedTags: z.array(z.string()),
-  suggestedPriority: z.string().nullable(),
-  intent: z.string().nullable(),
+  suggestedPriority: z.string().nullish(),
+  intent: z.string().nullish(),
   confidence: z.number().nullable().optional(),
   provider: z.string().nullable().optional(),
   model: z.string().nullable().optional(),
@@ -44,20 +44,20 @@ export const aiRewriteRequestSchema = z.object({
 export const aiRewriteResultSchema = z.object({
   available: z.boolean(),
   text: z.string(),
-  provider: z.string().nullable(),
-  model: z.string().nullable(),
+  provider: z.string().nullish(),
+  model: z.string().nullish(),
 });
 
 export const aiSentimentResultSchema = z.object({
   available: z.boolean(),
-  sentiment: z.string().nullable(),
-  urgency: z.string().nullable(),
-  summary: z.string().nullable(),
+  sentiment: z.string().nullish(),
+  urgency: z.string().nullish(),
+  summary: z.string().nullish(),
 });
 
 export const aiHandoffSummaryResultSchema = z.object({
   available: z.boolean(),
-  noteMessageId: z.string().nullable(),
+  noteMessageId: z.string().nullish(),
   summary: z.string(),
 });
 
@@ -71,8 +71,8 @@ export const aiAssistRequestSchema = z.object({
 export const aiAssistResultSchema = z.object({
   available: z.boolean(),
   text: z.string(),
-  provider: z.string().nullable(),
-  model: z.string().nullable(),
+  provider: z.string().nullish(),
+  model: z.string().nullish(),
 });
 
 export const aiUsageSummarySchema = z.object({
@@ -115,9 +115,9 @@ export const aiUpdatePromptRequestSchema = z.object({
 });
 
 export const aiOrgSettingsSchema = z.object({
-  preferredProvider: z.string().nullable(),
-  preferredChatModel: z.string().nullable(),
-  preferredReasoningModel: z.string().nullable(),
+  preferredProvider: z.string().nullish(),
+  preferredChatModel: z.string().nullish(),
+  preferredReasoningModel: z.string().nullish(),
   firstResponderEnabled: z.boolean(),
 });
 
