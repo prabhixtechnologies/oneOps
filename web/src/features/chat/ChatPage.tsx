@@ -195,19 +195,23 @@ function VisitorContextPanel({ visitorId }: { visitorId: string | undefined }) {
           <Separator />
           <div>
             <h3 className="font-semibold">Device & location</h3>
+            {/* Each value is a <dd>. They were bare text nodes, so the terms had nothing bound to
+                them and a screen reader read the labels without the values they describe. */}
             <dl className="mt-2 space-y-1 text-xs text-text-muted">
-              {latestSession.deviceType && <div><dt className="inline font-medium text-text">Device: </dt>{latestSession.deviceType}</div>}
-              {latestSession.browser && <div><dt className="inline font-medium text-text">Browser: </dt>{latestSession.browser}</div>}
-              {latestSession.os && <div><dt className="inline font-medium text-text">OS: </dt>{latestSession.os}</div>}
+              {latestSession.deviceType && <div><dt className="inline font-medium text-text">Device: </dt><dd className="inline">{latestSession.deviceType}</dd></div>}
+              {latestSession.browser && <div><dt className="inline font-medium text-text">Browser: </dt><dd className="inline">{latestSession.browser}</dd></div>}
+              {latestSession.os && <div><dt className="inline font-medium text-text">OS: </dt><dd className="inline">{latestSession.os}</dd></div>}
               {(latestSession.geoCity || latestSession.geoCountry) && (
                 <div>
                   <dt className="inline font-medium text-text">Location: </dt>
-                  {[latestSession.geoCity, latestSession.geoCountry].filter(Boolean).join(", ")}
+                  <dd className="inline">
+                    {[latestSession.geoCity, latestSession.geoCountry].filter(Boolean).join(", ")}
+                  </dd>
                 </div>
               )}
               {latestSession.referrer && (
                 <div className="break-all">
-                  <dt className="inline font-medium text-text">Referrer: </dt>{latestSession.referrer}
+                  <dt className="inline font-medium text-text">Referrer: </dt><dd className="inline">{latestSession.referrer}</dd>
                 </div>
               )}
             </dl>
