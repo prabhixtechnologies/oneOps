@@ -196,6 +196,10 @@ prabhix:
       jwks-uri: ${IDENTITY_JWKS_URI:}
       jwks-cache-ttl: ${IDENTITY_JWKS_CACHE_TTL:PT10M}
       jwks-min-refresh-interval: ${IDENTITY_JWKS_MIN_REFRESH:PT30S}
+      # Where the local users mirror is filled in from. Internal address: /internal is not routed
+      # publicly, and the token below is the second lock rather than the only one.
+      internal-base-url: ${IDENTITY_INTERNAL_URL:http://identity:8081}
+      service-token: ${IDENTITY_SERVICE_TOKEN:}
     # Sliding-window limits enforced in Redis, per IP and per organization.
     rate-limit:
       enabled: ${RATE_LIMIT_ENABLED:true}

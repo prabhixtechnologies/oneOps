@@ -73,7 +73,21 @@ public record PrabhixProperties(
                  */
                 @DefaultValue("PT10M") Duration jwksCacheTtl,
                 /** Floor between refreshes, so a stream of tokens naming absent key ids cannot be used to hammer identity. */
-                @DefaultValue("PT30S") Duration jwksMinRefreshInterval) {
+                @DefaultValue("PT30S") Duration jwksMinRefreshInterval,
+                /**
+                 * Where {@code /internal/users/lookup} lives, for filling in the local users mirror.
+                 * An internal address, not the issuer: {@code /internal} is not routed publicly.
+                 */
+                @DefaultValue("http://identity:8081") String internalBaseUrl,
+                /**
+                 * Shared secret presented as {@code X-Prabhix-Service-Token}. Blank means the mirror
+                 * cannot be filled in on demand, and a subject with no local row is refused.
+                 */
+                @DefaultValue("") String serviceToken) {
+
+            public boolean canMirror() {
+                return serviceToken != null && !serviceToken.isBlank();
+            }
 
             public boolean enabled() {
                 return issuer != null && !issuer.isBlank();

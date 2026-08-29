@@ -59,14 +59,16 @@ public final class TestProperties {
     /** A blank issuer, which is how every deployment starts and what most tests want. */
     public static PrabhixProperties.Security.Identity identityDisabled() {
         return new PrabhixProperties.Security.Identity(
-                "", "", Duration.ofMinutes(10), Duration.ofSeconds(30));
+                "", "", Duration.ofMinutes(10), Duration.ofSeconds(30),
+                "http://identity:8081", "");
     }
 
     /** Trusts an identity issuer, for the tests that present an RS256 token. */
     public static PrabhixProperties.Security.Identity identityTrusting(String issuer) {
         return new PrabhixProperties.Security.Identity(
                 issuer, issuer + "/.well-known/jwks.json",
-                Duration.ofMinutes(10), Duration.ofSeconds(30));
+                Duration.ofMinutes(10), Duration.ofSeconds(30),
+                "http://identity:8081", "test-service-token");
     }
 
     /** Host-only and insecure, matching how a browser accepts cookies on localhost. */

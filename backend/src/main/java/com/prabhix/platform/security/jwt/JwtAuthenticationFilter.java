@@ -13,6 +13,7 @@ import com.prabhix.platform.security.tenant.ImpersonationAuditor;
 import com.prabhix.platform.security.tenant.TenantContext;
 import com.prabhix.platform.user.domain.User;
 import com.prabhix.platform.user.repository.UserRepository;
+import com.prabhix.platform.user.service.IdentityUserMirror;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,6 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final PermissionResolver permissionResolver;
     private final OrganizationMembershipRepository membershipRepository;
     private final UserRepository userRepository;
+    private final IdentityUserMirror identityUserMirror;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -125,12 +127,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private PrabhixPrincipal authorizeIdentityToken(PrabhixPrincipal principal,
                                                     HttpServletRequest request) {
-        // The mirror row. Absent means identity knows this person and the platform does not, which is
-        // an import or provisioning gap rather than a credential problem, so it says so plainly.
+        // The mirror row. Absent means identity knows this person and this database has not been told
+        // yet — the ordinary case for anyone who signed up after the bulk import — so it is fetched
+        // once here rather than treated as a credential failure. Users who arrive through an invite
+        // already have a row and never reach this.
         User user = userRepository.findById(principal.userId())
                 .filter(candidate -> !candidate.isDeleted())
-                .orElseThrow(() -> ApiException.of(ErrorCode.UNAUTHENTICATED,
-                        "This account is not provisioned on the platform"));
+                .orElseGet(() -> {
+                    identityUserMirror.pull(principal.userId());
+                    return userRepository.findById(principal.userId())
+                            .filter(candidate -> !candidate.isDeleted())
+                            .orElseThrow(() -> ApiException.of(ErrorCode.UNAUTHENTICATED,
+                                    "This account is not provisioned on the platform"));
+                });
 
         UUID requestedOrg = requestedOrganization(request);
         boolean platformAdmin = user.isPlatformAdmin();
