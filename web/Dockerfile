@@ -20,11 +20,15 @@ ARG VITE_ONEOPS_URL=
 # redirects to the hosted login page instead — so setting it before identity is actually serving
 # /oauth2/authorize makes signing in impossible rather than merely different.
 ARG VITE_IDENTITY_ISSUER=
+# Prabhix Mailroom. Unset hides the "My mail" link, which is the right default for a build that has
+# no idea whether a Mailroom is running.
+ARG VITE_MAILROOM_URL=
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_RAZORPAY_KEY_ID=$VITE_RAZORPAY_KEY_ID
 ENV VITE_GOOGLE_SSO_ENABLED=$VITE_GOOGLE_SSO_ENABLED
 ENV VITE_ONEOPS_URL=$VITE_ONEOPS_URL
 ENV VITE_IDENTITY_ISSUER=$VITE_IDENTITY_ISSUER
+ENV VITE_MAILROOM_URL=$VITE_MAILROOM_URL
 RUN npm run build
 # The CSP names a hash for each inline script, and the hash has to come from the minified artifact
 # rather than the source, so it is computed here and not checked in.

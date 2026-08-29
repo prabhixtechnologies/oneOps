@@ -253,6 +253,7 @@ jobs:
             VITE_API_URL=https://api.prabhixtechnologies.com
             VITE_RAZORPAY_KEY_ID=${{ vars.RAZORPAY_KEY_ID }}
             VITE_GOOGLE_SSO_ENABLED=false
+            VITE_MAILROOM_URL=https://mail.prabhixtechnologies.com
           tags: |
             prabhixtechnologies/prabhix-web:latest
             prabhixtechnologies/prabhix-web:${{ steps.meta.outputs.sha }}
@@ -272,6 +273,7 @@ jobs:
             VITE_API_URL=https://api.prabhixtechnologies.com
             VITE_GOOGLE_SSO_ENABLED=false
             VITE_ONEOPS_URL=https://oneops.prabhixtechnologies.com
+            VITE_MAILROOM_URL=https://mail.prabhixtechnologies.com
           tags: |
             prabhixtechnologies/prabhix-admin:latest
             prabhixtechnologies/prabhix-admin:${{ steps.meta.outputs.sha }}

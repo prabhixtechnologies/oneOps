@@ -70,6 +70,8 @@ both hosts.
 | `VITE_RAZORPAY_KEY_ID` | — | Razorpay test/live key for checkout. OneOps only; admin has no checkout |
 | `VITE_GOOGLE_SSO_ENABLED` | `false` | Show Google SSO button (requires server config) |
 | `VITE_ONEOPS_URL` | production host | Admin only: where "Open" sends staff. Unset in a local admin build means the button goes to production |
+| `VITE_IDENTITY_ISSUER` | — | Set, the app stops rendering a password form and redirects to Identity's hosted login instead |
+| `VITE_MAILROOM_URL` | — | Adds a "My mail" link to the sidebar, pointing at Prabhix Mailroom. Unset hides it |
 
 ## Scripts
 

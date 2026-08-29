@@ -97,7 +97,21 @@ beforeAll(async () => {
     headers: { "Content-Type": "application/json", Origin: ORIGIN },
     body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
   });
-  const body = (await res.json()) as { accessToken: string };
+
+  // Fail here rather than carrying on with no token. Without this, a wrong password produced a
+  // report saying all 47 endpoints had schema failures — every one of them a 401 — which reads as
+  // the API having broken rather than as the sign-in that actually failed.
+  if (!res.ok) {
+    throw new Error(
+      `Could not sign in to ${API} as ${EMAIL}: ${res.status}. ` +
+        `Check PBX_CONTRACT_EMAIL and PBX_CONTRACT_PASSWORD; nothing below ran.`,
+    );
+  }
+
+  const body = (await res.json()) as { accessToken?: string };
+  if (!body.accessToken) {
+    throw new Error("Sign-in succeeded but returned no accessToken, so no endpoint could be checked");
+  }
   token = body.accessToken;
 
   const me = await fetch(`${API}/auth/me`, {
@@ -105,6 +119,11 @@ beforeAll(async () => {
   });
   const meBody = (await me.json()) as { organizationId?: string; memberships?: { orgId: string }[] };
   orgId = meBody.organizationId ?? meBody.memberships?.[0]?.orgId ?? "";
+
+  // Two of the cases interpolate this, and an empty one silently requests `/organizations/`.
+  if (!orgId) {
+    throw new Error("Signed in, but /auth/me named no organization, so the org-scoped cases cannot run");
+  }
 }, 60_000);
 
 async function check(path: string, schema: ZodTypeAny) {

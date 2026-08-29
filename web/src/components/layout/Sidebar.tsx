@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { LogOut, Moon, Search, Sun } from "lucide-react";
+import { LogOut, Mail, Moon, Search, Sun } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,14 @@ import { useAuth } from "@/lib/auth";
 import { IS_ADMIN_APP } from "@/lib/app-mode";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { navGroups, type NavItem } from "./nav-config";
+
+/**
+ * Prabhix Mailroom, for a person's own mail as opposed to the shared inbox this console owns.
+ *
+ * Unset hides the link. Guessing the production host would put a dead link in every local build, and
+ * unlike the admin handoff there is no action here that silently needs somewhere to go.
+ */
+const MAILROOM_URL: string = import.meta.env.VITE_MAILROOM_URL ?? "";
 
 interface SidebarProps {
   onOpenCommand: () => void;
@@ -102,6 +110,14 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
         </Button>
+        {MAILROOM_URL && (
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-3" asChild>
+            <a href={MAILROOM_URL} target="_blank" rel="noopener noreferrer">
+              <Mail className="h-4 w-4" aria-hidden="true" />
+              <span>My mail</span>
+            </a>
+          </Button>
+        )}
         <Separator className="my-1" />
         <Button
           variant="ghost"
