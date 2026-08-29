@@ -40,6 +40,11 @@ function appEntryPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [appEntryPlugin(), react(), tailwindcss()],
+  define: {
+    // Read by lib/app-mode.ts. A constant rather than a runtime value so the comparisons against it
+    // fold, and each bundle keeps only its own app's branches.
+    __APP_MODE__: JSON.stringify(APP),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

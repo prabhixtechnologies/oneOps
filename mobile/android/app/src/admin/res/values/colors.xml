@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Overrides the launcher icon background for the admin flavor only; the flavor source set takes
+  precedence over main, so the shared monogram is reused unchanged.
+
+  A colour change rather than different art, because the two icons need telling apart at launcher
+  size on a phone that has both installed, where the monogram itself is a few millimetres across.
+  Near-black against the OneOps purple is legible at a glance; two purples would not be. The white
+  P and cyan A keep their contrast against it.
+-->
+<resources>
+    <color name="ic_launcher_background">#0B1120</color>
+</resources>

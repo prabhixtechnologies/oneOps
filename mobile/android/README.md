@@ -1,6 +1,22 @@
-# Prabhix Operator — Android
+# Prabhix Android
 
-Native Kotlin operator app for managing chat, mail, visitors, and dashboard KPIs from a phone at scale.
+Two apps from one module, chosen by product flavor:
+
+| Flavor | Application ID | Name | Who it is for |
+|--------|----------------|------|---------------|
+| `oneops` | `com.prabhix.operator` | Prabhix Operator | Customers. Chat, mail, visitors and KPIs for their own organization. |
+| `admin` | `com.prabhix.admin` | Prabhix Admin | Prabhix staff. Everything above, plus the platform overview, the tenant directory and the ability to view any customer's data. |
+
+Both install side by side — different application IDs — and the admin icon is on a near-black
+background rather than purple so they are distinguishable on the launcher.
+
+The platform screens, the cross-tenant API and the impersonation banner live in
+`app/src/admin/`, so the customer's APK does not contain them. That is enforced by a CI check which
+greps the OneOps APK for `admin/platform/` and fails if it appears, because the mistake — moving one
+of those files back into `src/main/` — breaks nothing visibly.
+
+Task names take the flavor: `assembleOneopsDebug`, `assembleAdminRelease`, and so on. A bare
+`assembleDebug` builds both.
 
 ## Prerequisites
 
@@ -8,7 +24,8 @@ Native Kotlin operator app for managing chat, mail, visitors, and dashboard KPIs
 - JDK 17
 - Android SDK 35
 - Backend running (see below)
-- Firebase project for push (optional until backend push endpoint ships)
+- Firebase project, for push only. Everything else works without it — see
+  [Push notifications](#push-notifications-fcm).
 
 ## Point at your backend
 
@@ -37,12 +54,14 @@ sdk.dir=/path/to/Android/Sdk
 Then build:
 
 ```bash
-./gradlew :app:assembleDebug
+./gradlew :app:assembleOneopsDebug :app:assembleAdminDebug
 ```
 
-On Windows: `gradlew.bat :app:assembleDebug`
+On Windows: `gradlew.bat :app:assembleOneopsDebug`
 
-Output: `app/build/outputs/apk/debug/app-debug.apk`
+Output: `app/build/outputs/apk/{oneops,admin}/debug/app-{oneops,admin}-debug.apk`
+
+In Android Studio, pick the variant from **Build > Select Build Variant**.
 
 Open the `mobile/android` folder in Android Studio and Run on a device/emulator.
 
@@ -75,10 +94,14 @@ keytool -genkeypair -v -keystore prabhix-release.jks -alias prabhix \
 > uninstall first, and Play Store updates become impossible under the same package name.
 
 ```bash
-./gradlew :app:assembleRelease
+./gradlew :app:assembleOneopsRelease :app:assembleAdminRelease
 ```
 
-Output: `app/build/outputs/apk/release/app-release.apk`
+Output: `app/build/outputs/apk/{oneops,admin}/release/app-{oneops,admin}-release.apk`
+
+Both flavors are signed by the same keystore. Play requires one signing key per application ID only
+in the sense that the key must stay the same for a given ID forever; sharing one key across two of
+your own apps is fine and one fewer thing to lose.
 
 Without `keystore.properties` the build still succeeds but the APK is **unsigned** and Android
 refuses to install it. That is deliberate: it keeps CI and fresh clones building without the
@@ -99,22 +122,38 @@ parse every API response. After changing dependencies or the rules, verify the s
 survived:
 
 ```bash
-unzip -p app/build/outputs/apk/release/app-release.apk classes.dex | strings | grep '$$serializer' | head
+unzip -p app/build/outputs/apk/oneops/release/app-oneops-release.apk classes.dex | strings | grep '$$serializer' | head
 ```
 
 ## Push notifications (FCM)
 
-1. Create a Firebase project and add an Android app (`com.prabhix.operator`).
-2. Download `google-services.json` into `mobile/android/app/`.
-3. Uncomment the Google Services plugin in root and app `build.gradle.kts` (see comments in those files).
-4. Backend must implement `POST /api/v1/devices/push-tokens` (documented in `docs/mobile-api-contract.md`).
+The backend side is done — `POST /api/v1/devices/push-tokens` exists and the FCM provider sends
+through it. What is missing is the Firebase project.
 
-Until the backend endpoint exists, the app logs a warning and continues without push registration. Rotated FCM tokens are re-registered via `onNewToken`.
+1. Create one Firebase project and add **four** Android apps to it, one per variant:
+   `com.prabhix.operator`, `com.prabhix.operator.debug`, `com.prabhix.admin`,
+   `com.prabhix.admin.debug`. Fewer than four and the Google Services plugin fails the build for
+   whichever variant it cannot find.
+2. Download `google-services.json` and put it at `app/google-services.json`. One file covers all
+   four; see `app/google-services.json.template` for the shape. It is git-ignored.
+3. Nothing else. `app/build.gradle.kts` applies the Google Services plugin when that file exists and
+   skips it when it does not, so the build stays green either way.
+4. On the server, set `PUSH_PROVIDER=FCM`, `FCM_PROJECT_ID` and `FCM_SERVICE_ACCOUNT_JSON` from a
+   service-account key for the same project. That is a different credential from
+   `google-services.json` and belongs only on the server. Until `PUSH_PROVIDER` is set the backend
+   uses its logging provider, so tokens register and nothing is delivered.
 
-With no `google-services.json` the app is fully usable — `FirebaseMessaging.getInstance()` throws
+Two application IDs means two FCM registrations from one phone if both apps are installed, which is
+correct: a notification for your own organization's chat should not open the customer product.
+
+Without `google-services.json` the app is fully usable. `FirebaseMessaging.getInstance()` throws
 `Default FirebaseApp is not initialized`, which `PushTokenManager` catches and logs. Everything
-served over the API keeps working, including live chat and mail via SSE; only background push
-notifications are missing, so you get updates while the app is open but not when it is closed.
+served over the API keeps working, including live chat and mail via SSE; only background push is
+missing, so you get updates while the app is open but not when it is closed.
+
+Note that notification permission is requested at first launch on Android 13 and later. Declaring
+`POST_NOTIFICATIONS` in the manifest is not enough there: an ungranted app still receives its FCM
+messages but is not allowed to post a notification, which looks exactly like push being broken.
 
 ## Architecture
 
@@ -129,7 +168,16 @@ notifications are missing, so you get updates while the app is open but not when
 
 ## Screens
 
-Login (password / OTP / magic link) → Org select → Bottom nav: **Dashboard**, **Chat** (mine/unassigned/all queues), **Mail**, **Live visitors** → Conversation/thread detail.
+Login (password / OTP / magic link) → Org select → Bottom nav: **Dashboard**, **Chat**
+(mine/unassigned/all queues), **Mail**, **Live visitors** → Conversation/thread detail.
+
+The admin flavor adds a fifth tab, **Platform**, shown only to an account the server reports as
+`platformAdmin`: the platform counts (tenants, accounts, backlogs, last 24 hours) and the tenant
+directory. Choosing *View as* on a tenant sends that organization's id on every subsequent request
+and reopens the live streams against it, so the rest of the app shows that customer. A banner sits
+above every screen for as long as it lasts, and the state is deliberately not persisted — it ends
+when the process does, because the dangerous version of this feature is the one you forget you left
+on. The server records each access.
 
 ### Implemented operator features
 

@@ -1,4 +1,33 @@
+import com.android.build.api.dsl.ApplicationProductFlavor
 import java.util.Properties
+
+/**
+ * Sets the app's name once per flavor, for both the launcher and the sessions list.
+ *
+ * <p>`app_name` is not in `res/values/strings.xml` any more: with two apps there is no sensible
+ * default, and a flavor silently inheriting the other one's name is worse than a build failure.
+ * `APP_LABEL` carries the same text into the device name sent at sign-in, so a phone with both apps
+ * installed produces two distinguishable rows in Settings rather than the model name twice — which
+ * matters when the point of that list is deciding which session to revoke.
+ */
+fun ApplicationProductFlavor.applyLabel(label: String) {
+    resValue("string", "app_name", label)
+    buildConfigField("String", "APP_LABEL", "\"$label\"")
+}
+
+/**
+ * Gives each flavor its own deep-link scheme.
+ *
+ * <p>Both apps can be installed on one phone, and the notification deep link is registered
+ * `BROWSABLE`, so a shared scheme would make any `prabhix://chat/{id}` link ambiguous: Android would
+ * show an app chooser and could open a customer's conversation in the wrong app. Notifications
+ * themselves are unaffected either way, since they target the activity explicitly, but the scheme
+ * still has to be unique for anything arriving from outside.
+ */
+fun ApplicationProductFlavor.applyDeepLinkScheme(scheme: String) {
+    manifestPlaceholders["deepLinkScheme"] = scheme
+    buildConfigField("String", "DEEP_LINK_SCHEME", "\"$scheme\"")
+}
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,6 +36,23 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+}
+
+/**
+ * Applies the Google Services plugin only when Firebase is configured.
+ *
+ * <p>The plugin fails the build outright if `google-services.json` is missing, so applying it
+ * unconditionally would mean nobody could build the app without Firebase credentials — including CI,
+ * which has none. Applied conditionally, push works the moment the file is dropped in and the build
+ * stays green until then, with [com.prabhix.operator.data.push.PushTokenManager] catching the
+ * "Default FirebaseApp is not initialized" it gets in the meantime.
+ *
+ * <p>One file covers both flavors and both build types: a single Firebase project holds four Android
+ * apps — `com.prabhix.operator`, `com.prabhix.admin` and the `.debug` variant of each — and the
+ * downloaded JSON contains a client block for every one. See `app/google-services.json.template`.
+ */
+if (file("google-services.json").exists()) {
+    apply(plugin = libs.plugins.google.services.get().pluginId)
 }
 
 // Release signing comes from keystore.properties, which is gitignored along with the .jks it
@@ -24,7 +70,6 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.prabhix.operator"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -32,7 +77,40 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/v1\"")
-        buildConfigField("String", "DEVICE_HEADER", "\"mobile-android\"")
+    }
+
+    /**
+     * Two apps from one module: the OneOps product sold to customers, and the private admin app.
+     *
+     * <p>Flavors rather than two modules or two repositories. Almost everything is identical between
+     * them — the same API, the same token handling, the same eight tenant-scoped screens — so a
+     * second copy would mean every fix landing twice and eventually only landing once. What differs
+     * is the application id, the name and the icon, set below, plus the platform screens, which live
+     * in `src/admin/` and are absent from the customer's build rather than merely switched off.
+     *
+     * <p>`oneops` is first, which makes it the default when a Gradle invocation names no flavor.
+     */
+    flavorDimensions += "app"
+
+    productFlavors {
+        create("oneops") {
+            dimension = "app"
+            // Unchanged from before flavors existed, so anyone with the app already installed gets
+            // an update rather than a second icon.
+            applicationId = "com.prabhix.operator"
+            applyLabel("Prabhix Operator")
+            applyDeepLinkScheme("prabhix")
+            buildConfigField("String", "DEVICE_HEADER", "\"mobile-android\"")
+        }
+        create("admin") {
+            dimension = "app"
+            // A separate id, so both install side by side on one phone and Play treats them as the
+            // two different products they are.
+            applicationId = "com.prabhix.admin"
+            applyLabel("Prabhix Admin")
+            applyDeepLinkScheme("prabhix-admin")
+            buildConfigField("String", "DEVICE_HEADER", "\"mobile-android-admin\"")
+        }
     }
 
     signingConfigs {

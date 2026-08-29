@@ -2,102 +2,115 @@
 
 Native SwiftUI operator app (iPhone + iPad, portrait and landscape) for chat, mail, live visitors, and dashboard KPIs.
 
-**There is no `.xcodeproj` in this repository.** Source lives under `PrabhixOperator/PrabhixOperator/`. `Package.swift` at this directory root builds only the shared `Core` library for linting — **not** the app target. You must create an Xcode app project locally (steps below).
+## Status: not yet compiled
+
+Read this before starting. There are ~2,000 lines of Swift here that **no compiler has ever seen**,
+because the project has only ever been developed from Windows and Xcode does not run there. It is a
+detailed draft, not a working app. Everything else in this repository — backend, web, Android — is
+built and verified in CI; this is not.
+
+Expect the first build to produce a real list of errors, and budget for that rather than treating it
+as a surprise. Nothing about the design is blocked; only the tooling is.
+
+**There is no `.xcodeproj` in this repository either**, and there should not be: it cannot be created
+or reviewed from Windows. Instead [project.yml](project.yml) is a text spec that generates it, which
+*can* be kept correct from any machine. `Package.swift` compiles only the shared `Core` directory,
+for a rough syntax check without a full project.
 
 ## Prerequisites
 
 - macOS with **Xcode 16+**
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
 - **iOS 17+** deployment target
-- Spring Boot backend at `http://localhost:8080` with API base `/api/v1`
-- Apple Developer account for push on physical devices
+- Backend reachable at `/api/v1` (see [API base URL](#api-base-url))
+- Apple Developer account, for push on physical devices
 
-## First-time Xcode project setup
+## Setup
 
-### 1. Create the app target
+```bash
+cd mobile/ios
+cp Config.xcconfig.template Config.xcconfig   # then set DEVELOPMENT_TEAM
+xcodegen generate
+open PrabhixOperator.xcodeproj
+```
 
-1. Open Xcode → **File → New → Project…**
-2. Choose **iOS → App**
-3. Settings:
-   - **Product Name:** `PrabhixOperator`
-   - **Team:** your Apple Developer team
-   - **Organization Identifier:** `com.prabhix`
-   - **Bundle Identifier:** `com.prabhix.operator` (must match APNs topic if using push)
-   - **Interface:** SwiftUI
-   - **Language:** Swift
-   - **Storage:** SwiftData (checked)
-4. Save the project as `mobile/ios/PrabhixOperator/PrabhixOperator.xcodeproj` (alongside the existing `PrabhixOperator/` source folder).
+That is the whole setup. `project.yml` already declares both targets, the Info.plist wiring, the
+orientations, the push and background-task entitlements and the signing style, so there are no
+manual Xcode steps to get subtly wrong or to repeat on the next machine.
 
-### 2. Replace template sources
+Re-run `xcodegen generate` after editing `project.yml`. Source files are referenced by directory, so
+**adding a Swift file needs no regeneration** — only adding a new directory does.
 
-Delete Xcode’s default `ContentView.swift`, `Item.swift`, and any generated model files.
+### Config.xcconfig
 
-In the project navigator, **Add Files to "PrabhixOperator"…** and select the entire folder:
+Gitignored; holds only what differs per developer:
 
-`mobile/ios/PrabhixOperator/PrabhixOperator/`
+```
+API_BASE_URL = http://192.168.x.x:8080/api/v1   # LAN IP for a physical device
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+CODE_SIGN_STYLE = Automatic
+```
 
-- **Copy items if needed:** unchecked (reference files in place)
-- **Create groups**
-- **Add to targets:** PrabhixOperator
+## Two apps, one source tree
 
-Ensure `@main` exists only in `PrabhixOperatorApp.swift`.
+The same split as the web console and Android: the product sold to customers, and the private admin
+app used to run the company.
 
-### 3. Info.plist
+| | Target | Bundle id | Deep link | `X-Prabhix-Device` |
+|---|---|---|---|---|
+| OneOps | `PrabhixOperator` | `com.prabhix.operator` | `prabhix://` | `mobile-ios` |
+| Admin | `PrabhixAdmin` | `com.prabhix.admin` | `prabhix-admin://` | `mobile-ios-admin` |
 
-Point the target’s **Info.plist File** build setting to:
+Two bundle ids, so both install side by side and the App Store treats them as the two products they
+are. The deep-link schemes differ because both apps would otherwise claim `prabhix://chat/{id}` and
+iOS would pick one arbitrarily — a customer's conversation opening in the wrong app.
 
-`PrabhixOperator/PrabhixOperator/Info.plist`
+Per-target values are build settings that `Info.plist` substitutes and
+[AppConfig](PrabhixOperator/PrabhixOperator/Core/AppConfig.swift) reads back at runtime, which is the
+iOS counterpart of Android's `BuildConfig` fields, deliberately using the same names:
 
-The bundled plist already includes:
+| Build setting | Purpose |
+|---|---|
+| `PRABHIX_APP_LABEL` | Names the app, and names it again in the sessions list |
+| `PRABHIX_DEVICE_HEADER` | Tells the backend which app a request came from |
+| `PRABHIX_DEEP_LINK_SCHEME` | Unique per app, per above |
+| `PRABHIX_ADMIN` | A compilation condition, set on the admin target only |
+
+`PRABHIX_ADMIN` is a compilation condition rather than a runtime flag for the same reason the web
+build uses a Vite define and Android uses source sets: `#if` removes the code, so the customer's
+binary does not contain the platform surface at all. A runtime check would ship it and hide it.
+
+### Remaining work: the admin screens
+
+The two targets are defined and differ correctly, but they currently build the *same* screens — all
+eight of which are tenant-scoped. The platform surface (platform overview and tenant directory,
+plus the "view as" banner) exists on web and Android and not here. When it is written it goes in its
+own directory added to the admin target only, exactly like `app/src/admin` on Android;
+`project.yml` marks the spot. Mirror
+[PlatformFeature.kt](../android/app/src/admin/java/com/prabhix/operator/ui/platform/PlatformFeature.kt)
+for the seam and
+[PlatformScreen.kt](../android/app/src/admin/java/com/prabhix/operator/ui/platform/PlatformScreen.kt)
+for the screen.
+
+## Info.plist
+
+Values marked `$(...)` come from the build settings above.
 
 | Key | Purpose |
 |-----|---------|
-| `PrabhixAPIBase` | Default REST base URL on device builds |
-| `CFBundleURLTypes` | Custom URL scheme `prabhix://` for deep links |
+| `CFBundleName` | `$(PRABHIX_APP_LABEL)` |
+| `PrabhixAPIBase` | REST base URL on device builds |
+| `PrabhixDeviceHeader`, `PrabhixDeepLinkScheme` | Read by `AppConfig` |
+| `CFBundleURLTypes` | Deep-link scheme, per target |
 | `NSAppTransportSecurity` → `NSAllowsLocalNetworking` | Local backend during development |
 | `NSFaceIDUsageDescription` | Biometric unlock prompt |
 | `UIBackgroundModes` | `fetch`, `processing`, `remote-notification` |
-| `BGTaskSchedulerPermittedIdentifiers` | `com.prabhix.operator.flush` |
+| `BGTaskSchedulerPermittedIdentifiers` | `$(PRODUCT_BUNDLE_IDENTIFIER).flush` |
 | Orientation arrays | iPhone + iPad portrait and landscape |
 
-### 4. Config.xcconfig
-
-```bash
-cp mobile/ios/Config.xcconfig.template mobile/ios/Config.xcconfig
-```
-
-Edit `Config.xcconfig`:
-
-```
-API_BASE_URL = http://192.168.x.x:8080/api/v1   # LAN IP for physical device
-DEVELOPMENT_TEAM = YOUR_TEAM_ID
-PRODUCT_BUNDLE_IDENTIFIER = com.prabhix.operator
-```
-
-In Xcode: select the **project** → **Info** tab → **Configurations** → set **Debug** and **Release** to use `Config.xcconfig`.
-
-Wire the API URL into the app:
-
-1. Target **Build Settings** → add User-Defined setting `PRABHIX_API_BASE` = `$(API_BASE_URL)`
-2. Target **Build Settings** → **Info.plist Values** (or Info tab) → set `PrabhixAPIBase` to `$(PRABHIX_API_BASE)`
-
-Simulator builds ignore `PrabhixAPIBase` and use `http://localhost:8080/api/v1` from `AppConfig.swift`.
-
-Launch-argument override (any build): `-PRABHIX_API_BASE http://host:8080/api/v1`
-
-### 5. Capabilities (Signing & Capabilities tab)
-
-Enable on the **PrabhixOperator** target:
-
-| Capability | Notes |
-|------------|--------|
-| **Push Notifications** | Required for APNs; token registration is in `AppDelegate` |
-| **Background Modes** | Background fetch, Background processing, Remote notifications (must match Info.plist) |
-| **Background Tasks** | Identifier `com.prabhix.operator.flush` registered in `BackgroundFlush` |
-
-### 6. Signing
-
-- **Automatically manage signing** with your team
-- Bundle ID `com.prabhix.operator` must match provisioning profile and APNs `apns-topic`
+The background-task identifier is derived from the bundle id in both the plist and
+`AppConfig.backgroundTaskIdentifier`, because `BGTaskScheduler` throws on an identifier the plist
+does not list, and two hardcoded copies are how that happens.
 
 ## API base URL
 
@@ -109,10 +122,30 @@ Enable on the **PrabhixOperator** target:
 
 ## Push (APNs)
 
-1. Enable **Push Notifications** capability (step 5).
-2. Configure backend APNs credentials (`backend` push settings) with bundle ID `com.prabhix.operator`.
-3. On launch, `AppDelegate` requests notification permission, registers for remote notifications, and sends the device token via `POST /api/v1/devices/push-tokens`.
-4. Tap handling: payload keys `conversationId` → `prabhix://chat/{id}`, `threadId` → `prabhix://mail/{id}` (same as Android).
+The capability and the entitlement are declared in `project.yml`, so there is nothing to click. The
+app side is written: on launch `AppDelegate` requests notification permission, registers for remote
+notifications, and posts the token to `POST /api/v1/devices/push-tokens`, which the backend already
+serves. Tap handling maps `conversationId` → `{scheme}://chat/{id}` and `threadId` →
+`{scheme}://mail/{id}`, the same payload contract as Android.
+
+What is missing is credentials. Set `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY` and
+`APNS_BUNDLE_ID` on the backend, along with `PUSH_PROVIDER=APNS`; until `PUSH_PROVIDER` is set the
+backend logs instead of sending.
+
+**The backend cannot yet serve both iOS apps.** `apns-topic` is the bundle id, so
+`com.prabhix.operator` and `com.prabhix.admin` are two topics, but `ApnsPushProvider` sends every
+notification to the single `APNS_BUNDLE_ID` it is configured with, and `push_tokens` records only
+`FCM` or `APNS` — not which app or which APNs environment a token came from. So whichever bundle id
+is configured works and the other silently does not. One APNs auth key covers both apps under the
+same Apple Developer team, so the credential is not the problem; the missing piece is per-token
+routing.
+
+Android does not have this problem because FCM identifies the app from the token itself, which is
+why it needed nothing beyond registering both apps in Firebase.
+
+Resolving it means storing the app and environment alongside the token and choosing the topic and
+host per send. That work belongs with the rest of iOS and is not worth doing before the app
+compiles, since nothing can register an iOS token until then.
 
 Deep links and notification taps require the operator to be signed in with an organization selected.
 
@@ -136,26 +169,46 @@ Login (password / OTP / magic link) → Organization picker → Tabs:
 - **Mail** — thread list, detail with reply composer, AI suggest/summarize
 - **Live** — active visitors
 
-Deep links: `prabhix://chat/{conversationId}`, `prabhix://mail/{threadId}`
+Deep links: `{scheme}://chat/{conversationId}`, `{scheme}://mail/{threadId}`, where the scheme is
+`prabhix` or `prabhix-admin` per the table above.
+
+The admin flavor gains a fifth **Platform** tab once those screens are written — see
+[Remaining work](#remaining-work-the-admin-screens).
 
 ## Library / OS versions
 
-Swift 5.10, iOS 17+, SwiftData, `BGTaskScheduler`, Keychain, `LocalAuthentication`, **no third-party dependencies**.
+Swift 5.10, iOS 17+, SwiftData, `BGTaskScheduler`, Keychain, `LocalAuthentication`, **no third-party
+dependencies**. XcodeGen is a build-time tool, not a dependency of the app.
 
 ## Build
 
-After completing setup above:
-
 ```bash
 cd mobile/ios
-xcodebuild -project PrabhixOperator/PrabhixOperator.xcodeproj \
-  -scheme PrabhixOperator \
-  -destination 'platform=iOS Simulator,name=iPhone 16' \
-  build
+xcodegen generate
+for scheme in PrabhixOperator PrabhixAdmin; do
+  xcodebuild -project PrabhixOperator.xcodeproj \
+    -scheme "$scheme" \
+    -destination 'platform=iOS Simulator,name=iPhone 16' \
+    build
+done
 ```
 
-This has **not** been verified in CI — requires macOS + Xcode.
+[.github/workflows/ios.yml](../../.github/workflows/ios.yml) runs exactly this on a macOS runner. It
+is **not** part of the main CI pipeline and must be started by hand from the Actions tab, for two
+reasons: macOS runners cost roughly ten times a Linux minute, and the build does not pass yet, so
+requiring it would block every unrelated pull request. Turn it into a required check once it goes
+green — that is the moment iOS stops being deferred.
 
 ## Optional: Core SPM package
 
-`Package.swift` exposes `PrabhixOperatorCore` from `PrabhixOperator/Core/` for isolated compilation checks only. The app target includes the same files directly; do not link the SPM product into the app unless you split targets intentionally.
+`Package.swift` compiles `PrabhixOperator/PrabhixOperator/Core/` as `PrabhixOperatorCore`, for a
+syntax check without a full project — useful as the first step of the shakedown, since it needs no
+signing and no simulator:
+
+```bash
+cd mobile/ios && swift build
+```
+
+The app targets compile the same files directly; do not link the SPM product into them. Note that
+`Core` alone may not compile even when the app does, because the app builds `Core` and `Features`
+as one module and nothing has yet forced `Core` to be self-contained.

@@ -10,7 +10,9 @@ let package = Package(
     targets: [
         .target(
             name: "PrabhixOperatorCore",
-            path: "PrabhixOperator/Core"
+            // Two levels of PrabhixOperator: the project directory, then the source directory Xcode
+            // creates inside it. The shallower path silently resolves to nothing.
+            path: "PrabhixOperator/PrabhixOperator/Core"
         ),
     ]
 )

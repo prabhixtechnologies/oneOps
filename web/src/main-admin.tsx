@@ -13,6 +13,6 @@ import "./index.css";
  */
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App mode="admin" router={router} />
+    <App router={router} />
   </StrictMode>,
 );

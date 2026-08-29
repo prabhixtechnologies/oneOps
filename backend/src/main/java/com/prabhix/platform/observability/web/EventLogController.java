@@ -50,6 +50,9 @@ public class EventLogController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) UUID organizationId,
+            // Platform staff only. Widens the search to every organization, which is how the admin
+            // console answers "where are the errors" without already knowing which tenant to ask.
+            @RequestParam(defaultValue = "false") boolean allOrganizations,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer limit) {
         int pageSize = properties.limits().clampPageSize(limit);
@@ -59,7 +62,7 @@ public class EventLogController {
                 organizationId,
                 severity, category, eventCode, correlationId,
                 actorUserId, targetType, targetId,
-                from, to, search, cursor, pageSize);
+                from, to, search, allOrganizations, cursor, pageSize);
     }
 
     @GetMapping("/{id}")
@@ -67,9 +70,11 @@ public class EventLogController {
     public EventLogView get(
             @CurrentUser PrabhixPrincipal principal,
             @PathVariable UUID id,
-            @RequestParam(required = false) UUID organizationId) {
+            @RequestParam(required = false) UUID organizationId,
+            @RequestParam(defaultValue = "false") boolean allOrganizations) {
         return queryService.getById(
-                principal.organizationId(), principal.platformAdmin(), organizationId, id);
+                principal.organizationId(), principal.platformAdmin(), organizationId,
+                allOrganizations, id);
     }
 
     @GetMapping("/trace/{correlationId}")
@@ -77,9 +82,11 @@ public class EventLogController {
     public TraceView trace(
             @CurrentUser PrabhixPrincipal principal,
             @PathVariable String correlationId,
-            @RequestParam(required = false) UUID organizationId) {
+            @RequestParam(required = false) UUID organizationId,
+            @RequestParam(defaultValue = "false") boolean allOrganizations) {
         return queryService.trace(
-                principal.organizationId(), principal.platformAdmin(), organizationId, correlationId);
+                principal.organizationId(), principal.platformAdmin(), organizationId,
+                allOrganizations, correlationId);
     }
 
     @GetMapping("/stats")
@@ -88,9 +95,11 @@ public class EventLogController {
             @CurrentUser PrabhixPrincipal principal,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            @RequestParam(required = false) UUID organizationId) {
+            @RequestParam(required = false) UUID organizationId,
+            @RequestParam(defaultValue = "false") boolean allOrganizations) {
         return queryService.stats(
-                principal.organizationId(), principal.platformAdmin(), organizationId, from, to);
+                principal.organizationId(), principal.platformAdmin(), organizationId,
+                allOrganizations, from, to);
     }
 
     @GetMapping("/export")
@@ -104,7 +113,8 @@ public class EventLogController {
             @RequestParam(required = false) String eventCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            @RequestParam(required = false) UUID organizationId) throws IOException {
+            @RequestParam(required = false) UUID organizationId,
+            @RequestParam(defaultValue = "false") boolean allOrganizations) throws IOException {
         boolean ndjson = "ndjson".equalsIgnoreCase(format);
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"event-logs." + (ndjson ? "ndjson" : "csv") + "\"");
@@ -112,11 +122,11 @@ public class EventLogController {
         if (ndjson) {
             exportService.exportNdjson(
                     principal.organizationId(), principal.platformAdmin(), organizationId,
-                    severity, category, eventCode, from, to, response.getOutputStream());
+                    allOrganizations, severity, category, eventCode, from, to, response.getOutputStream());
         } else {
             exportService.exportCsv(
                     principal.organizationId(), principal.platformAdmin(), organizationId,
-                    severity, category, eventCode, from, to, response.getOutputStream());
+                    allOrganizations, severity, category, eventCode, from, to, response.getOutputStream());
         }
     }
 }

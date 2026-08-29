@@ -23,7 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PERMISSIONS, type Permission } from "@/lib/permissions";
-import type { AppMode } from "@/lib/app-mode";
+import { IS_ADMIN_APP } from "@/lib/app-mode";
 
 export interface NavItem {
   to: string;
@@ -119,6 +119,11 @@ function withBilling(groups: NavGroup[]): NavGroup[] {
   );
 }
 
-export function navGroupsFor(mode: AppMode): NavGroup[] {
-  return mode === "admin" ? [...tenantGroups, platformGroup] : withBilling(tenantGroups);
-}
+/**
+ * The navigation for this build. Decided at module scope rather than per render: the answer cannot
+ * change while the app is running, and this way the branch not taken is dropped from the bundle
+ * along with the group it names.
+ */
+export const navGroups: NavGroup[] = IS_ADMIN_APP
+  ? [...tenantGroups, platformGroup]
+  : withBilling(tenantGroups);

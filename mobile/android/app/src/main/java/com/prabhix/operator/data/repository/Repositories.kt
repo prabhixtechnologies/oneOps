@@ -3,6 +3,7 @@ package com.prabhix.operator.data.repository
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import com.prabhix.operator.BuildConfig
 import com.prabhix.operator.data.api.ApiException
 import com.prabhix.operator.data.api.AuthApi
 import com.prabhix.operator.data.api.ChatApi
@@ -57,7 +58,9 @@ class AuthRepository @Inject constructor(
                 email = email.trim(),
                 password = password,
                 deviceId = tokenStore.deviceId(),
-                deviceName = android.os.Build.MODEL,
+                // Names the app as well as the phone. Both apps can be installed at once, and two
+                // sessions both labelled "Pixel 7" cannot be told apart when revoking one of them.
+                deviceName = "${android.os.Build.MODEL} · ${BuildConfig.APP_LABEL}",
             ),
         )
         completeLogin(response)
@@ -76,7 +79,7 @@ class AuthRepository @Inject constructor(
     private suspend fun completeLogin(response: TokenResponse) {
         tokenStore.saveTokens(response)
         val me = authApi.me()
-        tokenStore.saveProfile(me.userId, me.email, me.displayName)
+        tokenStore.saveProfile(me.userId, me.email, me.displayName, me.platformAdmin)
         realtimeHub.start()
         pushTokenManager.registerIfPossible()
     }

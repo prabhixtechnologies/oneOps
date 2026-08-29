@@ -18,6 +18,7 @@ import javax.inject.Singleton
 @Singleton
 class AuthInterceptor @Inject constructor(
     private val tokenStore: TokenStore,
+    private val viewingOrgStore: ViewingOrgStore,
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val original = chain.request()
@@ -28,7 +29,11 @@ class AuthInterceptor @Inject constructor(
 
         session?.let {
             builder.header("Authorization", "Bearer ${it.accessToken}")
-            it.organizationId?.let { org -> builder.header("X-Prabhix-Org", org) }
+            // While staff are viewing a customer, every request asks for that customer's rows
+            // instead of their own. The signed-in identity is unchanged — only the tenant scope is —
+            // and the server audits each one against the organization named here.
+            val org = viewingOrgStore.organizationIdOverride() ?: it.organizationId
+            org?.let { id -> builder.header("X-Prabhix-Org", id) }
         }
 
         return chain.proceed(builder.build())

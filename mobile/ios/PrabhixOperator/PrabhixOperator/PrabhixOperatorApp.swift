@@ -132,7 +132,7 @@ enum OfflineStore {
 }
 
 enum BackgroundFlush {
-    static let identifier = "com.prabhix.operator.flush"
+    static let identifier = AppConfig.backgroundTaskIdentifier
 
     static func register() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: identifier, using: nil) { task in

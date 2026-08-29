@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { LogOut, Moon, Search, Sun } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import { LogoMark } from "@/components/brand/LogoMark";
@@ -7,9 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
-import { useAppMode } from "@/lib/app-mode";
+import { IS_ADMIN_APP } from "@/lib/app-mode";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { navGroupsFor, type NavItem } from "./nav-config";
+import { navGroups, type NavItem } from "./nav-config";
 
 interface SidebarProps {
   onOpenCommand: () => void;
@@ -21,8 +21,7 @@ interface SidebarProps {
 export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
   const { me } = useAuth();
-  const mode = useAppMode();
-  const groups = useMemo(() => navGroupsFor(mode), [mode]);
+  const groups = navGroups;
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -64,7 +63,7 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
       <div className="flex h-14 items-center gap-2 border-b border-border px-3 lg:px-4">
         <LogoMark className="h-8 w-8 shrink-0" />
         <span className="text-sm font-semibold">Prabhix</span>
-        {mode === "admin" && (
+        {IS_ADMIN_APP && (
           <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
             Admin
           </span>

@@ -17,6 +17,7 @@ work = "2.10.0"
 securityCrypto = "1.1.0-alpha06"
 biometric = "1.1.0"
 firebaseBom = "33.7.0"
+googleServices = "4.4.2"
 ksp = "2.0.21-1.0.28"
 coroutines = "1.9.0"
 
@@ -63,3 +64,6 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+# Reads google-services.json and generates the Firebase config resources. Applied by
+# app/build.gradle.kts only when that file is present — see the comment there.
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

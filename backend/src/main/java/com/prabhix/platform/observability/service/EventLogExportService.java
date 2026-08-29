@@ -35,6 +35,7 @@ public class EventLogExportService {
     public void exportCsv(UUID organizationId,
                           boolean platformAdmin,
                           UUID requestedOrgId,
+                          boolean allOrganizations,
                           String severity,
                           String category,
                           String eventCode,
@@ -43,7 +44,7 @@ public class EventLogExportService {
                           OutputStream out) throws IOException {
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
         writer.println("occurredAt,eventCode,severity,category,correlationId,actorLabel,targetType,targetId");
-        writeRows(organizationId, platformAdmin, requestedOrgId, severity, category, eventCode,
+        writeRows(organizationId, platformAdmin, requestedOrgId, allOrganizations, severity, category, eventCode,
                 from, to, writer, (view) -> String.join(",",
                         csv(view.occurredAt()),
                         csv(view.eventCode()),
@@ -60,6 +61,7 @@ public class EventLogExportService {
     public void exportNdjson(UUID organizationId,
                              boolean platformAdmin,
                              UUID requestedOrgId,
+                             boolean allOrganizations,
                              String severity,
                              String category,
                              String eventCode,
@@ -67,7 +69,7 @@ public class EventLogExportService {
                              Instant to,
                              OutputStream out) throws IOException {
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
-        writeRows(organizationId, platformAdmin, requestedOrgId, severity, category, eventCode,
+        writeRows(organizationId, platformAdmin, requestedOrgId, allOrganizations, severity, category, eventCode,
                 from, to, writer, view -> {
                     try {
                         return objectMapper.writeValueAsString(view);
@@ -82,6 +84,7 @@ public class EventLogExportService {
     private void writeRows(UUID organizationId,
                            boolean platformAdmin,
                            UUID requestedOrgId,
+                           boolean allOrganizations,
                            String severity,
                            String category,
                            String eventCode,
@@ -96,7 +99,7 @@ public class EventLogExportService {
             var page = queryService.search(
                     organizationId, platformAdmin, requestedOrgId,
                     severity, category, eventCode, null, null, null, null,
-                    from, to, null, cursor, batch);
+                    from, to, null, allOrganizations, cursor, batch);
             for (EventLogView view : page.items()) {
                 writer.println(formatter.apply(view));
                 exported++;

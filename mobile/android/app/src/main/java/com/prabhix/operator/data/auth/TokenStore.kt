@@ -18,6 +18,12 @@ data class SessionState(
     val userId: String? = null,
     val displayName: String? = null,
     val email: String? = null,
+    /**
+     * Whether this account is Prabhix staff rather than a customer. Decides only whether the admin
+     * app offers its platform screens; the server enforces the same thing on every request, so a
+     * stale `true` here buys nothing but a screen full of 403s.
+     */
+    val platformAdmin: Boolean = false,
 )
 
 @Singleton
@@ -48,11 +54,17 @@ class TokenStore @Inject constructor(
             .apply()
     }
 
-    fun saveProfile(userId: String, email: String, displayName: String) {
+    fun saveProfile(
+        userId: String,
+        email: String,
+        displayName: String,
+        platformAdmin: Boolean = false,
+    ) {
         prefs.edit()
             .putString(KEY_USER_ID, userId)
             .putString(KEY_EMAIL, email)
             .putString(KEY_DISPLAY, displayName)
+            .putBoolean(KEY_PLATFORM_ADMIN, platformAdmin)
             .apply()
     }
 
@@ -68,6 +80,7 @@ class TokenStore @Inject constructor(
             userId = prefs.getString(KEY_USER_ID, null),
             displayName = prefs.getString(KEY_DISPLAY, null),
             email = prefs.getString(KEY_EMAIL, null),
+            platformAdmin = prefs.getBoolean(KEY_PLATFORM_ADMIN, false),
         )
     }
 
@@ -102,6 +115,7 @@ class TokenStore @Inject constructor(
         private const val KEY_USER_ID = "user_id"
         private const val KEY_EMAIL = "email"
         private const val KEY_DISPLAY = "display"
+        private const val KEY_PLATFORM_ADMIN = "platform_admin"
         private const val KEY_DEVICE_ID = "device_id"
         private const val KEY_BIOMETRIC = "biometric"
     }

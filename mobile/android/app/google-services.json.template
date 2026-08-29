@@ -1,0 +1,103 @@
+{
+  "__instructions": [
+    "Copy this file to app/google-services.json and replace every YOUR_* placeholder with values",
+    "from Firebase Console > Project Settings > Your apps. Do not commit the result: it is ignored",
+    "by .gitignore.",
+    "",
+    "One Firebase project, four Android apps. Register all four package names below, otherwise the",
+    "Google Services plugin fails the build for whichever variant it cannot find:",
+    "  com.prabhix.operator          OneOps, release",
+    "  com.prabhix.operator.debug    OneOps, debug",
+    "  com.prabhix.admin             Admin, release",
+    "  com.prabhix.admin.debug       Admin, debug",
+    "",
+    "The plugin ignores keys it does not recognise, so this block can stay in the real file.",
+    "",
+    "The server side is already done: it posts to FCM using PUSH_PROVIDER=FCM, FCM_PROJECT_ID and",
+    "FCM_SERVICE_ACCOUNT_JSON, which are a separate service-account key from anything here."
+  ],
+  "project_info": {
+    "project_number": "YOUR_PROJECT_NUMBER",
+    "project_id": "YOUR_PROJECT_ID",
+    "storage_bucket": "YOUR_PROJECT_ID.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "YOUR_ONEOPS_APP_ID",
+        "android_client_info": {
+          "package_name": "com.prabhix.operator"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "YOUR_API_KEY"
+        }
+      ],
+      "oauth_client": [],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "YOUR_ONEOPS_DEBUG_APP_ID",
+        "android_client_info": {
+          "package_name": "com.prabhix.operator.debug"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "YOUR_API_KEY"
+        }
+      ],
+      "oauth_client": [],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "YOUR_ADMIN_APP_ID",
+        "android_client_info": {
+          "package_name": "com.prabhix.admin"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "YOUR_API_KEY"
+        }
+      ],
+      "oauth_client": [],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "YOUR_ADMIN_DEBUG_APP_ID",
+        "android_client_info": {
+          "package_name": "com.prabhix.admin.debug"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "YOUR_API_KEY"
+        }
+      ],
+      "oauth_client": [],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

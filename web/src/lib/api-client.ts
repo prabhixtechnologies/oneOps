@@ -210,11 +210,14 @@ export async function apiUpload<T>(
   return execute(false);
 }
 
-export async function apiDownload(path: string): Promise<{ blob: Blob; filename: string }> {
+export async function apiDownload(
+  path: string,
+  options: Pick<RequestOptions, "skipOrg"> = {},
+): Promise<{ blob: Blob; filename: string }> {
   const url = `${API_V1}${path}`;
 
   const execute = async (retried: boolean): Promise<{ blob: Blob; filename: string }> => {
-    const headers = buildHeaders({}, false);
+    const headers = buildHeaders(options, false);
 
     const response = await fetch(url, { headers, credentials: "include" });
 

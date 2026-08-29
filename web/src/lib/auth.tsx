@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiClientError, apiRequest, configureApiClient } from "./api-client";
+import { setViewingOrg, viewingOrgId } from "./impersonation";
 import {
   arraySchema,
   authMeSchema,
@@ -123,6 +124,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setOrganization(null);
     orgIdRef.current = null;
+    // Otherwise the next person to sign in on this tab lands inside whichever customer's data the
+    // last one was looking at.
+    setViewingOrg(null);
     queryClient.clear();
   }, [queryClient, setAccessToken]);
 
@@ -208,6 +212,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const switchOrg = useCallback(
     async (orgId: string) => {
+      // Changing the session's own organization makes any viewing override meaningless, and leaving
+      // it set would silently keep sending the old customer's id after the switch.
+      setViewingOrg(null);
       const tokens = await apiRequest(
         `/organizations/${orgId}/select`,
         authTokensSchema,
@@ -221,7 +228,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     configureApiClient({
       getAccessToken: () => accessTokenRef.current,
-      getOrgId: () => orgIdRef.current,
+      // A platform admin viewing a customer's data overrides the org for the duration. The session
+      // itself is untouched — only which tenant's rows each request asks for.
+      getOrgId: () => viewingOrgId() ?? orgIdRef.current,
       refreshTokens: refreshSession,
       // Local teardown only. Calling the logout endpoint here would POST the very access token the
       // server just refused, which is what produced a run of 401s from /auth/logout.

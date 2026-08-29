@@ -170,11 +170,14 @@ enum AuthService {
 private struct EmptyResponse: Decodable {}
 
 enum UIDeviceName {
+    /// Names the app as well as the phone, so an operator with both apps installed gets two
+    /// distinguishable rows in the sessions list rather than the device name twice. Matches the
+    /// Android format.
     static var current: String {
         #if os(iOS)
-        return UIDevice.current.name
+        return "\(UIDevice.current.name) · \(AppConfig.appLabel)"
         #else
-        return "iOS Device"
+        return "iOS Device · \(AppConfig.appLabel)"
         #endif
     }
 }

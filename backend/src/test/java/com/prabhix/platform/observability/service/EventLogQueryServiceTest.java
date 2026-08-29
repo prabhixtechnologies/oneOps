@@ -1,6 +1,7 @@
 package com.prabhix.platform.observability.service;
 
 import com.prabhix.platform.common.error.ApiException;
+import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.web.CursorPage;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.observability.domain.EventLog;
@@ -8,6 +9,7 @@ import com.prabhix.platform.observability.dto.EventLogDtos.EventLogView;
 import com.prabhix.platform.observability.repository.EventLogRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,51 +49,98 @@ class EventLogQueryServiceTest {
         service = new EventLogQueryService(eventLogRepository, entityManager, props);
     }
 
+    /** Keeps the long positional argument list in one place. */
+    private CursorPage<EventLogView> search(UUID tokenOrg,
+                                            boolean platformAdmin,
+                                            UUID requestedOrg,
+                                            boolean allOrganizations,
+                                            int limit) {
+        return service.search(tokenOrg, platformAdmin, requestedOrg,
+                null, null, null, null, null, null, null,
+                null, null, null, allOrganizations, null, limit);
+    }
+
+    private void expectPageFor(UUID scope, List<EventLog> rows) {
+        when(eventLogRepository.findPage(
+                eq(scope), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
+                .thenReturn(rows);
+    }
+
     @Test
     void tenantIsolationBlocksCrossOrgQuery() {
-        assertThrows(ApiException.class, () -> service.search(
-                orgA, false, orgB,
-                null, null, null, null, null, null, null,
-                null, null, null, null, 25));
+        assertThrows(ApiException.class, () -> search(orgA, false, orgB, false, 25));
     }
 
     @Test
     void platformAdminMayQueryOtherOrg() {
-        EventLog row = sampleRow(orgB);
-        when(eventLogRepository.findPage(
-                eq(orgB), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
-                isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
-                .thenReturn(List.of(row));
+        expectPageFor(orgB, List.of(sampleRow(orgB)));
 
-        CursorPage<EventLogView> page = service.search(
-                orgA, true, orgB,
-                null, null, null, null, null, null, null,
-                null, null, null, null, 25);
+        CursorPage<EventLogView> page = search(orgA, true, orgB, false, 25);
 
         assertEquals(1, page.items().size());
         assertEquals(orgB, page.items().get(0).organizationId());
     }
 
     @Test
+    @DisplayName("staff can sweep every organization at once")
+    void platformAdminMaySearchAllOrganizations() {
+        // A null scope means "no organization filter" in the repository. It was unreachable before:
+        // staff tokens carry their own organization, so omitting the parameter narrowed to that
+        // rather than widening, and there was no way to ask where errors were coming from without
+        // already knowing which tenant to ask.
+        expectPageFor(null, List.of(sampleRow(orgA), sampleRow(orgB)));
+
+        CursorPage<EventLogView> page = search(orgA, true, null, true, 25);
+
+        assertThat(page.items()).extracting(EventLogView::organizationId)
+                .containsExactly(orgA, orgB);
+    }
+
+    @Test
+    @DisplayName("a customer asking for every organization is refused, not quietly narrowed")
+    void nonAdminCannotSearchAllOrganizations() {
+        // Narrowing silently would show them their own rows under the heading "all organizations",
+        // which is a wrong answer rather than a denied one.
+        ApiException ex = assertThrows(ApiException.class, () -> search(orgA, false, null, true, 25));
+
+        assertEquals(ErrorCode.CROSS_TENANT_ACCESS, ex.getCode());
+    }
+
+    @Test
+    @DisplayName("naming one organization and all of them at once is contradictory")
+    void oneOrgAndAllOrgsTogetherIsRejected() {
+        ApiException ex = assertThrows(ApiException.class, () -> search(orgA, true, orgB, true, 25));
+
+        assertEquals(ErrorCode.MALFORMED_REQUEST, ex.getCode());
+    }
+
+    @Test
+    @DisplayName("staff omitting both still see only their own organization")
+    void adminWithoutEitherStaysScopedToTheirOwnOrg() {
+        // The widening has to be asked for. Defaulting to every organization would mean a platform
+        // admin opening the ordinary logs page saw other tenants' data without intending to.
+        expectPageFor(orgA, List.of(sampleRow(orgA)));
+
+        CursorPage<EventLogView> page = search(orgA, true, null, false, 25);
+
+        assertEquals(1, page.items().size());
+        assertEquals(orgA, page.items().get(0).organizationId());
+    }
+
+    @Test
     void getByIdEnforcesOrg() {
         UUID id = UUID.randomUUID();
         when(eventLogRepository.findByOrgAndId(orgA, id)).thenReturn(Optional.empty());
-        assertThrows(ApiException.class, () -> service.getById(orgA, false, null, id));
+
+        assertThrows(ApiException.class, () -> service.getById(orgA, false, null, false, id));
     }
 
     @Test
     void cursorPaginationUsesLimitPlusOne() {
-        EventLog first = sampleRow(orgA);
-        EventLog second = sampleRow(orgA);
-        when(eventLogRepository.findPage(
-                eq(orgA), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
-                isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
-                .thenReturn(List.of(first, second));
+        expectPageFor(orgA, List.of(sampleRow(orgA), sampleRow(orgA)));
 
-        CursorPage<EventLogView> page = service.search(
-                orgA, false, null,
-                null, null, null, null, null, null, null,
-                null, null, null, null, 1);
+        CursorPage<EventLogView> page = search(orgA, false, null, false, 1);
 
         assertEquals(1, page.items().size());
         assertTrue(page.hasMore());

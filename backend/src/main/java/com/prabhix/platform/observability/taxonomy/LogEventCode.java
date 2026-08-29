@@ -145,6 +145,17 @@ public enum LogEventCode {
 
     // --- Security ---
     SECURITY_CROSS_TENANT_BLOCKED("security.cross_tenant.blocked", LogCategory.SECURITY, LogSeverity.WARN, true, false),
+    /**
+     * A platform admin read or wrote a customer organization's data.
+     *
+     * <p>Staff can act in any organization by naming it in a header, with no membership required.
+     * That is deliberate — it is how support works — but until this existed it left no record at
+     * all, so there was no way to answer "who looked at this customer's inbox".
+     *
+     * <p>Recorded against the organization being viewed rather than the admin's own, so it appears
+     * in the customer's log where it is answerable.
+     */
+    SECURITY_TENANT_IMPERSONATED("security.tenant.impersonated", LogCategory.SECURITY, LogSeverity.WARN, true, false),
     SECURITY_RATE_LIMITED("security.rate_limited", LogCategory.SECURITY, LogSeverity.WARN, true, false),
     SECURITY_INVALID_TOKEN("security.invalid_token", LogCategory.SECURITY, LogSeverity.WARN, true, false),
     SECURITY_SUSPICIOUS_REQUEST("security.suspicious.request", LogCategory.SECURITY, LogSeverity.WARN, true, false),

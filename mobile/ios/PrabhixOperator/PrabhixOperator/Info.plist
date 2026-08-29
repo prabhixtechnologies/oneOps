@@ -9,7 +9,9 @@
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleName</key>
-    <string>Prabhix Operator</string>
+    <string>$(PRABHIX_APP_LABEL)</string>
+    <key>CFBundleDisplayName</key>
+    <string>$(PRABHIX_APP_LABEL)</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -17,7 +19,11 @@
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>PrabhixAPIBase</key>
-    <string>http://localhost:8080/api/v1</string>
+    <string>$(PRABHIX_API_BASE)</string>
+    <key>PrabhixDeviceHeader</key>
+    <string>$(PRABHIX_DEVICE_HEADER)</string>
+    <key>PrabhixDeepLinkScheme</key>
+    <string>$(PRABHIX_DEEP_LINK_SCHEME)</string>
     <key>UILaunchScreen</key>
     <dict/>
     <key>UISupportedInterfaceOrientations</key>
@@ -38,7 +44,7 @@
         <dict>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>prabhix</string>
+                <string>$(PRABHIX_DEEP_LINK_SCHEME)</string>
             </array>
         </dict>
     </array>
@@ -57,7 +63,7 @@
     </array>
     <key>BGTaskSchedulerPermittedIdentifiers</key>
     <array>
-        <string>com.prabhix.operator.flush</string>
+        <string>$(PRODUCT_BUNDLE_IDENTIFIER).flush</string>
     </array>
 </dict>
 </plist>

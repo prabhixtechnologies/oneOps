@@ -48,9 +48,10 @@ public class EventLogQueryService {
                                            Instant from,
                                            Instant to,
                                            String search,
+                                           boolean allOrganizations,
                                            String cursor,
                                            int limit) {
-        UUID effectiveOrg = resolveOrgScope(organizationId, platformAdmin, requestedOrgId);
+        UUID effectiveOrg = resolveOrgScope(organizationId, platformAdmin, requestedOrgId, allOrganizations);
         Cursor decoded = Cursor.decode(cursor);
         Instant cursorAt = decoded == null ? null : decoded.timestamp();
         UUID cursorId = decoded == null ? null : decoded.id();
@@ -74,8 +75,12 @@ public class EventLogQueryService {
     }
 
     @Transactional(readOnly = true)
-    public EventLogView getById(UUID organizationId, boolean platformAdmin, UUID requestedOrgId, UUID id) {
-        UUID effectiveOrg = resolveOrgScope(organizationId, platformAdmin, requestedOrgId);
+    public EventLogView getById(UUID organizationId,
+                                boolean platformAdmin,
+                                UUID requestedOrgId,
+                                boolean allOrganizations,
+                                UUID id) {
+        UUID effectiveOrg = resolveOrgScope(organizationId, platformAdmin, requestedOrgId, allOrganizations);
         EventLog row = eventLogRepository.findByOrgAndId(effectiveOrg, id)
                 .orElseThrow(() -> ApiException.of(ErrorCode.NOT_FOUND, "Event log entry not found"));
         return toView(row);
@@ -85,8 +90,9 @@ public class EventLogQueryService {
     public TraceView trace(UUID organizationId,
                            boolean platformAdmin,
                            UUID requestedOrgId,
+                           boolean allOrganizations,
                            String correlationId) {
-        UUID effectiveOrg = resolveOrgScope(organizationId, platformAdmin, requestedOrgId);
+        UUID effectiveOrg = resolveOrgScope(organizationId, platformAdmin, requestedOrgId, allOrganizations);
 
         List<TraceEntry> entries = new ArrayList<>();
         for (EventLog event : eventLogRepository.findByCorrelation(effectiveOrg, correlationId)) {
@@ -123,9 +129,10 @@ public class EventLogQueryService {
     public EventLogStats stats(UUID organizationId,
                                boolean platformAdmin,
                                UUID requestedOrgId,
+                               boolean allOrganizations,
                                Instant from,
                                Instant to) {
-        UUID effectiveOrg = resolveOrgScope(organizationId, platformAdmin, requestedOrgId);
+        UUID effectiveOrg = resolveOrgScope(organizationId, platformAdmin, requestedOrgId, allOrganizations);
         Instant rangeFrom = from == null ? Instant.now().minusSeconds(86_400) : from;
         Instant rangeTo = to == null ? Instant.now() : to;
 
@@ -186,7 +193,33 @@ public class EventLogQueryService {
                 .getResultList();
     }
 
-    private UUID resolveOrgScope(UUID tokenOrg, boolean platformAdmin, UUID requestedOrgId) {
+    /**
+     * Decides which organization a log query covers, where {@code null} means every one.
+     *
+     * <p>The repository queries have always accepted a null scope, but no caller could reach it: a
+     * platform admin's token carries their own organization, so omitting the parameter fell back to
+     * that rather than widening. Staff had to know a tenant's id to look at anything, and could
+     * never ask "where are the errors coming from". {@code allOrganizations} is that request, stated
+     * outright rather than inferred from an absence.
+     *
+     * <p>Naming both an organization and all of them is contradictory, so it is refused. Quietly
+     * honouring one of the two would answer a question nobody asked.
+     */
+    private UUID resolveOrgScope(UUID tokenOrg,
+                                 boolean platformAdmin,
+                                 UUID requestedOrgId,
+                                 boolean allOrganizations) {
+        if (allOrganizations) {
+            if (!platformAdmin) {
+                throw ApiException.of(ErrorCode.CROSS_TENANT_ACCESS,
+                        "Only platform staff can search across organizations");
+            }
+            if (requestedOrgId != null) {
+                throw ApiException.of(ErrorCode.MALFORMED_REQUEST,
+                        "Choose either one organization or all of them, not both");
+            }
+            return null;
+        }
         if (platformAdmin) {
             return requestedOrgId != null ? requestedOrgId : tokenOrg;
         }

@@ -7,6 +7,7 @@ import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.security.PrabhixPrincipal;
+import com.prabhix.platform.security.tenant.ImpersonationAuditor;
 import com.prabhix.platform.security.tenant.TenantContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -46,6 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final TokenDenyList denyList;
     private final ObjectMapper objectMapper;
     private final StructuredEventLogger eventLogger;
+    private final ImpersonationAuditor impersonationAuditor;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -79,6 +81,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 TenantContext.set(effective.organizationId());
             }
 
+            // Deliberately after both contexts are established, so the event is attributed to the
+            // organization being viewed and carries the admin as its actor. Recording it earlier
+            // would file it against the admin's own organization, where nobody would look for it.
+            if (effective.platformAdmin()) {
+                impersonationAuditor.recordAccess(effective.userId(), effective.sessionId(),
+                        principal.organizationId(), effective.organizationId());
+            }
+
             chain.doFilter(request, response);
         } catch (ApiException ex) {
             // Written directly rather than rethrown: @RestControllerAdvice does not see
@@ -94,8 +104,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     /**
      * Lets a multi-organization user act in a specific organization for this request.
      *
-     * <p>The header can only ever narrow to what the token already carries. Honouring an
-     * arbitrary organization id here would be a complete tenancy bypass, so a mismatch is a
+     * <p>For an ordinary user the header can only ever narrow to what the token already carries.
+     * Honouring an arbitrary organization id would be a complete tenancy bypass, so a mismatch is a
      * hard failure and the header is never trusted as a source of permissions.
      */
     private PrabhixPrincipal applyRequestedOrganization(PrabhixPrincipal principal,
@@ -113,7 +123,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (principal.platformAdmin()) {
-            // Staff impersonation is audited by AuditingInterceptor on the way through.
+            // Staff may name any organization, membership or not, because support work requires it.
+            // The permission set is deliberately left as the token's own: this grants a view into
+            // another tenant's data, never the roles that tenant's own members hold. The access is
+            // recorded by ImpersonationAuditor once the tenant context is in place.
             return new PrabhixPrincipal(principal.userId(), principal.email(), principal.displayName(),
                     requestedOrg, principal.permissions(), principal.sessionId(), true);
         }

@@ -9,3 +9,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Substituted by Vite's `define` at build time. See lib/app-mode.ts. */
+declare const __APP_MODE__: "admin" | "oneops";

@@ -38,7 +38,7 @@ final class AppNavigationState {
     }
 
     func handleDeepLink(_ url: URL) {
-        guard url.scheme == "prabhix" else { return }
+        guard url.scheme == AppConfig.deepLinkScheme else { return }
         if url.host == "chat", let id = url.pathComponents.last, id != "/" {
             openChat(id)
         }

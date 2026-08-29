@@ -7,6 +7,6 @@ import "./index.css";
 /** Entry point for the OneOps product. See {@link ./main-admin.tsx} for the admin console. */
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App mode="oneops" router={router} />
+    <App router={router} />
   </StrictMode>,
 );

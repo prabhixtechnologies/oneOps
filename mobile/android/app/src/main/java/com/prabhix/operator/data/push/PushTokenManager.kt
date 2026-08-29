@@ -23,7 +23,10 @@ class PushTokenManager @Inject constructor(
             val token = FirebaseMessaging.getInstance().token.await()
             registerToken(token)
         } catch (t: Throwable) {
-            Log.w(TAG, "Push registration skipped (endpoint may not exist yet): ${t.message}")
+            // Almost always "Default FirebaseApp is not initialized", meaning this build had no
+            // google-services.json. Not an error worth surfacing: the app works without push, it
+            // just only receives updates over SSE while open. See mobile/android/README.md.
+            Log.w(TAG, "No FCM token, push disabled for this install: ${t.message}")
         }
     }
 
@@ -36,7 +39,7 @@ class PushTokenManager @Inject constructor(
                     token = token,
                     platform = "FCM",
                     deviceId = tokenStore.deviceId(),
-                    deviceName = android.os.Build.MODEL,
+                    deviceName = "${android.os.Build.MODEL} · ${BuildConfig.APP_LABEL}",
                     appVersion = BuildConfig.VERSION_NAME,
                 ),
             )

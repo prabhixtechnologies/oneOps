@@ -8,6 +8,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.prabhix.operator.BuildConfig
 import com.prabhix.operator.MainActivity
 import com.prabhix.operator.R
 import com.prabhix.operator.data.push.PushTokenManager
@@ -40,12 +41,13 @@ class PrabhixFirebaseMessagingService : FirebaseMessagingService() {
         ensureChannel()
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            val scheme = BuildConfig.DEEP_LINK_SCHEME
             when {
                 conversationId != null -> {
-                    data = android.net.Uri.parse("prabhix://chat/$conversationId")
+                    data = android.net.Uri.parse("$scheme://chat/$conversationId")
                 }
                 threadId != null -> {
-                    data = android.net.Uri.parse("prabhix://mail/$threadId")
+                    data = android.net.Uri.parse("$scheme://mail/$threadId")
                 }
             }
         }
@@ -67,12 +69,22 @@ class PrabhixFirebaseMessagingService : FirebaseMessagingService() {
             })
             .build()
         val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(type.hashCode(), notification)
+        // Keyed by the thing the notification is about, so two conversations produce two
+        // notifications. Keying by type alone would silently replace the first message with the
+        // second, which is the failure mode where push looks like it works and still loses work.
+        val id = (conversationId ?: threadId ?: type).hashCode()
+        manager.notify(id, notification)
     }
 
     private fun ensureChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, "Operator alerts", NotificationManager.IMPORTANCE_DEFAULT)
+            // Named per flavor: with both apps installed the user otherwise sees two identical
+            // "Operator alerts" entries in system settings and cannot tell which app to mute.
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "${BuildConfig.APP_LABEL} alerts",
+                NotificationManager.IMPORTANCE_DEFAULT,
+            )
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }

@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">Prabhix Operator</string>
+    <!--
+      app_name is declared per flavor in build.gradle.kts, not here. The two apps have different
+      names, and a default in this file would be shadowed by both flavors while still looking
+      authoritative to anyone reading it.
+    -->
 </resources>

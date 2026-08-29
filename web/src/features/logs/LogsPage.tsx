@@ -31,6 +31,10 @@ import {
   useEventLogTrace,
   useEventLogs,
 } from "@/features/logs/api";
+import { IS_ADMIN_APP } from "@/lib/app-mode";
+import { useAuth } from "@/lib/auth";
+import { useTenantNames } from "@/lib/tenant-directory";
+import { useViewingOrg } from "@/lib/use-viewing-org";
 import { cn } from "@/lib/utils";
 
 const SEVERITIES = ["all", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"] as const;
@@ -38,6 +42,17 @@ const CATEGORIES = [
   "all", "AUTH", "ORG", "MAIL", "BILLING", "COMMERCE", "CHAT",
   "VISITOR", "FILE", "AI", "JOB", "INTEGRATION", "SECURITY", "PLATFORM",
 ] as const;
+
+/**
+ * Resolves organization names for the cross-organization view, in the admin build only.
+ *
+ * <p>Chosen here rather than at the call site because a hook cannot be called conditionally. The
+ * condition is a build constant, so this folds to one of the two and the other — along with the
+ * import naming a staff-only endpoint — leaves the customer product's bundle.
+ */
+const useOrgNames: typeof useTenantNames = IS_ADMIN_APP
+  ? useTenantNames
+  : () => ({ nameFor: () => "—", isLoading: false });
 
 function severityClass(severity: string) {
   switch (severity) {
@@ -59,19 +74,34 @@ export default function LogsPage() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<EventLogEntry | null>(null);
   const [traceId, setTraceId] = useState<string | undefined>();
+  // Starts platform-wide in the admin app, which exists to watch every tenant at once, and stays
+  // single-tenant in the customer product where the option does not exist.
+  const [allOrgs, setAllOrgs] = useState(IS_ADMIN_APP);
+
+  // Two conditions, not one. IS_ADMIN_APP is a build constant, so the customer product does not
+  // contain this control at all; the authority check is what the server enforces regardless of which
+  // build is asking.
+  const { me } = useAuth();
+  const { isViewingOther } = useViewingOrg();
+  // Impersonation wins. The banner says which customer is on screen, and a page ignoring it to show
+  // every tenant's events would contradict the one indicator that is meant to be trusted.
+  const canCrossOrg = IS_ADMIN_APP && me?.platformAdmin === true && !isViewingOther;
+  const crossOrg = canCrossOrg && allOrgs;
 
   const filters = useMemo(
     () => ({
       severity: severity && severity !== "all" ? severity : undefined,
       category: category && category !== "all" ? category : undefined,
       search: search.trim() || undefined,
+      allOrganizations: crossOrg || undefined,
     }),
-    [severity, category, search],
+    [severity, category, search, crossOrg],
   );
 
   const logsQuery = useEventLogs(filters);
-  const statsQuery = useEventLogStats();
-  const traceQuery = useEventLogTrace(traceId);
+  const statsQuery = useEventLogStats(undefined, undefined, crossOrg);
+  const traceQuery = useEventLogTrace(traceId, crossOrg);
+  const { nameFor } = useOrgNames(crossOrg);
 
   const logs = logsQuery.data?.pages.flatMap((p) => p.items) ?? [];
 
@@ -88,7 +118,11 @@ export default function LogsPage() {
     <div className="space-y-6 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-6">
       <PageHeader
         title="Event logs"
-        description="Operational events across your organization — searchable, correlated, exportable"
+        description={
+          crossOrg
+            ? "Operational events across every organization on the platform — searchable, correlated, exportable"
+            : "Operational events across your organization — searchable, correlated, exportable"
+        }
         actions={
           <PermissionGate permission={PERMISSIONS.LOG_EXPORT}>
             <Button
@@ -157,6 +191,25 @@ export default function LogsPage() {
             ))}
           </SelectContent>
         </Select>
+        {canCrossOrg && (
+          <Select
+            value={allOrgs ? "all" : "mine"}
+            onValueChange={(v) => {
+              setAllOrgs(v === "all");
+              // The open row belongs to the previous scope and may not be readable in the new one.
+              setSelected(null);
+              setTraceId(undefined);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-44" aria-label="Organization scope">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="mine">This organization</SelectItem>
+              <SelectItem value="all">All organizations</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="h-[min(600px,70vh)] rounded-lg border border-border">
@@ -194,6 +247,12 @@ export default function LogsPage() {
                     )}
                   </p>
                 </div>
+                {/* Only in the cross-organization scope: otherwise every row says the same thing. */}
+                {crossOrg && (
+                  <span className="w-40 shrink-0 truncate text-right text-text-muted">
+                    {nameFor(log.organizationId)}
+                  </span>
+                )}
                 <RelativeTime date={log.occurredAt} className="shrink-0 text-xs" />
               </div>
               <div className="p-2 md:hidden">
@@ -204,6 +263,9 @@ export default function LogsPage() {
                   </div>
                   <p className="font-medium">{log.eventCode}</p>
                   <MobileCardRow label="Actor" value={log.actorLabel ?? log.actorType} />
+                  {crossOrg && (
+                    <MobileCardRow label="Organization" value={nameFor(log.organizationId)} />
+                  )}
                 </MobileCard>
               </div>
             </button>
@@ -220,6 +282,9 @@ export default function LogsPage() {
             <div className="mt-4 space-y-3 text-sm">
               <DetailRow label="Severity" value={selected.severity} />
               <DetailRow label="Category" value={selected.category} />
+              {crossOrg && (
+                <DetailRow label="Organization" value={nameFor(selected.organizationId)} />
+              )}
               <DetailRow label="Correlation" value={selected.correlationId} mono />
               <DetailRow label="Actor" value={selected.actorLabel ?? selected.actorType} />
               <DetailRow label="When" value={<RelativeTime date={selected.occurredAt} />} />
