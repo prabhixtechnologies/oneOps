@@ -275,7 +275,7 @@ T "users/me avatar upload" {
 
 Write-Host "`n=== User self-service ===" -ForegroundColor Cyan
 T "PATCH /users/me" {
-    $p = @{ displayName = "Abhishek" } | ConvertTo-Json
+    $p = @{ displayName = "Smoke Test User" } | ConvertTo-Json
     Invoke-RestMethod "$base/users/me" -Method Patch -Body $p -Headers $HA -ContentType "application/json" -TimeoutSec 20
 }
 T "GET /users/me/sessions" { Invoke-RestMethod "$base/users/me/sessions" -Headers $HA -TimeoutSec 20 }
@@ -292,7 +292,7 @@ TDenied "unmapped endpoint returns 404 not 500" "NOT_FOUND" {
 
 Write-Host "`n=== Marketing site (public) ===" -ForegroundColor Cyan
 T "POST /site/leads" {
-    $p = @{ name = "Priti"; email = "priti$([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())@example.com"; company = "Acme"; message = "Interested in Prabhix." } | ConvertTo-Json
+    $p = @{ name = "Riya Menon"; email = "lead$([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())@example.com"; company = "Acme"; message = "Interested in Prabhix." } | ConvertTo-Json
     Invoke-RestMethod "$base/site/leads" -Method Post -Body $p -ContentType "application/json" -TimeoutSec 20
 }
 T "POST /site/subscribers" {
@@ -419,7 +419,7 @@ T "agent adds an internal note via the body flag" {
     Invoke-RestMethod "$base/chat/conversations/$($conv.conversationId)/messages" -Method Post -Body $p -Headers $HA -ContentType "application/json" -TimeoutSec 20
 }
 T "agent adds an internal note via the query flag" {
-    $p = @{ body = "Escalate to Abhishek." } | ConvertTo-Json
+    $p = @{ body = "Escalate to the account lead." } | ConvertTo-Json
     Invoke-RestMethod "$base/chat/conversations/$($conv.conversationId)/messages?note=true" -Method Post -Body $p -Headers $HA -ContentType "application/json" -TimeoutSec 20
 }
 $vmsgs = $null
@@ -429,7 +429,7 @@ T "visitor reads the thread and sees the agent reply" {
     $script:vmsgs
 }
 T "both internal notes are withheld from the visitor" {
-    foreach ($secret in @("Upsell candidate.", "Escalate to Abhishek.")) {
+    foreach ($secret in @("Upsell candidate.", "Escalate to the account lead.")) {
         if ($vmsgs.items | Where-Object { $_.body -eq $secret }) { throw "internal note leaked to visitor: $secret" }
     }
     if ($vmsgs.items | Where-Object { $_.senderType -eq "NOTE" }) { throw "a NOTE message reached the visitor" }
@@ -437,7 +437,7 @@ T "both internal notes are withheld from the visitor" {
 }
 T "agent sees every message including both notes" {
     $d = Invoke-RestMethod "$base/chat/conversations/$($conv.conversationId)" -Headers $HA -TimeoutSec 20
-    foreach ($secret in @("Upsell candidate.", "Escalate to Abhishek.")) {
+    foreach ($secret in @("Upsell candidate.", "Escalate to the account lead.")) {
         if (-not ($d.messages | Where-Object { $_.body -eq $secret })) { throw "note missing for agent: $secret" }
     }
     $d

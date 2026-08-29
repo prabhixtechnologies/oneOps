@@ -10,9 +10,9 @@
 
 param(
     [string]$BaseUrl = "http://localhost:8080/api/v1",
-    [string]$Email = "abhishek@prabhixtechnologies.com",
+    [string]$Email = "demo.owner@prabhixtechnologies.com",
     [string]$Password = "Prabhix!Demo123",
-    [string]$FullName = "Abhishek",
+    [string]$FullName = "Demo Owner",
     [string]$OrgName = "Prabhix Technologies",
     [string]$LmtpToken = $env:MAIL_LMTP_TOKEN
 )
@@ -410,8 +410,8 @@ StepNew "team Support" {
 $roles = @((Invoke-RestMethod "$base/roles" -Headers $H -TimeoutSec 20))
 $agentRole = $roles | Where-Object { $_.key -eq "AGENT" -or $_.name -eq "Agent" } | Select-Object -First 1
 if ($agentRole) {
-    StepNew "invite priti@prabhixtechnologies.com as Agent" {
-        $p = @{ email = "priti@prabhixtechnologies.com"; roleId = $agentRole.id } | ConvertTo-Json
+    StepNew "invite demo.agent@prabhixtechnologies.com as Agent" {
+        $p = @{ email = "demo.agent@prabhixtechnologies.com"; roleId = $agentRole.id } | ConvertTo-Json
         Invoke-RestMethod "$base/invites" -Method Post -Body $p -Headers $H -ContentType "application/json" -TimeoutSec 20
     } | Out-Null
 } else {
