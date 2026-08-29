@@ -225,7 +225,11 @@ public class InvitationService {
                                  String rawToken,
                                  String message,
                                  Instant expiresAt) {
-        String link = properties.urls().console() + "/invites/accept?token=" + rawToken;
+        // Console router path: /invite/:token, a path segment rather than a query parameter, and
+        // singular. It was /invites/accept?token=, which matches no route — so the invitee fell
+        // through to the catch-all, got redirected to a protected page and landed on the sign-in
+        // form with no account to sign in to. The token is URL-safe base64, so it needs no encoding.
+        String link = properties.urls().console() + "/invite/" + rawToken;
         events.publishEvent(MailRequested.forOrganization(
                 org.getId(),
                 email,

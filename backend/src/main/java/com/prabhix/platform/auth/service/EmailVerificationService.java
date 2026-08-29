@@ -52,7 +52,10 @@ public class EmailVerificationService {
         challengeRepository.save(challenge);
 
         int expiryMinutes = (int) properties.otp().ttl().toMinutes();
-        String link = properties.urls().console() + "/auth/verify-email?token=" + rawToken;
+        // Console router path, not an API path, and not /auth/verify-email — that route never
+        // existed, so every verification email sent so far has 404'd. Same defect the magic-link and
+        // password-reset links had. Spelled the way web/src/routes-shell.tsx spells it.
+        String link = properties.urls().console() + "/verify-email?token=" + rawToken;
         events.publishEvent(MailRequested.interactive(
                 user.getEmail(),
                 "auth.email-verify",

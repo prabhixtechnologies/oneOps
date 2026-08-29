@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
-import { protectedShell, publicRoutes, SuspenseWrap } from "@/routes-shell";
+import { protectedShell, publicRoutes, SuspenseWrap, unguardedRoutes } from "@/routes-shell";
 import { tenantRoutes } from "@/routes-tenant";
 
 /**
@@ -25,6 +25,7 @@ const billingRoutes: RouteObject[] = [
 
 export const router = createBrowserRouter([
   publicRoutes,
+  unguardedRoutes,
   protectedShell([...tenantRoutes, ...billingRoutes]),
   { path: "*", element: <Navigate to="/" replace /> },
 ]);

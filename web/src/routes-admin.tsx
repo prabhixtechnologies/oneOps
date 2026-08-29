@@ -1,6 +1,12 @@
 import { lazy } from "react";
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
-import { PlatformAdminRoute, protectedShell, publicRoutes, SuspenseWrap } from "@/routes-shell";
+import {
+  PlatformAdminRoute,
+  protectedShell,
+  publicRoutes,
+  SuspenseWrap,
+  unguardedRoutes,
+} from "@/routes-shell";
 
 /**
  * The private admin console, served from admin.prabhixtechnologies.com.
@@ -42,6 +48,7 @@ const platformRoutes: RouteObject[] = [
 
 export const router = createBrowserRouter([
   publicRoutes,
+  unguardedRoutes,
   protectedShell(platformRoutes),
   // Every tenant path — /chat, /commerce/orders, /settings — lands here. Those URLs exist in
   // OneOps, and a staff bookmark to one of them should not resolve to a blank screen.

@@ -35,6 +35,9 @@ const AcceptInvitePage = lazy(() =>
 const MagicLinkPage = lazy(() =>
   import("@/features/auth/MagicLinkPage").then((m) => ({ default: m.MagicLinkPage })),
 );
+const VerifyEmailPage = lazy(() =>
+  import("@/features/auth/VerifyEmailPage").then((m) => ({ default: m.VerifyEmailPage })),
+);
 
 export function PageLoader() {
   return (
@@ -98,6 +101,27 @@ export const publicRoutes: RouteObject = {
         { path: "/reset-password", element: <SuspenseWrap><ResetPasswordPage /></SuspenseWrap> },
         { path: "/magic-link", element: <SuspenseWrap><MagicLinkPage /></SuspenseWrap> },
         { path: "/invite/:token", element: <SuspenseWrap><AcceptInvitePage /></SuspenseWrap> },
+      ],
+    },
+  ],
+};
+
+/**
+ * Routes that have to work whether or not somebody is signed in.
+ *
+ * <p>Separate from {@link publicRoutes} because that group redirects an authenticated visitor to `/`,
+ * which is right for a sign-in form and wrong for a link that arrives by email. Email verification is
+ * usually requested *from* the settings page, so the person clicking the link is already signed in;
+ * under the public guard they would be bounced before the token was consumed and the address would
+ * never be verified.
+ */
+export const unguardedRoutes: RouteObject = {
+  errorElement: <RouteErrorBoundary />,
+  children: [
+    {
+      element: <AuthShell />,
+      children: [
+        { path: "/verify-email", element: <SuspenseWrap><VerifyEmailPage /></SuspenseWrap> },
       ],
     },
   ],
