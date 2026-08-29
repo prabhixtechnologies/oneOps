@@ -156,6 +156,14 @@ public enum LogEventCode {
      * in the customer's log where it is answerable.
      */
     SECURITY_TENANT_IMPERSONATED("security.tenant.impersonated", LogCategory.SECURITY, LogSeverity.WARN, true, false),
+    /**
+     * Staff invalidated every token and session for an account.
+     *
+     * <p>ERROR rather than WARN: this is the break-glass path, so it is either an incident in progress
+     * or a mistake, and both want someone to look. Written synchronously by its caller, because if the
+     * process is being killed a second later the row still has to exist.
+     */
+    SECURITY_BREAK_GLASS_REVOKED("security.break_glass.revoked", LogCategory.SECURITY, LogSeverity.ERROR, true, false),
     SECURITY_RATE_LIMITED("security.rate_limited", LogCategory.SECURITY, LogSeverity.WARN, true, false),
     SECURITY_INVALID_TOKEN("security.invalid_token", LogCategory.SECURITY, LogSeverity.WARN, true, false),
     SECURITY_SUSPICIOUS_REQUEST("security.suspicious.request", LogCategory.SECURITY, LogSeverity.WARN, true, false),

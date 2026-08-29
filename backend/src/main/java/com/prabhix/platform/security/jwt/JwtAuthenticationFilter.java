@@ -8,6 +8,8 @@ import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
 import com.prabhix.platform.org.service.PermissionResolver;
+import com.prabhix.platform.ops.domain.StaffRole;
+import com.prabhix.platform.ops.service.PlatformStaffService;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.tenant.ImpersonationAuditor;
 import com.prabhix.platform.security.tenant.TenantContext;
@@ -57,6 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final OrganizationMembershipRepository membershipRepository;
     private final UserRepository userRepository;
     private final IdentityUserMirror identityUserMirror;
+    private final PlatformStaffService platformStaff;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -144,12 +147,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         UUID requestedOrg = requestedOrganization(request);
         boolean platformAdmin = user.isPlatformAdmin();
 
-        if (requestedOrg != null && !platformAdmin
+        if (requestedOrg != null
                 && !membershipRepository.existsActiveMembership(requestedOrg, principal.userId())) {
-            log.warn("Cross-tenant attempt: user {} is not an active member of org {}",
-                    principal.userId(), requestedOrg);
-            throw ApiException.of(ErrorCode.CROSS_TENANT_ACCESS,
-                    "You are not a member of that organization.");
+            if (!platformAdmin) {
+                log.warn("Cross-tenant attempt: user {} is not an active member of org {}",
+                        principal.userId(), requestedOrg);
+                throw ApiException.of(ErrorCode.CROSS_TENANT_ACCESS,
+                        "You are not a member of that organization.");
+            }
+            // Staff reaching into a tenant they do not belong to. Allowed, but only for the roles whose
+            // job involves tenant content: a billing hire has no reason to read a customer's mail.
+            platformStaff.requireAny(principal.userId(), StaffRole.TENANT_ACCESS);
         }
 
         return new PrabhixPrincipal(
@@ -196,7 +204,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (principal.platformAdmin()) {
-            // Staff may name any organization, membership or not, because support work requires it.
+            // Staff may name any organization, membership or not, because support work requires it —
+            // but only the staff whose job involves tenant content. The role lookup is a query per
+            // request, which is why it sits behind this branch: it runs only when someone with the
+            // staff flag names an organization, not on ordinary traffic.
+            platformStaff.requireAny(principal.userId(), StaffRole.TENANT_ACCESS);
+
             // The permission set is deliberately left as the token's own: this grants a view into
             // another tenant's data, never the roles that tenant's own members hold. The access is
             // recorded by ImpersonationAuditor once the tenant context is in place.
