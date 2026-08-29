@@ -2,6 +2,7 @@ package com.prabhix.platform.mail.web;
 
 import com.prabhix.platform.mail.dto.MailboxDtos;
 import com.prabhix.platform.mail.helpdesk.MailboxService;
+import com.prabhix.platform.mail.provisioning.MailboxPasswordService;
 import com.prabhix.platform.security.CurrentUser;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Authorize;
@@ -26,6 +27,7 @@ import java.util.UUID;
 public class MailboxController {
 
     private final MailboxService mailboxService;
+    private final MailboxPasswordService mailPasswordService;
 
     @GetMapping
     @PreAuthorize(Authorize.MAIL_MAILBOX_READ)
@@ -59,6 +61,25 @@ public class MailboxController {
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public void delete(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
         mailboxService.delete(principal.requireOrganizationId(), id);
+    }
+
+    /**
+     * Issues the password a mail client authenticates with, returned once and not retrievable.
+     *
+     * <p>POST rather than PUT: it is not idempotent. Calling it twice produces two different
+     * passwords and invalidates the first, which signs out every client configured with it.
+     */
+    @PostMapping("/{id}/mail-password")
+    @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
+    public MailboxPasswordService.Issued issueMailPassword(@CurrentUser PrabhixPrincipal principal,
+                                                           @PathVariable UUID id) {
+        return mailPasswordService.issue(principal.requireOrganizationId(), id);
+    }
+
+    @DeleteMapping("/{id}/mail-password")
+    @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
+    public void revokeMailPassword(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+        mailPasswordService.revoke(principal.requireOrganizationId(), id);
     }
 
     @PostMapping("/{id}/members")

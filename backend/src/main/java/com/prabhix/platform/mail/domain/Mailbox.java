@@ -94,6 +94,20 @@ public class Mailbox extends TenantScopedEntity {
     @Column(name = "smtp_password_enc", columnDefinition = "text")
     private String smtpPasswordEnc;
 
+    /**
+     * BCrypt hash of the password a mail client authenticates with, which Dovecot's SQL passdb reads
+     * as BLF-CRYPT.
+     *
+     * <p>Deliberately not {@link #imapPasswordEnc}: that is reversible AES-GCM ciphertext, because
+     * the IMAP poller has to present the original password to someone else's server. This one is
+     * one-way, and there is no code path that reads it back.
+     */
+    @Column(name = "password_hash", columnDefinition = "text")
+    private String passwordHash;
+
+    @Column(name = "password_updated_at")
+    private Instant passwordUpdatedAt;
+
     @Column(name = "auto_reply_enabled", nullable = false)
     private boolean autoReplyEnabled;
 
