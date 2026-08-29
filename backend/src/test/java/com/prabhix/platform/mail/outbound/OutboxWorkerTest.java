@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -82,6 +84,38 @@ class OutboxWorkerTest {
 
         assertEquals(MailEnums.OutboxStatus.SENT, row.getStatus());
         verify(deliveryEventRepository).save(any());
+    }
+
+    @Test
+    void routerRefusalLeavesMailRetryableRatherThanSent() {
+        MailOutbox row = outbox();
+        when(suppressionService.isSuppressed(any(), any())).thenReturn(false);
+        when(transportRouter.select())
+                .thenThrow(new IllegalStateException("No mail transport can deliver"));
+
+        worker.processRow(row);
+
+        // The failure this guards against is not a lost row, it is a row that says SENT with
+        // transport_used = LOGGING. Nobody goes looking for mail the outbox claims it delivered.
+        assertEquals(MailEnums.OutboxStatus.FAILED, row.getStatus());
+        assertNull(row.getSentAt());
+        assertNull(row.getTransportUsed());
+        assertEquals(1, row.getAttempts());
+        assertNotNull(row.getNextAttemptAt());
+    }
+
+    @Test
+    void exhaustedAttemptsEndDeadRatherThanSent() {
+        MailOutbox row = outbox();
+        row.setAttempts(row.getMaxAttempts() - 1);
+        when(suppressionService.isSuppressed(any(), any())).thenReturn(false);
+        when(transportRouter.select())
+                .thenThrow(new IllegalStateException("No mail transport can deliver"));
+
+        worker.processRow(row);
+
+        assertEquals(MailEnums.OutboxStatus.DEAD, row.getStatus());
+        assertNull(row.getSentAt());
     }
 
     private MailOutbox outbox() {

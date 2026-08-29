@@ -140,6 +140,12 @@ management:
       enabled: true
     readinessstate:
       enabled: true
+    # Spring's mail indicator opens an SMTP connection to spring.mail.host regardless of which
+    # transport is configured, so with MAIL_TRANSPORT=SES it reports the application DOWN for
+    # failing to reach a port nothing is meant to be listening on. MailTransportHealthIndicator
+    # asks the router what it would actually send through, and contributes under "mailTransport".
+    mail:
+      enabled: false
 
 springdoc:
   swagger-ui:

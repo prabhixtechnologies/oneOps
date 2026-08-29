@@ -1,7 +1,9 @@
 package com.prabhix.platform.mail.outbound.transport;
 
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.mail.util.LocalMailProfiles;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,26 +18,59 @@ public class MailTransportRouter {
     private static final int CIRCUIT_THRESHOLD = 5;
 
     private final PrabhixProperties properties;
+    private final Environment environment;
     private final LoggingTransport loggingTransport;
     private final SelfHostedSmtpTransport selfHostedSmtpTransport;
     private final SmtpRelayTransport smtpRelayTransport;
     private final SesTransport sesTransport;
     private final Map<String, AtomicInteger> recentFailures = new ConcurrentHashMap<>();
 
+    /**
+     * The transport to send the next message with.
+     *
+     * @throws IllegalStateException outside dev/test when nothing can deliver, so the caller records
+     *     a failure and retries later instead of the message being lost.
+     */
     public MailTransport select() {
-        String configured = properties.mail().transport();
-        List<MailTransport> chain = switch (configured) {
-            case "SELF_HOSTED_SMTP" -> List.of(selfHostedSmtpTransport, loggingTransport);
-            case "SMTP_RELAY" -> List.of(smtpRelayTransport, loggingTransport);
-            case "SES" -> List.of(sesTransport, smtpRelayTransport, loggingTransport);
-            default -> List.of(loggingTransport);
-        };
-        for (MailTransport transport : chain) {
-            if (transport.healthy() && recentFailures.getOrDefault(transport.providerId(), new AtomicInteger()).get() < CIRCUIT_THRESHOLD) {
+        for (MailTransport transport : chainFor(properties.mail().transport())) {
+            if (available(transport)) {
                 return transport;
             }
         }
-        return loggingTransport;
+        // Logging is a destination only where nobody expects mail to arrive. Everywhere else,
+        // refusing to send is the honest outcome: MailTransportResult.ok() from LoggingTransport is
+        // indistinguishable from a real send, so OutboxWorker marked the row SENT and the message
+        // was gone. Production ran this way — outbox rows read SENT with transport_used=LOGGING and
+        // a connection-refused error attached, because the chain ended in loggingTransport and the
+        // final fallback returned it even when the chain was exhausted.
+        if (LocalMailProfiles.isLocal(environment)) {
+            return loggingTransport;
+        }
+        throw new IllegalStateException("No mail transport can deliver: MAIL_TRANSPORT="
+                + properties.mail().transport() + " and every transport in its chain is either "
+                + "unreachable or circuit-broken after " + CIRCUIT_THRESHOLD + " failures");
+    }
+
+    /**
+     * Candidates in preference order. Deliberately without a logging tail — see {@link #select()}.
+     */
+    private List<MailTransport> chainFor(String configured) {
+        return switch (configured) {
+            case "SELF_HOSTED_SMTP" -> List.of(selfHostedSmtpTransport);
+            case "SMTP_RELAY" -> List.of(smtpRelayTransport);
+            case "SES" -> List.of(sesTransport, smtpRelayTransport);
+            default -> List.of();
+        };
+    }
+
+    /** Breaker first: it is an in-memory counter, whereas {@code healthy()} may probe the network. */
+    private boolean available(MailTransport transport) {
+        return !circuitOpen(transport.providerId()) && transport.healthy();
+    }
+
+    private boolean circuitOpen(String providerId) {
+        AtomicInteger failures = recentFailures.get(providerId);
+        return failures != null && failures.get() >= CIRCUIT_THRESHOLD;
     }
 
     public void recordFailure(String providerId) {
