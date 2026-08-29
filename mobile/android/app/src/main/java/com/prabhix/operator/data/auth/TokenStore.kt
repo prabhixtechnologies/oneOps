@@ -3,7 +3,6 @@ package com.prabhix.operator.data.auth
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.prabhix.operator.data.api.TokenResponse
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
@@ -43,14 +42,36 @@ class TokenStore @Inject constructor(
 
     fun deviceId(): String = deviceId
 
-    fun saveTokens(response: TokenResponse) {
-        val expiresAt = System.currentTimeMillis() + response.expiresInSeconds * 1000L
+    /**
+     * Stores what Identity's token endpoint returned.
+     *
+     * <p>Writes only the tokens. An OIDC token response carries no organization and no permissions —
+     * authentication and authorization are different services now, and those come from `/auth/me`
+     * against the platform, through [saveAuthorization]. Not touching either key means refreshing
+     * mid-session cannot silently drop the tenant the user is working in.
+     */
+    fun saveOidcTokens(
+        accessToken: String,
+        refreshToken: String?,
+        idToken: String?,
+        expiresAtEpochMs: Long,
+    ) {
+        prefs.edit().apply {
+            putString(KEY_ACCESS, accessToken)
+            putLong(KEY_EXPIRES, expiresAtEpochMs)
+            refreshToken?.let { putString(KEY_REFRESH, it) }
+            // Kept only to hand back as `id_token_hint` at sign-out, so Identity knows whose session
+            // to end rather than showing an "are you sure" page nobody expects.
+            idToken?.let { putString(KEY_ID_TOKEN, it) }
+        }.apply()
+    }
+
+    fun idToken(): String? = prefs.getString(KEY_ID_TOKEN, null)
+
+    fun saveAuthorization(organizationId: String?, permissions: Set<String>) {
         prefs.edit()
-            .putString(KEY_ACCESS, response.accessToken)
-            .putString(KEY_REFRESH, response.refreshToken)
-            .putLong(KEY_EXPIRES, expiresAt)
-            .putString(KEY_ORG, response.organizationId)
-            .putStringSet(KEY_PERMISSIONS, response.permissions)
+            .putString(KEY_ORG, organizationId)
+            .putStringSet(KEY_PERMISSIONS, permissions)
             .apply()
     }
 
@@ -109,6 +130,7 @@ class TokenStore @Inject constructor(
         private const val PREFS_NAME = "prabhix_secure_session"
         private const val KEY_ACCESS = "access"
         private const val KEY_REFRESH = "refresh"
+        private const val KEY_ID_TOKEN = "id_token"
         private const val KEY_EXPIRES = "expires"
         private const val KEY_ORG = "org"
         private const val KEY_PERMISSIONS = "permissions"

@@ -20,7 +20,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -53,10 +55,16 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    fun logout(onLoggedOut: () -> Unit) {
+    /**
+     * Signs out here, then hands the caller Identity's end-session URL.
+     *
+     * <p>Clearing the local tokens alone leaves the browser signed in, so the next "Continue" comes
+     * straight back with a new session and no prompt — which looks like the sign-out did nothing.
+     */
+    fun logout(onLoggedOut: (android.net.Uri) -> Unit) {
         viewModelScope.launch {
-            authRepository.logout()
-            onLoggedOut()
+            val endSession = authRepository.logout()
+            onLoggedOut(endSession)
         }
     }
 }
@@ -68,7 +76,17 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val dashboard by viewModel.dashboard.collectAsState()
+    val context = LocalContext.current
     LaunchedEffect(Unit) { viewModel.refresh() }
+
+    val signOut = {
+        viewModel.logout { endSession ->
+            // Failing to open a tab must not strand the user on a screen with no session. The local
+            // tokens are already gone by this point, so navigating away is correct either way.
+            runCatching { CustomTabsIntent.Builder().build().launchUrl(context, endSession) }
+            onLoggedOut()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -82,7 +100,7 @@ fun DashboardScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.logout(onLoggedOut) }) {
+                    IconButton(onClick = signOut) {
                         Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Log out")
                     }
                 },

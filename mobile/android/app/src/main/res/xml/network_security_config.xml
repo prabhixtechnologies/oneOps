@@ -1,8 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext was permitted for every host, in release builds too, so that a developer could reach the
+  backend on the emulator's host loopback. That also meant a release APK would happily send a bearer
+  token over plain HTTP to anything that answered — including whatever a hostile network redirected it
+  to. The exception is now named rather than global.
+
+  10.0.2.2 is the host machine as seen from the Android emulator, and 10.0.3.2 is the same for Genymotion.
+  Neither resolves on a real device, so listing them costs a shipped build nothing.
+-->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">10.0.3.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
 </network-security-config>

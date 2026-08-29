@@ -9,37 +9,27 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+/**
+ * What the platform is still asked about authentication, now that Identity does the authenticating.
+ *
+ * <p>The login, OTP, magic-link and refresh endpoints are gone from here. They still exist on the
+ * server for the web's non-OIDC path, but this app cannot reach a password field any more: sign-in is
+ * a Custom Tab on Identity's hosted page, and refresh goes to Identity's token endpoint, which is the
+ * only service that has ever seen the refresh token.
+ *
+ * <p>What remains is the platform answering questions only it can: who this token belongs to according
+ * to its own database, and what they may do.
+ */
 interface AuthApi {
-    @POST("auth/login")
-    suspend fun login(@Body body: LoginRequest): TokenResponse
-
-    @POST("auth/refresh")
-    suspend fun refresh(@Body body: RefreshRequest): TokenResponse
-
     @POST("auth/logout")
     suspend fun logout(@Body body: LogoutRequest)
 
     @GET("auth/me")
     suspend fun me(): AuthMeResponse
-
-    @POST("auth/otp/request")
-    suspend fun requestOtp(@Body body: EmailRequest): AckResponse
-
-    @POST("auth/otp/verify")
-    suspend fun verifyOtp(@Body body: OtpVerifyRequest): TokenResponse
-
-    @POST("auth/magic-link/request")
-    suspend fun requestMagicLink(@Body body: EmailRequest): AckResponse
-
-    @POST("auth/magic-link/verify")
-    suspend fun verifyMagicLink(@Body body: MagicLinkVerifyRequest): TokenResponse
 }
 
 interface OrganizationApi {
     @GET("organizations")
     suspend fun list(): List<OrganizationView>
-
-    @POST("organizations/{id}/select")
-    suspend fun select(@Path("id") id: String): TokenResponse
 }
 

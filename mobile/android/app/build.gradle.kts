@@ -29,6 +29,18 @@ fun ApplicationProductFlavor.applyDeepLinkScheme(scheme: String) {
     buildConfigField("String", "DEEP_LINK_SCHEME", "\"$scheme\"")
 }
 
+/**
+ * Points a flavor at its own OAuth client on Prabhix Identity.
+ *
+ * <p>Two apps, two client ids, because a redirect registered for one must not be usable by the other:
+ * a shared client would let the customer app receive an authorization code minted for the staff app.
+ * The redirect URI itself is not set here — it derives from the application id, which the debug build
+ * type suffixes, so it is assembled per variant further down.
+ */
+fun ApplicationProductFlavor.applyOAuthClient(clientId: String) {
+    buildConfigField("String", "OAUTH_CLIENT_ID", "\"$clientId\"")
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -77,6 +89,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/v1\"")
+        // Where sign-in happens. 10.0.2.2 is the host machine as seen from the emulator, so a
+        // developer running the compose stack gets the real hosted login page rather than a stub.
+        buildConfigField("String", "IDENTITY_ISSUER", "\"http://10.0.2.2:8081\"")
     }
 
     /**
@@ -103,6 +118,7 @@ android {
             applicationId = "com.prabhix.operator"
             applyLabel("Prabhix OneOps")
             applyDeepLinkScheme("prabhix")
+            applyOAuthClient("prabhix-oneops-android")
             buildConfigField("String", "DEVICE_HEADER", "\"mobile-android\"")
         }
         create("admin") {
@@ -114,6 +130,7 @@ android {
             // No deep-link scheme, and no push. Every notification this platform sends addresses a
             // conversation or a mail thread, and this app has no screen to open one in — so it does
             // not advertise a scheme it would only have to ignore.
+            applyOAuthClient("prabhix-admin-android")
             buildConfigField("String", "DEVICE_HEADER", "\"mobile-android-admin\"")
         }
     }
@@ -141,6 +158,7 @@ android {
                 "proguard-rules.pro",
             )
             buildConfigField("String", "API_BASE_URL", "\"https://api.prabhixtechnologies.com/api/v1\"")
+            buildConfigField("String", "IDENTITY_ISSUER", "\"https://id.prabhixtechnologies.com\"")
         }
         debug {
             applicationIdSuffix = ".debug"
@@ -165,6 +183,34 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+/**
+ * Gives every variant a redirect URI matching its own application id.
+ *
+ * <p>The scheme has to be the application id, including the debug suffix. AppAuth's
+ * `RedirectUriReceiverActivity` filters on `appAuthRedirectScheme`, and Android resolves a private-use
+ * scheme across all installed apps — so a debug build claiming the release build's scheme would make
+ * the redirect ambiguous on a developer's phone, and the authorization code could land in the wrong
+ * app. Both spellings are registered server-side in Identity's client list.
+ *
+ * <p>Set here rather than on the flavor because only the variant knows the suffix.
+ */
+androidComponents {
+    onVariants { variant ->
+        val scheme = variant.applicationId
+        variant.manifestPlaceholders.put("appAuthRedirectScheme", scheme)
+        variant.buildConfigFields.put(
+            "OAUTH_REDIRECT_URI",
+            scheme.map {
+                com.android.build.api.variant.BuildConfigField(
+                    "String",
+                    "\"$it:/oauth2redirect\"",
+                    "Redirect back into this exact app after sign-in.",
+                )
+            },
+        )
     }
 }
 
@@ -201,6 +247,8 @@ dependencies {
     implementation(libs.okhttp.sse)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines)
+    implementation(libs.appauth)
+    implementation(libs.androidx.browser)
     // OneOps only. Push notifications here address a conversation or a mail thread, and the admin
     // app has no screen to open one — so it needs neither the SDK nor the service the SDK's own
     // manifest contributes, which was the last piece of the product left in the staff APK.

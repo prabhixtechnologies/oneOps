@@ -20,6 +20,8 @@ firebaseBom = "33.7.0"
 googleServices = "4.4.2"
 ksp = "2.0.21-1.0.28"
 coroutines = "1.9.0"
+appauth = "0.11.1"
+browser = "1.8.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -56,6 +58,11 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging-ktx" }
+# The OpenID Foundation's certified client. Sign-in happens in a Custom Tab rather than a WebView or
+# a native form: the Custom Tab shares the system browser's cookie jar, so someone already signed in
+# on the web is signed in here without typing anything, and the app never sees the password.
+appauth = { group = "net.openid", name = "appauth", version.ref = "appauth" }
+androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "browser" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

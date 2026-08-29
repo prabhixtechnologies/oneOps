@@ -20,40 +20,7 @@ data class ApiErrorBody(
 )
 
 @Serializable
-data class TokenResponse(
-    val accessToken: String,
-    val refreshToken: String,
-    val expiresInSeconds: Long,
-    val organizationId: String? = null,
-    val permissions: Set<String> = emptySet(),
-)
-
-@Serializable
-data class LoginRequest(
-    val email: String,
-    val password: String,
-    val deviceId: String? = null,
-    val deviceName: String? = null,
-    val deviceType: String = "MOBILE",
-)
-
-@Serializable
-data class RefreshRequest(val refreshToken: String)
-
-@Serializable
-data class EmailRequest(val email: String)
-
-@Serializable
-data class OtpVerifyRequest(val email: String, val code: String)
-
-@Serializable
-data class MagicLinkVerifyRequest(val token: String)
-
-@Serializable
 data class LogoutRequest(val refreshToken: String? = null)
-
-@Serializable
-data class AckResponse(val message: String)
 
 @Serializable
 data class AuthMeResponse(
