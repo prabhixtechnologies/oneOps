@@ -50,6 +50,7 @@ public class InvitationService {
     private final OrganizationService organizationService;
     private final OrganizationMemberService memberService;
     private final RoleService roleService;
+    private final OrganizationDomainService domainService;
     private final UserService userService;
     private final ApplicationEventPublisher events;
     private final PrabhixProperties properties;
@@ -67,6 +68,12 @@ public class InvitationService {
         // Checked at invite time as well as accept time, so an admin learns they are out of
         // seats before a candidate is emailed a link that will fail.
         entitlements.requireMemberSeat(orgId, org.getMemberCount());
+
+        // No-op until this organization verifies a domain, which is what makes it opt-in rather than
+        // a change that breaks every existing tenant's invitations on deploy. Once one is verified,
+        // an admin can no longer invite an address outside it — the case this guards is a typo'd
+        // domain quietly sending an invitation with real access to a stranger.
+        domainService.requireInvitableAddress(orgId, email);
 
         String rawToken = Ids.token();
         String tokenHash = sha256(rawToken);

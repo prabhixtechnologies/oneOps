@@ -43,6 +43,9 @@ class InvitationAcceptTest {
     @Mock private OrganizationService organizationService;
     @Mock private OrganizationMemberService memberService;
     @Mock private RoleService roleService;
+    // Returns no verified domains by default, so the invite-address restriction is inert here. These
+    // tests are about accepting an invitation, not about who may be sent one.
+    @Mock private OrganizationDomainService domainService;
     @Mock private UserService userService;
     @Mock private ApplicationEventPublisher events;
     @Mock private EntitlementGate entitlements;
@@ -54,7 +57,8 @@ class InvitationAcceptTest {
         PrabhixProperties properties = new PrabhixProperties(null, null, null, null, null, null, null, null);
         invitationService = new InvitationService(
                 invitationRepository, membershipRepository, roleRepository, organizationService,
-                memberService, roleService, userService, events, properties, entitlements);
+                memberService, roleService, domainService, userService, events, properties,
+                entitlements);
     }
 
     @Test
