@@ -37,6 +37,7 @@ import {
 } from "@/features/mail/api";
 import { useMembers } from "@/features/org/api";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { MailClientPanel } from "./MailClientPanel";
 
 const CONDITION_FIELDS = ["FROM", "FROM_DOMAIN", "TO", "SUBJECT", "BODY", "HAS_ATTACHMENT", "SPAM_SCORE"] as const;
 const OPERATORS = ["EQUALS", "CONTAINS", "MATCHES", "IN", "GT", "LT"] as const;
@@ -87,6 +88,7 @@ export default function MailboxDetailPage() {
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="routing">Routing rules</TabsTrigger>
           <TabsTrigger value="sla">SLA & hours</TabsTrigger>
+          <TabsTrigger value="client">Mail client</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-4 max-w-xl space-y-4">
@@ -329,6 +331,10 @@ export default function MailboxDetailPage() {
               </div>
             </>
           )}
+        </TabsContent>
+
+        <TabsContent value="client" className="mt-4 max-w-xl">
+          <MailClientPanel mailbox={data} />
         </TabsContent>
       </Tabs>
     </div>

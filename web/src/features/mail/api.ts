@@ -85,6 +85,39 @@ export function useRemoveMailboxMember() {
   });
 }
 
+const issuedMailPasswordSchema = z.object({
+  address: z.string(),
+  password: z.string(),
+  issuedAt: z.string(),
+});
+
+/**
+ * Issues the password a mail client (Thunderbird, Apple Mail, a phone) uses for IMAP and SMTP.
+ *
+ * Deliberately not cached and never refetched: the plaintext exists only in this one response, so
+ * putting it in the query cache would keep a live credential in memory for every subsequent render.
+ * The caller shows it once and drops it.
+ */
+export function useIssueMailPassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (mailboxId: string) =>
+      apiRequest(`/mail/mailboxes/${mailboxId}/mail-password`, issuedMailPasswordSchema, {
+        method: "POST",
+      }),
+    onSuccess: (_, mailboxId) => void qc.invalidateQueries({ queryKey: ["mailbox", mailboxId] }),
+  });
+}
+
+export function useRevokeMailPassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (mailboxId: string) =>
+      apiRequestVoid(`/mail/mailboxes/${mailboxId}/mail-password`, { method: "DELETE" }),
+    onSuccess: (_, mailboxId) => void qc.invalidateQueries({ queryKey: ["mailbox", mailboxId] }),
+  });
+}
+
 export function useThreads(filters: Record<string, string | undefined>) {
   const params = new URLSearchParams({ limit: "25" });
   for (const [k, v] of Object.entries(filters)) {

@@ -189,6 +189,7 @@ public class MailboxService {
                         ? String.valueOf(mailbox.getSlaFirstResponseMins()) : null,
                 mailbox.getSignatureHtml(),
                 mailbox.getCreatedAt(),
+                mailbox.getPasswordUpdatedAt(),
                 memberViews,
                 rules.stream().map(this::toRoutingRule).toList(),
                 parseBusinessHours(mailbox));

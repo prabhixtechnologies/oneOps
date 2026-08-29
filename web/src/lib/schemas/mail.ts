@@ -133,6 +133,7 @@ export const mailboxDetailSchema = z.object({
   slaPolicyId: z.string().nullable().optional(),
   signature: z.string().nullable().optional(),
   createdAt: z.string().optional(),
+  mailPasswordUpdatedAt: z.string().nullable().optional(),
   members: z.array(mailboxMemberSchema).optional(),
   routingRules: z.array(routingRuleSchema).optional(),
   businessHours: businessHoursSchema.nullable().optional(),

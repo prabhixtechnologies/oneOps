@@ -34,6 +34,14 @@ public final class MailboxDtos {
             String slaPolicyId,
             String signature,
             Instant createdAt,
+            /**
+             * When a mail-client password was last issued, or null if the mailbox has none.
+             *
+             * <p>Deliberately a timestamp and not a boolean: "no password" and "password issued
+             * eighteen months ago and still on someone's old phone" are both worth acting on, and a
+             * flag cannot tell them apart. The hash itself never leaves the server.
+             */
+            Instant mailPasswordUpdatedAt,
             List<MailboxMemberResponse> members,
             List<RoutingRuleResponse> routingRules,
             BusinessHoursResponse businessHours) {
