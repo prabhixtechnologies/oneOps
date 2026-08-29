@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Set;
 
 /**
  * Fixed-window rate limiting in Redis, keyed per client.
@@ -35,6 +36,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final String KEY_PREFIX = "pbx:rl:";
     private static final Duration WINDOW = Duration.ofMinutes(1);
+
+    /**
+     * Auth paths that get the ordinary API budget instead of the credential-stuffing one.
+     *
+     * <p>The tight budget exists to slow an attacker guessing secrets. The session exchange carries
+     * no guessable secret: its credential is an HttpOnly cookie the caller can neither read nor
+     * construct, so repeating the call proves nothing an attacker does not already have.
+     *
+     * <p>It is also routine — every console tab calls it on load and again when its access token
+     * ages out, and with two consoles on one browser that adds up fast. Sharing ten attempts a
+     * minute with sign-in meant an ordinary morning of reloading could exhaust the budget, and a 429
+     * here is indistinguishable from being signed out.
+     */
+    private static final Set<String> ROUTINE_AUTH_PATHS = Set.of("/api/v1/auth/session/token");
 
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
@@ -63,7 +78,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
-        boolean authEndpoint = request.getRequestURI().startsWith("/api/v1/auth/");
+        String path = request.getRequestURI();
+        boolean authEndpoint = path.startsWith("/api/v1/auth/") && !ROUTINE_AUTH_PATHS.contains(path);
         int limit = authEndpoint ? config.authAttemptsPerMinute() : config.apiRequestsPerMinute();
         String key = KEY_PREFIX + (authEndpoint ? "auth:" : "api:") + clientKey(request);
 
