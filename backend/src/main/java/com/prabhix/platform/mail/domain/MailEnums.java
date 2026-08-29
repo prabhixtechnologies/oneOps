@@ -25,6 +25,20 @@ public final class MailEnums {
         MEMBER, LEAD
     }
 
+    /**
+     * Where a thread is filed, which is a different question from what its {@link ThreadStatus} is: the
+     * status is about the work and the folder is about where the person put it, and the two move
+     * independently. The named kinds exist so code can ask for "this mailbox's trash" without matching on
+     * a name the owner is free to rename or translate; CUSTOM is everything a person made themselves.
+     */
+    public enum FolderKind {
+        INBOX, SENT, DRAFTS, ARCHIVE, TRASH, SPAM, CUSTOM;
+
+        public boolean isSystem() {
+            return this != CUSTOM;
+        }
+    }
+
     public enum ThreadStatus {
         OPEN, PENDING_CUSTOMER, ON_HOLD, RESOLVED, CLOSED, SPAM, TRASH
     }

@@ -43,6 +43,16 @@ public class Mailbox extends TenantScopedEntity {
     @Column(name = "colour", length = 9)
     private String colour;
 
+    /**
+     * Whose mailbox this is, for {@link MailEnums.MailboxKind#PERSONAL}. Null on a shared or system
+     * mailbox, and null on a personal one whose membership was ambiguous when the column was added.
+     *
+     * <p>Access is still decided by {@code mail_mailbox_members}; this only answers "which of these is
+     * mine", which previously required counting members and guessing.
+     */
+    @Column(name = "owner_user_id")
+    private UUID ownerUserId;
+
     @Column(name = "signature_html", columnDefinition = "text")
     private String signatureHtml;
 

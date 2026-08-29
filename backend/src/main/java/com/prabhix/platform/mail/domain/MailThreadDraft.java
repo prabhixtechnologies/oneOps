@@ -19,8 +19,19 @@ import java.util.UUID;
 @Table(name = "mail_thread_drafts")
 public class MailThreadDraft extends TenantScopedEntity {
 
-    @Column(name = "thread_id", nullable = false)
+    /**
+     * The thread this is a reply to, or null for a new message that has never been sent — there is
+     * nothing for a first draft to hang off, which is why this stopped being mandatory in V64.
+     */
+    @Column(name = "thread_id")
     private UUID threadId;
+
+    /**
+     * Which mailbox it will be sent from. Only meaningful when {@link #threadId} is null; a reply is
+     * always sent from the mailbox that received the thread.
+     */
+    @Column(name = "mailbox_id")
+    private UUID mailboxId;
 
     @Column(name = "author_user_id", nullable = false)
     private UUID authorUserId;

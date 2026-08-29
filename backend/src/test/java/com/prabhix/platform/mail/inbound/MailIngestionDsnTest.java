@@ -32,6 +32,8 @@ class MailIngestionDsnTest {
     @Mock MailThreadTagRepository threadTagRepository;
     @Mock FileStorageService fileStorageService;
     @Mock ThreadResolver threadResolver;
+    @Mock com.prabhix.platform.mail.mailbox.MailFolderService folderService;
+    @Mock com.prabhix.platform.mail.repository.MailThreadFlagRepository flagRepository;
     @Mock RoutingRuleEngine routingRuleEngine;
     @Mock SlaService slaService;
     @Mock SuppressionService suppressionService;
@@ -44,8 +46,8 @@ class MailIngestionDsnTest {
         ingestionService = new MailIngestionService(
                 inboundRawRepository, messageRepository, attachmentRepository, threadRepository,
                 eventRepository, mailboxRepository, tagRepository, threadTagRepository,
-                fileStorageService, new MimeParser(), threadResolver, routingRuleEngine,
-                slaService, suppressionService, events);
+                fileStorageService, new MimeParser(), threadResolver, folderService, flagRepository,
+                routingRuleEngine, slaService, suppressionService, events);
     }
 
     @Test

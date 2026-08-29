@@ -48,6 +48,8 @@ public class MailIngestionService {
     private final FileStorageService fileStorageService;
     private final MimeParser mimeParser;
     private final ThreadResolver threadResolver;
+    private final com.prabhix.platform.mail.mailbox.MailFolderService folderService;
+    private final com.prabhix.platform.mail.repository.MailThreadFlagRepository flagRepository;
     private final RoutingRuleEngine routingRuleEngine;
     private final SlaService slaService;
     private final SuppressionService suppressionService;
@@ -116,6 +118,11 @@ public class MailIngestionService {
 
         updateThread(thread, parsed, message, routingContext);
         slaService.onInboundMessage(thread, parsed);
+
+        // A message that arrives has to land somewhere a person will look, and it has to look new to
+        // everybody who had already read the thread.
+        folderService.fileInboundArrival(thread);
+        flagRepository.markUnreadForAll(thread.getId(), Instant.now());
 
         appendEvent(thread, message);
         applyTags(thread, raw.getOrganizationId(), routingContext);
