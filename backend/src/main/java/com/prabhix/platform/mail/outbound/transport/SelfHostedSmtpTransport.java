@@ -39,6 +39,7 @@ public class SelfHostedSmtpTransport implements MailTransport {
 
     private volatile Instant probedAt = Instant.EPOCH;
     private volatile boolean reachable;
+    private volatile String note;
 
     @Override
     public MailTransportResult send(OutboundMail mail) {
@@ -78,17 +79,27 @@ public class SelfHostedSmtpTransport implements MailTransport {
         return reachable;
     }
 
+    @Override
+    public String healthNote() {
+        return note;
+    }
+
     private boolean canConnect() {
         String host = mailProperties.getHost();
         Integer port = mailProperties.getPort();
         if (host == null || host.isBlank() || port == null) {
+            note = "no SMTP host or port is configured";
             log.warn("SMTP transport has no host or port configured; treating it as unavailable");
             return false;
         }
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port), PROBE_TIMEOUT_MS);
+            note = null;
             return true;
         } catch (IOException ex) {
+            // Names the host and port, because the failure in production was SMTP_HOST=localhost
+            // with no mail server running there — which the message has to say to be actionable.
+            note = host + ":" + port + " is unreachable (" + ex.getMessage() + ")";
             log.warn("SMTP host {}:{} is unreachable ({}); outbound mail will be retried, not sent",
                     host, port, ex.getMessage());
             return false;

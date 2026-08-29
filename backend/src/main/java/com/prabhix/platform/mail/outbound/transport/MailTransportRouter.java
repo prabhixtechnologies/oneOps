@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,10 +33,13 @@ public class MailTransportRouter {
      *     a failure and retries later instead of the message being lost.
      */
     public MailTransport select() {
-        for (MailTransport transport : chainFor(properties.mail().transport())) {
+        String configured = properties.mail().transport();
+        List<String> rejected = new ArrayList<>();
+        for (MailTransport transport : chainFor(configured)) {
             if (available(transport)) {
                 return transport;
             }
+            rejected.add(transport.providerId() + " (" + why(transport) + ")");
         }
         // Logging is a destination only where nobody expects mail to arrive. Everywhere else,
         // refusing to send is the honest outcome: MailTransportResult.ok() from LoggingTransport is
@@ -46,9 +50,20 @@ public class MailTransportRouter {
         if (LocalMailProfiles.isLocal(environment)) {
             return loggingTransport;
         }
-        throw new IllegalStateException("No mail transport can deliver: MAIL_TRANSPORT="
-                + properties.mail().transport() + " and every transport in its chain is either "
-                + "unreachable or circuit-broken after " + CIRCUIT_THRESHOLD + " failures");
+        // The reasons are carried in the message rather than only logged: this string reaches the
+        // outbox row's last_error and /actuator/health, which are the two places anyone looks when
+        // mail stops arriving.
+        throw new IllegalStateException("No mail transport can deliver: MAIL_TRANSPORT=" + configured
+                + (rejected.isEmpty()
+                ? " names no transport" : ", and " + String.join(", ", rejected)));
+    }
+
+    private String why(MailTransport transport) {
+        if (circuitOpen(transport.providerId())) {
+            return "circuit open after " + CIRCUIT_THRESHOLD + " consecutive failures";
+        }
+        String note = transport.healthNote();
+        return note == null ? "reported unhealthy" : note;
     }
 
     /**

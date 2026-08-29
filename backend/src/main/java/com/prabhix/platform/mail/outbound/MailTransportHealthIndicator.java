@@ -33,10 +33,17 @@ public class MailTransportHealthIndicator implements HealthIndicator {
         String configured = properties.mail().transport();
         try {
             MailTransport selected = transportRouter.select();
-            return Health.up()
+            Health.Builder up = Health.up()
                     .withDetail("configured", configured)
-                    .withDetail("selected", selected.providerId())
-                    .build();
+                    .withDetail("selected", selected.providerId());
+            // A usable transport can still have something worth knowing attached to it — an SES
+            // account in the sandbox delivers only to verified recipients, which is indistinguishable
+            // from mail vanishing unless it is said somewhere.
+            String note = selected.healthNote();
+            if (note != null) {
+                up.withDetail("note", note);
+            }
+            return up.build();
         } catch (IllegalStateException ex) {
             // The router throws only when every transport in the chain is unreachable or
             // circuit-broken. Mail queues and retries rather than being lost, so this is a

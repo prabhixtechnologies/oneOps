@@ -1,7 +1,5 @@
 package com.prabhix.platform.mail.outbound.transport;
 
-import com.prabhix.platform.common.error.ApiException;
-import com.prabhix.platform.common.error.ErrorCode;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -26,5 +24,10 @@ public class SmtpRelayTransport implements MailTransport {
     @Override
     public boolean healthy() {
         return delegate.healthy();
+    }
+
+    @Override
+    public String healthNote() {
+        return delegate.healthNote();
     }
 }

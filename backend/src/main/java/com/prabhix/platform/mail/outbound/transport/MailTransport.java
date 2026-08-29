@@ -15,6 +15,21 @@ public interface MailTransport {
 
     boolean healthy();
 
+    /**
+     * Why {@link #healthy()} answered as it did, for {@code /actuator/health} to report.
+     *
+     * <p>The boolean alone is not enough to act on. "SES is unhealthy" and "SES is unhealthy because
+     * prabhixtechnologies.com is not a verified identity" are the same signal and a different
+     * afternoon. It also carries the caveats that do not warrant unhealthy on their own — an account
+     * still in the SES sandbox sends only to verified recipients, which looks exactly like mail
+     * silently not arriving.
+     *
+     * @return null when there is nothing to add beyond the boolean
+     */
+    default String healthNote() {
+        return null;
+    }
+
     @Getter
     @Setter
     class OutboundMail {

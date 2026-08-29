@@ -124,6 +124,41 @@ class MailTransportRouterTest {
     }
 
     @Test
+    void namesWhyEachTransportWasRejected() {
+        when(sesTransport.providerId()).thenReturn("SES");
+        when(sesTransport.healthy()).thenReturn(false);
+        when(sesTransport.healthNote()).thenReturn("prabhix.test is not an SES identity");
+        when(smtpRelayTransport.providerId()).thenReturn("SMTP_RELAY");
+        when(smtpRelayTransport.healthy()).thenReturn(false);
+        when(smtpRelayTransport.healthNote()).thenReturn("localhost:587 is unreachable");
+        MailTransportRouter router = router("SES", "prod");
+
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, router::select);
+
+        // This message becomes the outbox row's last_error and the health endpoint's reason, so it
+        // is the whole diagnosis anyone gets. "Unhealthy" alone would send them reading logs.
+        assertTrue(thrown.getMessage().contains("SES (prabhix.test is not an SES identity)"));
+        assertTrue(thrown.getMessage().contains("SMTP_RELAY (localhost:587 is unreachable)"));
+    }
+
+    @Test
+    void reportsAnOpenCircuitRatherThanTheStaleHealthNote() {
+        when(sesTransport.providerId()).thenReturn("SES");
+        MailTransportRouter router = router("SES", "prod");
+        for (int i = 0; i < 5; i++) {
+            router.recordFailure("SES");
+        }
+        when(smtpRelayTransport.providerId()).thenReturn("SMTP_RELAY");
+        when(smtpRelayTransport.healthy()).thenReturn(false);
+
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, router::select);
+
+        // A breaker-tripped transport may still report itself healthy, which would otherwise read as
+        // "SES (null)" and hide the actual reason it is not being used.
+        assertTrue(thrown.getMessage().contains("SES (circuit open"));
+    }
+
+    @Test
     void refusesToSendWhenEveryTransportInTheChainIsUnreachable() {
         when(sesTransport.providerId()).thenReturn("SES");
         when(sesTransport.healthy()).thenReturn(false);
