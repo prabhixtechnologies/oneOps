@@ -41,11 +41,10 @@ export interface NavGroup {
 }
 
 /**
- * Groups shared by both consoles, in the order they appear.
+ * The pages that act on a single organization's data — the OneOps product.
  *
- * <p>Headings exist to make the admin console's boundary legible: everything above "Platform" acts
- * on one organization, everything under it spans all of them. Without that line drawn visibly, the
- * two consoles look like the same app and it stops being obvious whose data is on screen.
+ * <p>The admin console has none of these. They act on one organization, and its subject is the
+ * platform; staff needing a customer's inbox are handed off to OneOps instead.
  */
 const tenantGroups: NavGroup[] = [
   {
@@ -104,11 +103,22 @@ const billingItem: NavItem = {
   permission: PERMISSIONS.BILLING_READ,
 };
 
-/** Admin-only, and the reason the admin console exists as a separate app. */
-const platformGroup: NavGroup = {
-  heading: "Platform",
-  items: [{ to: "/ops", icon: Briefcase, label: "Ops Hub", platformAdminOnly: true }],
-};
+/**
+ * The whole of the admin console: the surfaces that span every organization.
+ *
+ * <p>Short by design. Everything a customer's staff do day to day is a tenant page and lives in
+ * OneOps; what is left here is the platform itself — who the customers are, what the marketing
+ * pipeline is doing, and what the system has been logging across all of them.
+ */
+const platformGroups: NavGroup[] = [
+  {
+    heading: "Platform",
+    items: [
+      { to: "/", icon: Briefcase, label: "Ops Hub", platformAdminOnly: true },
+      { to: "/logs", icon: ScrollText, label: "Event Logs", platformAdminOnly: true },
+    ],
+  },
+];
 
 function withBilling(groups: NavGroup[]): NavGroup[] {
   return groups.map((group) =>
@@ -120,10 +130,8 @@ function withBilling(groups: NavGroup[]): NavGroup[] {
 }
 
 /**
- * The navigation for this build. Decided at module scope rather than per render: the answer cannot
- * change while the app is running, and this way the branch not taken is dropped from the bundle
- * along with the group it names.
+ * The navigation for this build, decided at module scope: the answer cannot change while the app is
+ * running, and this way the branch not taken is dropped from the bundle along with every string in
+ * the groups it names.
  */
-export const navGroups: NavGroup[] = IS_ADMIN_APP
-  ? [...tenantGroups, platformGroup]
-  : withBilling(tenantGroups);
+export const navGroups: NavGroup[] = IS_ADMIN_APP ? platformGroups : withBilling(tenantGroups);

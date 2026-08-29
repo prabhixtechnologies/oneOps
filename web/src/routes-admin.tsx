@@ -1,38 +1,49 @@
 import { lazy } from "react";
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
-import {
-  PlatformAdminRoute,
-  protectedShell,
-  publicRoutes,
-  SuspenseWrap,
-  tenantRoutes,
-} from "@/routes-shared";
+import { PlatformAdminRoute, protectedShell, publicRoutes, SuspenseWrap } from "@/routes-shell";
 
 /**
  * The private admin console, served from admin.prabhixtechnologies.com.
  *
- * <p>Carries the tenant pages, because Prabhix's own inbox, chat and visitors live in its own
- * organization, plus the platform pages that span every organization. Billing is left out: there is
- * no subscription to manage for the company that owns the platform.
+ * <p>A control tower, not a copy of the product. It mounts the platform surfaces and nothing else:
+ * the tenant directory, the marketing pipeline, and platform-wide event logs. There is no inbox, no
+ * chat, no shop and no settings here, because every one of those acts on a single organization and
+ * this console's subject is the platform.
+ *
+ * <h2>Where the tenant pages went</h2>
+ *
+ * <p>They are in OneOps, which is where they belong. Prabhix runs its own business as a customer of
+ * its own product — signed in at oneops.prabhixtechnologies.com like anybody else — and staff who
+ * need to see a customer's data are handed off to the same place, carrying the organization with
+ * them. See {@link ./features/ops/TenantsTab.tsx}.
+ *
+ * <p>The earlier arrangement mounted the whole customer product here and revealed it once an
+ * organization was chosen. It was correct about access and wrong about identity: the two consoles
+ * were the same 22 feature directories with one page's difference, so nothing on screen told you
+ * which app you had opened.
  */
 
-/** Declared here rather than in the shared module so the OneOps bundle does not carry it. */
+/** Declared here rather than in the shared module so the OneOps bundle does not carry them. */
 const OpsHubPage = lazy(() => import("@/features/ops/OpsHubPage"));
+const LogsPage = lazy(() => import("@/features/logs/LogsPage"));
 
 const platformRoutes: RouteObject[] = [
   {
     element: <PlatformAdminRoute />,
     children: [
-      { path: "ops", element: <SuspenseWrap><OpsHubPage /></SuspenseWrap> },
+      { index: true, element: <SuspenseWrap><OpsHubPage /></SuspenseWrap> },
+      { path: "ops", element: <Navigate to="/" replace /> },
       // The hub lived at /site before it was named; keep old bookmarks working.
-      { path: "site", element: <Navigate to="/ops" replace /> },
+      { path: "site", element: <Navigate to="/" replace /> },
+      { path: "logs", element: <SuspenseWrap><LogsPage /></SuspenseWrap> },
     ],
   },
 ];
 
 export const router = createBrowserRouter([
   publicRoutes,
-  protectedShell([...tenantRoutes, ...platformRoutes]),
-  // Billing is the only path that exists in OneOps and not here; typing it lands on the dashboard.
+  protectedShell(platformRoutes),
+  // Every tenant path — /chat, /commerce/orders, /settings — lands here. Those URLs exist in
+  // OneOps, and a staff bookmark to one of them should not resolve to a blank screen.
   { path: "*", element: <Navigate to="/" replace /> },
 ]);

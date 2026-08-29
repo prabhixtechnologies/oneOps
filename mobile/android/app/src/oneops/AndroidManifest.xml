@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Merged onto src/main's manifest for the OneOps flavor only.
+
+  Both entries here address a conversation or a mail thread: the messaging service that posts the
+  notification, and the deep link that opens it. Neither belongs in the admin app, which has no
+  screen to land on — a notification that opened a blank page would be worse than no notification.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${deepLinkScheme}" android:host="chat" />
+                <data android:scheme="${deepLinkScheme}" android:host="mail" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".push.PrabhixFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

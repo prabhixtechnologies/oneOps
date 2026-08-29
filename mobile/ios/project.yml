@@ -96,7 +96,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.prabhix.operator
         # PRODUCT_NAME is left as the target name, so the bundle and executable are PrabhixOperator
         # with no space in them. The name a user sees is PRABHIX_APP_LABEL, via CFBundleDisplayName.
-        PRABHIX_APP_LABEL: Prabhix Operator
+        PRABHIX_APP_LABEL: Prabhix OneOps
         PRABHIX_DEVICE_HEADER: mobile-ios
         PRABHIX_DEEP_LINK_SCHEME: prabhix
 

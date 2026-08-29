@@ -5,7 +5,6 @@ import com.prabhix.operator.data.api.ChatStreamPayload
 import com.prabhix.operator.data.api.MailStreamPayload
 import com.prabhix.operator.data.auth.TokenRefresher
 import com.prabhix.operator.data.auth.TokenStore
-import com.prabhix.operator.data.auth.ViewingOrgStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,7 +35,6 @@ class RealtimeHub @Inject constructor(
     private val client: OkHttpClient,
     private val tokenStore: TokenStore,
     private val tokenRefresher: TokenRefresher,
-    private val viewingOrgStore: ViewingOrgStore,
     private val json: Json,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -68,14 +66,11 @@ class RealtimeHub @Inject constructor(
         scope.launch { _events.emit(RealtimeEvent.Connection(false)) }
     }
 
-    /** Restarts both streams against whichever organization is now in scope. */
+    /** Restarts both streams, after a sign-in or a change of organization. */
     fun restart() {
         stop()
         start()
     }
-
-    private fun effectiveOrgId(sessionOrgId: String?): String? =
-        viewingOrgStore.organizationIdOverride() ?: sessionOrgId
 
     private fun connectChat() {
         chatSource?.cancel()
@@ -87,9 +82,7 @@ class RealtimeHub @Inject constructor(
             .header("X-Correlation-Id", UUID.randomUUID().toString())
             .header("X-Prabhix-Device", BuildConfig.DEVICE_HEADER)
             .apply {
-                // Same override as the request interceptor, so a stream does not keep pushing your
-                // own organization's messages into a screen showing a customer's.
-                effectiveOrgId(session.organizationId)?.let { header("X-Prabhix-Org", it) }
+                session.organizationId?.let { header("X-Prabhix-Org", it) }
             }
             .build()
 
@@ -113,7 +106,7 @@ class RealtimeHub @Inject constructor(
             .header("X-Correlation-Id", UUID.randomUUID().toString())
             .header("X-Prabhix-Device", BuildConfig.DEVICE_HEADER)
             .apply {
-                effectiveOrgId(session.organizationId)?.let { header("X-Prabhix-Org", it) }
+                session.organizationId?.let { header("X-Prabhix-Org", it) }
             }
             .build()
 

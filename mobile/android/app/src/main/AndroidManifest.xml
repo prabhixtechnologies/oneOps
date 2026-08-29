@@ -25,22 +25,11 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="${deepLinkScheme}" android:host="chat" />
-                <data android:scheme="${deepLinkScheme}" android:host="mail" />
-            </intent-filter>
+            <!-- The chat and mail deep links are declared in src/oneops, along with the messaging
+                 service that sends the notifications carrying them. The admin app has no screen to
+                 open a conversation in, so advertising the scheme would offer to handle links it
+                 would then have to ignore. -->
         </activity>
-
-        <service
-            android:name=".push.PrabhixFirebaseMessagingService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
 
         <provider
             android:name="androidx.startup.InitializationProvider"

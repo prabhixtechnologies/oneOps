@@ -3,14 +3,7 @@ package com.prabhix.operator.di
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.prabhix.operator.BuildConfig
 import com.prabhix.operator.data.api.AuthApi
-import com.prabhix.operator.data.api.ChatAiApi
-import com.prabhix.operator.data.api.ChatApi
-import com.prabhix.operator.data.api.DashboardApi
-import com.prabhix.operator.data.api.MailAiApi
-import com.prabhix.operator.data.api.MailApi
 import com.prabhix.operator.data.api.OrganizationApi
-import com.prabhix.operator.data.api.PushApi
-import com.prabhix.operator.data.api.VisitorApi
 import com.prabhix.operator.data.auth.AuthAuthenticator
 import com.prabhix.operator.data.auth.AuthInterceptor
 import dagger.Module
@@ -71,15 +64,12 @@ object NetworkModule {
             .build()
     }
 
+    // Sign-in and organization selection only — the two things both apps do. The product's APIs are
+    // provided by ProductApiModule in `src/oneops/`, and the platform's by PlatformModule in
+    // `src/admin/`. A provider here would be a provider in both apps, which is what kept the whole
+    // product reachable from the staff build's dependency graph.
     @Provides fun authApi(retrofit: Retrofit): AuthApi = retrofit.create(AuthApi::class.java)
     @Provides fun organizationApi(retrofit: Retrofit): OrganizationApi = retrofit.create(OrganizationApi::class.java)
-    @Provides fun chatApi(retrofit: Retrofit): ChatApi = retrofit.create(ChatApi::class.java)
-    @Provides fun mailApi(retrofit: Retrofit): MailApi = retrofit.create(MailApi::class.java)
-    @Provides fun visitorApi(retrofit: Retrofit): VisitorApi = retrofit.create(VisitorApi::class.java)
-    @Provides fun dashboardApi(retrofit: Retrofit): DashboardApi = retrofit.create(DashboardApi::class.java)
-    @Provides fun pushApi(retrofit: Retrofit): PushApi = retrofit.create(PushApi::class.java)
-    @Provides fun chatAiApi(retrofit: Retrofit): ChatAiApi = retrofit.create(ChatAiApi::class.java)
-    @Provides fun mailAiApi(retrofit: Retrofit): MailAiApi = retrofit.create(MailAiApi::class.java)
 
     private fun String.ensureTrailingSlash(): String = if (endsWith("/")) this else "$this/"
 }

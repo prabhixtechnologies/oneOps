@@ -65,7 +65,7 @@ struct LoginView: View {
                     Text(error).foregroundStyle(.red)
                 }
             }
-            .navigationTitle("Prabhix Operator")
+            .navigationTitle(AppConfig.appLabel)
         }
     }
 }

@@ -62,8 +62,6 @@ class PlatformViewModel @Inject constructor(
     private val _state = MutableStateFlow(PlatformUiState())
     val state: StateFlow<PlatformUiState> = _state.asStateFlow()
 
-    val viewing = platformRepository.viewing
-
     init { refresh() }
 
     fun refresh() {
@@ -108,27 +106,25 @@ class PlatformViewModel @Inject constructor(
                 .onFailure { _state.value = _state.value.copy(isLoadingMore = false) }
         }
     }
-
-    fun startViewing(tenant: TenantSummary) = platformRepository.startViewing(tenant)
-
-    fun stopViewing() = platformRepository.stopViewing()
 }
 
 /**
- * Platform overview and the tenant directory — the admin app's reason to exist as a separate app.
+ * Platform overview and the tenant directory — the whole of the admin app.
  *
  * <p>The smallest useful slice of the web Ops Hub: the counts that say whether anything is wrong,
- * and the list that lets you go and look. Leads, subscribers and applications are deliberately left
+ * and the directory that says with whom. Leads, subscribers and applications are deliberately left
  * on the web, where reading a form submission is not a phone-sized task.
+ *
+ * <p>The tenant rows are not tappable, and this is not an omission. Opening a customer means
+ * opening the customer's screens, which are the OneOps product's — on the web, staff are handed off
+ * to that console with the organization carried across and the access announced. There is nothing
+ * for a tap here to lead to, and a phone-sized reimplementation of somebody else's inbox would be a
+ * second copy of the product to keep in step with the first.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlatformScreen(
-    onViewingTenant: () -> Unit,
-    viewModel: PlatformViewModel = hiltViewModel(),
-) {
+fun PlatformScreen(viewModel: PlatformViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
-    val viewing by viewModel.viewing.collectAsState()
     LaunchedEffect(Unit) { viewModel.refresh() }
 
     Scaffold(
@@ -157,23 +153,6 @@ fun PlatformScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
-                }
-            }
-
-            viewing?.let { org ->
-                item {
-                    Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text("Viewing ${org.name}", style = MaterialTheme.typography.titleSmall)
-                            Text(
-                                "Every screen is showing this customer's data. Access is recorded.",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                            TextButton(onClick = { viewModel.stopViewing() }) {
-                                Text("Back to my organization")
-                            }
-                        }
-                    }
                 }
             }
 
@@ -244,14 +223,7 @@ fun PlatformScreen(
             }
 
             items(state.tenants, key = { it.id }) { tenant ->
-                TenantRow(
-                    tenant = tenant,
-                    isViewing = viewing?.id == tenant.id,
-                    onView = {
-                        viewModel.startViewing(tenant)
-                        onViewingTenant()
-                    },
-                )
+                TenantRow(tenant)
             }
 
             if (state.tenants.isEmpty() && !state.isLoading) {
@@ -284,7 +256,7 @@ private fun CountRow(vararg values: String) {
 }
 
 @Composable
-private fun TenantRow(tenant: TenantSummary, isViewing: Boolean, onView: () -> Unit) {
+private fun TenantRow(tenant: TenantSummary) {
     Card(Modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(16.dp),
@@ -301,9 +273,6 @@ private fun TenantRow(tenant: TenantSummary, isViewing: Boolean, onView: () -> U
                     "${tenant.status.lowercase()} · ${tenant.memberCount}/${tenant.seatLimit} seats",
                     style = MaterialTheme.typography.bodySmall,
                 )
-            }
-            TextButton(onClick = onView, enabled = !isViewing) {
-                Text(if (isViewing) "Viewing" else "View as")
             }
         }
     }

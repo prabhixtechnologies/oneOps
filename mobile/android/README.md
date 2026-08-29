@@ -4,16 +4,55 @@ Two apps from one module, chosen by product flavor:
 
 | Flavor | Application ID | Name | Who it is for |
 |--------|----------------|------|---------------|
-| `oneops` | `com.prabhix.operator` | Prabhix Operator | Customers. Chat, mail, visitors and KPIs for their own organization. |
-| `admin` | `com.prabhix.admin` | Prabhix Admin | Prabhix staff. Everything above, plus the platform overview, the tenant directory and the ability to view any customer's data. |
+| `oneops` | `com.prabhix.operator` | Prabhix OneOps | Customers, and Prabhix's own team. Chat, mail, visitors and KPIs for one organization. |
+| `admin` | `com.prabhix.admin` | Prabhix Admin | Prabhix staff. The platform overview and tenant directory — one screen, read-only. |
+
+The application ID stays `com.prabhix.operator` despite the app being called OneOps. It is the app's
+identity to Play and to every phone that already has it, so renaming it would publish an unrelated
+second app and strand existing installs on a version that never updates. Only the label changed.
 
 Both install side by side — different application IDs — and the admin icon is on a near-black
 background rather than purple so they are distinguishable on the launcher.
 
-The platform screens, the cross-tenant API and the impersonation banner live in
-`app/src/admin/`, so the customer's APK does not contain them. That is enforced by a CI check which
-greps the OneOps APK for `admin/platform/` and fails if it appears, because the mistake — moving one
-of those files back into `src/main/` — breaks nothing visibly.
+## What actually differs
+
+Almost everything above the network layer. These are two apps, not one app with a flag.
+
+**Admin has one screen**: the platform overview and the tenant directory. No bottom bar, because
+there is nowhere else to go. The tenant rows are not tappable — opening a customer means opening the
+customer's screens, and those are the product's, on the web, where the handoff carries the
+organization across and announces the access. A phone-sized reimplementation of somebody else's
+inbox would be a second copy of the product to keep in step with the first.
+
+It also has no push and no deep-link scheme. Every notification this platform sends addresses a
+conversation or a mail thread, and admin has no screen to open one in, so it does not advertise a
+scheme it would only have to ignore. Firebase is a `oneopsImplementation` dependency for the same
+reason.
+
+### How the source sets divide
+
+| Source set | Holds | In which APK |
+|---|---|---|
+| `src/main/` | Sign-in, organization selection, tokens, the HTTP client, `SessionLifecycle` | Both |
+| `src/oneops/` | Chat, mail, dashboard, visitors; the Room database, paging, SSE, push, the send queue, and the product's Retrofit APIs | OneOps only |
+| `src/admin/` | The platform screen, the cross-tenant API, its repository and DI | Admin only |
+
+Each flavor supplies its **own** `PrabhixNavHost` with the same signature, which is what lets
+`MainActivity` stay shared while referring to screens that exist in only one app.
+
+`SessionLifecycle` (in `src/main/`) is the seam that made the data layer separable. Sign-in is
+shared, but what follows it is not: OneOps opens its streams, registers for push and schedules the
+send queue, while admin does nothing at all. `AuthRepository` used to call `RealtimeHub` and
+`PushTokenManager` directly, which meant Hilt held providers for them in **both** apps — so R8 could
+prove nothing unreachable and the staff APK shipped the streaming client and the database it feeds.
+
+That is the general trap here: it is not enough for a screen to be unreachable. If anything in the
+dependency graph can provide a thing, it stays in the APK. Hence one `@Provides` per flavor
+(`ProductApiModule` vs `PlatformModule`) rather than one shared module listing everything.
+
+Verified by the leakage audit in both directions: no `admin/platform/*` in the OneOps APK, and no
+`chat/conversations`, `mail/threads`, `chat/stream`, `prabhix_operator.db`, `outbound_flush` or
+Firebase in the admin APK. Release APKs are 2.95 MB (OneOps) and 2.56 MB (admin).
 
 Task names take the flavor: `assembleOneopsDebug`, `assembleAdminRelease`, and so on. A bare
 `assembleDebug` builds both.

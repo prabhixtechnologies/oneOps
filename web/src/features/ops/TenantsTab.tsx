@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
-import { Eye } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { CursorList } from "@/components/shared/CursorList";
 import { MobileCard, MobileCardRow } from "@/components/shared/ResponsiveTable";
 import { RelativeTime } from "@/components/shared/RelativeTime";
@@ -8,21 +7,26 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/features/ops/OpsHubPage";
 import { StatusFilter } from "@/features/ops/StatusFilter";
 import { useTenants } from "@/features/ops/api";
-import { useViewingOrg } from "@/lib/use-viewing-org";
+import { useAuth } from "@/lib/auth";
+import { staffHandoffUrl } from "@/lib/staff-handoff";
 import { TENANT_STATUSES, type TenantSummary } from "@/lib/schemas/ops";
 
 export function TenantsTab() {
   const [status, setStatus] = useState<string | undefined>();
   const query = useTenants(status);
   const tenants = query.data?.pages.flatMap((page) => page.items) ?? [];
-  const { canView, startViewing, viewing } = useViewingOrg();
-  const navigate = useNavigate();
+  const { me } = useAuth();
+  const canView = me?.platformAdmin === true;
 
+  /**
+   * Opens the customer's workspace in OneOps, in a new tab.
+   *
+   * <p>A new tab rather than this one, because the two are different jobs: the directory is where
+   * staff are working, and a support look-up should not cost them their place in it. It also keeps
+   * the two contexts visibly apart — the platform in one tab, one customer in another.
+   */
   const view = (tenant: TenantSummary) => {
-    startViewing({ id: tenant.id, name: tenant.name });
-    // Straight to the dashboard: staying on the tenant directory after choosing a tenant leaves no
-    // sign anything happened except the banner, which reads as a click that did nothing.
-    void navigate("/");
+    window.open(staffHandoffUrl(tenant.id), "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -65,10 +69,10 @@ export function TenantsTab() {
                     variant="ghost"
                     className="w-24 shrink-0"
                     onClick={() => view(tenant)}
-                    disabled={viewing?.id === tenant.id}
+                    title={`Open ${tenant.name} in OneOps. This access is recorded.`}
                   >
-                    <Eye className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                    {viewing?.id === tenant.id ? "Viewing" : "View as"}
+                    <ExternalLink className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                    Open
                   </Button>
                 )}
               </div>
@@ -96,10 +100,9 @@ export function TenantsTab() {
                       variant="outline"
                       className="mt-2 w-full"
                       onClick={() => view(tenant)}
-                      disabled={viewing?.id === tenant.id}
                     >
-                      <Eye className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                      {viewing?.id === tenant.id ? "Currently viewing" : "View as this tenant"}
+                      <ExternalLink className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                      Open in OneOps
                     </Button>
                   )}
                 </MobileCard>

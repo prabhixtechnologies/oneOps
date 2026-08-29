@@ -95,10 +95,13 @@ android {
     productFlavors {
         create("oneops") {
             dimension = "app"
-            // Unchanged from before flavors existed, so anyone with the app already installed gets
-            // an update rather than a second icon.
+            // Deliberately still `operator`, which is what this app was called before the product
+            // was named. The id is the app's identity to Play and to every phone that already has
+            // it: changing it to match the label would publish a second, unrelated app and leave
+            // existing installs on a version that never updates again. The label is what people
+            // see, and that is free to change.
             applicationId = "com.prabhix.operator"
-            applyLabel("Prabhix Operator")
+            applyLabel("Prabhix OneOps")
             applyDeepLinkScheme("prabhix")
             buildConfigField("String", "DEVICE_HEADER", "\"mobile-android\"")
         }
@@ -108,7 +111,9 @@ android {
             // two different products they are.
             applicationId = "com.prabhix.admin"
             applyLabel("Prabhix Admin")
-            applyDeepLinkScheme("prabhix-admin")
+            // No deep-link scheme, and no push. Every notification this platform sends addresses a
+            // conversation or a mail thread, and this app has no screen to open one in — so it does
+            // not advertise a scheme it would only have to ignore.
             buildConfigField("String", "DEVICE_HEADER", "\"mobile-android-admin\"")
         }
     }
@@ -196,8 +201,13 @@ dependencies {
     implementation(libs.okhttp.sse)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines)
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.messaging)
+    // OneOps only. Push notifications here address a conversation or a mail thread, and the admin
+    // app has no screen to open one — so it needs neither the SDK nor the service the SDK's own
+    // manifest contributes, which was the last piece of the product left in the staff APK.
+    // Quoted because flavor configurations are created by the Android plugin after this block is
+    // type-checked, so the Kotlin DSL has no generated accessor for them.
+    "oneopsImplementation"(platform(libs.firebase.bom))
+    "oneopsImplementation"(libs.firebase.messaging)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

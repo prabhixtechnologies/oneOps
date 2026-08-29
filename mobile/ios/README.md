@@ -1,6 +1,10 @@
-# Prabhix Operator — iOS
+# Prabhix OneOps — iOS
 
 Native SwiftUI operator app (iPhone + iPad, portrait and landscape) for chat, mail, live visitors, and dashboard KPIs.
+
+The target and directory are still named `PrabhixOperator`, which is what the app was called before
+the product was named. The bundle identifier and the on-disk paths are deliberately left alone; only
+the user-visible label is "Prabhix OneOps", set by `PRABHIX_APP_LABEL` in `project.yml`.
 
 ## Status: not yet compiled
 

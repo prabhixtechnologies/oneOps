@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.prabhix.operator.BuildConfig
 import com.prabhix.operator.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -119,7 +120,9 @@ fun LoginScreen(onLoggedIn: () -> Unit, viewModel: AuthViewModel = hiltViewModel
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Prabhix Operator", style = MaterialTheme.typography.headlineMedium)
+        // Whichever app this is. Hardcoding the OneOps name here put it at the top of the admin
+        // app's sign-in too, which is the one screen where being told which app you opened matters.
+        Text(BuildConfig.APP_LABEL, style = MaterialTheme.typography.headlineMedium)
         TabRow(selectedTabIndex = tab) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Password") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("OTP") })

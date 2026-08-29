@@ -54,12 +54,48 @@ jobs:
         run: npm run test
 
       - name: Build OneOps
-        run: npm run build
+        run: npm run build && mv dist dist-oneops
 
       # Built separately because the two entry points import different route tables, so a break in
       # the admin-only pages does not show up in the OneOps build at all.
       - name: Build admin
-        run: npm run build:admin
+        run: npm run build:admin && mv dist dist-admin
+
+      # The web half of the split, guarded in both directions.
+      #
+      # Neither failure mode is visible: the OneOps bundle carrying staff endpoints looks fine, and
+      # so does the admin bundle carrying the entire product — which is what shipped twice, because
+      # a module-scope `lazy(() => import(...))` is emitted into every bundle that imports the file
+      # declaring it, whether or not a route reaches it. Hence routes-tenant.tsx.
+      #
+      # Each string is asserted present on the side that should have it before being asserted absent
+      # on the other, so renaming an endpoint cannot quietly turn this into a test of nothing.
+      - name: Check neither bundle contains the other's code
+        run: |
+          fail=0
+          check() {
+            local present="$1" absent="$2" needle="$3"
+            if ! grep -rqa -- "$needle" "$present/assets"; then
+              echo "::error::'$needle' is missing from $present, so testing for its absence in $absent proves nothing. Update this list."
+              fail=1
+            elif grep -rqa -- "$needle" "$absent/assets"; then
+              echo "::error::$absent contains '$needle', which belongs only to $present."
+              fail=1
+            fi
+          }
+
+          # Staff-only surfaces must not reach the customer product.
+          for needle in 'admin/platform/tenants' 'admin/site/leads' 'Ops Hub'; do
+            check dist-admin dist-oneops "$needle"
+          done
+
+          # The product must not be in the staff console.
+          for needle in '/commerce/orders' '/mail/threads' '/chat/conversations' '/billing/subscription'; do
+            check dist-oneops dist-admin "$needle"
+          done
+
+          [ "$fail" -eq 0 ] || exit 1
+          echo "Neither bundle contains the other's code."
 
   marketing:
     name: Marketing (Next.js)
@@ -122,21 +158,44 @@ jobs:
       # The admin APK is checked for the same string first, so the check cannot pass vacuously. Were
       # only the OneOps side asserted, renaming the endpoint would turn this into a test that always
       # passes while protecting nothing.
-      - name: Check the OneOps build contains no platform admin code
+      - name: Check neither build contains the other's code
         run: |
           dex() { unzip -p "app/build/outputs/apk/$1/debug/app-$1-debug.apk" 'classes*.dex'; }
 
-          if ! dex admin | grep -qa 'admin/platform/'; then
-            echo "::error::The admin APK no longer references admin/platform endpoints, so the OneOps check below proves nothing. Update the string this job greps for."
-            exit 1
-          fi
+          dex admin  > /tmp/admin.dex
+          dex oneops > /tmp/oneops.dex
 
-          if dex oneops | grep -qa 'admin/platform/'; then
+          fail=0
+
+          # Direction 1: the customer's app must not contain the staff endpoints.
+          #
+          # Asserted against the admin APK first so the check cannot pass vacuously. Were only the
+          # OneOps side tested, renaming the endpoint would turn this into a test that always passes
+          # while protecting nothing.
+          if ! grep -qa 'admin/platform/' /tmp/admin.dex; then
+            echo "::error::The admin APK no longer references admin/platform endpoints, so the OneOps check proves nothing. Update the string this job greps for."
+            fail=1
+          elif grep -qa 'admin/platform/' /tmp/oneops.dex; then
             echo "::error::The OneOps APK references admin/platform endpoints. Platform admin code must live in app/src/admin."
-            exit 1
+            fail=1
           fi
 
-          echo "Admin APK has the platform endpoints, OneOps APK does not."
+          # Direction 2: the staff app must not contain the product. This is the one that broke
+          # twice, and neither time was visible — the screens were unreachable while the Retrofit
+          # APIs, the Room database and the SSE client were all still compiled in, because a Hilt
+          # provider in src/main kept them reachable from both graphs.
+          for needle in 'chat/conversations' 'mail/threads' 'chat/stream' 'prabhix_operator.db' 'outbound_flush'; do
+            if ! grep -qa "$needle" /tmp/oneops.dex; then
+              echo "::error::'$needle' is missing from the OneOps APK, so testing for its absence in admin proves nothing. Update this list."
+              fail=1
+            elif grep -qa "$needle" /tmp/admin.dex; then
+              echo "::error::The admin APK contains '$needle'. The product belongs in app/src/oneops; check for a @Provides or an injection in src/main that reaches it."
+              fail=1
+            fi
+          done
+
+          [ "$fail" -eq 0 ] || exit 1
+          echo "Neither APK contains the other's code."
 
       # So a build can be installed on a phone without a local Android toolchain. Debug-signed, so
       # they install directly but cannot be uploaded to Play.
@@ -200,8 +259,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Same context and Dockerfile as web; APP picks the entry point, so the two images differ only
-      # in which routes they contain. No Razorpay key — the admin app has no checkout.
+      # Same context and Dockerfile as web; APP picks the entry point, so the two images differ in
+      # which routes they contain. No Razorpay key — the admin app has no checkout.
       - name: Build and push admin
         uses: docker/build-push-action@v6
         with:
@@ -212,6 +271,7 @@ jobs:
             APP=admin
             VITE_API_URL=https://api.prabhixtechnologies.com
             VITE_GOOGLE_SSO_ENABLED=false
+            VITE_ONEOPS_URL=https://oneops.prabhixtechnologies.com
           tags: |
             prabhixtechnologies/prabhix-admin:latest
             prabhixtechnologies/prabhix-admin:${{ steps.meta.outputs.sha }}

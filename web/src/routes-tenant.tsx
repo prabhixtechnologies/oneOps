@@ -1,35 +1,19 @@
-import { lazy, Suspense } from "react";
-import { Navigate, Outlet, useRouteError, type RouteObject } from "react-router";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AppShell } from "@/components/layout/AppShell";
-import { AuthShell } from "@/components/layout/AuthShell";
-import { RouteErrorState } from "@/components/shared/ErrorBoundary";
-import { useAuth } from "@/lib/auth";
+import { lazy } from "react";
+import { type RouteObject } from "react-router";
+import { SuspenseWrap } from "@/routes-shell";
 
 /**
- * Everything both console apps share: the pages, the guards, and the sign-in routes.
+ * The pages that operate on one organization's data: inbox, chat, visitors, shop, settings.
  *
- * There are two apps built from this source tree — the OneOps product, sold to customers, and the
- * private admin console. They overlap almost entirely, because Prabhix's own day-to-day work
- * happens in the admin app rather than in the customer product. Keeping one copy of the route
- * definitions means a page added here appears in both without anyone remembering to do it twice,
- * while {@link ./routes.tsx} and {@link ./routes-admin.tsx} decide what each app actually mounts.
+ * <p>Imported only by {@link ./routes.tsx}, the OneOps product. Every page here needs an
+ * organization to be meaningful, and OneOps always has exactly one — the account's own, or a
+ * customer's while platform staff are handed off into it for support.
+ *
+ * <p>Keeping the `lazy` calls in this file rather than alongside the guards is what keeps them out
+ * of the admin bundle: a module-scope dynamic import is emitted into every bundle that imports the
+ * file containing it, so a shared module would put all thirty chunks in both apps.
  */
 
-const LoginPage = lazy(() => import("@/features/auth/LoginPage").then((m) => ({ default: m.LoginPage })));
-const SignupPage = lazy(() => import("@/features/auth/SignupPage").then((m) => ({ default: m.SignupPage })));
-const ForgotPasswordPage = lazy(() =>
-  import("@/features/auth/ForgotPasswordPage").then((m) => ({ default: m.ForgotPasswordPage })),
-);
-const ResetPasswordPage = lazy(() =>
-  import("@/features/auth/ForgotPasswordPage").then((m) => ({ default: m.ResetPasswordPage })),
-);
-const AcceptInvitePage = lazy(() =>
-  import("@/features/auth/AcceptInvitePage").then((m) => ({ default: m.AcceptInvitePage })),
-);
-const MagicLinkPage = lazy(() =>
-  import("@/features/auth/MagicLinkPage").then((m) => ({ default: m.MagicLinkPage })),
-);
 const ChatPage = lazy(() => import("@/features/chat/ChatPage"));
 const ChatSettingsPage = lazy(() => import("@/features/chat/ChatSettingsPage"));
 const VisitorsPage = lazy(() => import("@/features/visitors/VisitorsPage"));
@@ -66,80 +50,6 @@ const CommerceSettingsPage = lazy(() => import("@/features/commerce/CommerceSett
 const AiSettingsPage = lazy(() => import("@/features/ai/AiSettingsPage"));
 const AiUsagePage = lazy(() => import("@/features/ai/AiUsagePage"));
 
-export function PageLoader() {
-  return (
-    <div className="flex h-full items-center justify-center p-8">
-      <Skeleton className="h-8 w-48" />
-    </div>
-  );
-}
-
-export function SuspenseWrap({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
-}
-
-function RouteErrorBoundary() {
-  const error = useRouteError();
-  const message = error instanceof Error ? error.message : "Unknown error";
-  return <RouteErrorState error={new Error(message)} />;
-}
-
-function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return <PageLoader />;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <Outlet />;
-}
-
-function PublicRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return <PageLoader />;
-  if (isAuthenticated) return <Navigate to="/" replace />;
-  return <Outlet />;
-}
-
-/**
- * Staff-only routes. The sidebar already hides these links, but hiding a link is not access
- * control: the path was reachable by typing it. The server rejects the underlying calls either
- * way, so this only decides whether a non-admin sees an empty page or gets sent home.
- *
- * <p>Still applied in the admin app, where the whole point is that only platform admins belong.
- * Being served from admin.prabhixtechnologies.com proves nothing about who is signed in — the same
- * session cookie works on both hostnames.
- */
-export function PlatformAdminRoute() {
-  const { me, isLoading } = useAuth();
-  if (isLoading) return <PageLoader />;
-  if (!me?.platformAdmin) return <Navigate to="/" replace />;
-  return <Outlet />;
-}
-
-/** Sign-in, sign-up and the links that arrive by email. Identical in both apps. */
-export const publicRoutes: RouteObject = {
-  element: <PublicRoute />,
-  errorElement: <RouteErrorBoundary />,
-  children: [
-    {
-      element: <AuthShell />,
-      children: [
-        { path: "/login", element: <SuspenseWrap><LoginPage /></SuspenseWrap> },
-        { path: "/signup", element: <SuspenseWrap><SignupPage /></SuspenseWrap> },
-        { path: "/forgot-password", element: <SuspenseWrap><ForgotPasswordPage /></SuspenseWrap> },
-        { path: "/reset-password", element: <SuspenseWrap><ResetPasswordPage /></SuspenseWrap> },
-        { path: "/magic-link", element: <SuspenseWrap><MagicLinkPage /></SuspenseWrap> },
-        { path: "/invite/:token", element: <SuspenseWrap><AcceptInvitePage /></SuspenseWrap> },
-      ],
-    },
-  ],
-};
-
-/**
- * The pages that operate on one organization's data: inbox, chat, visitors, shop, settings.
- *
- * <p>Present in both apps on purpose. In OneOps they are the product; in the admin app they are how
- * Prabhix runs its own organization, which is what makes it possible never to open the customer
- * product to do everyday work.
- */
 export const tenantRoutes: RouteObject[] = [
   { index: true, element: <SuspenseWrap><DashboardPage /></SuspenseWrap> },
   { path: "chat", element: <SuspenseWrap><ChatPage /></SuspenseWrap> },
@@ -173,20 +83,3 @@ export const tenantRoutes: RouteObject[] = [
   { path: "ai/usage", element: <SuspenseWrap><AiUsagePage /></SuspenseWrap> },
   { path: "settings", element: <SuspenseWrap><SettingsPage /></SuspenseWrap> },
 ];
-
-/**
- * Wraps a set of in-app routes in the authenticated shell.
- *
- * <p>Routes that belong to only one app — Billing in OneOps, the Ops Hub in admin — are declared in
- * that app's own route file rather than here. Declaring `lazy(() => import(...))` in this shared
- * module would emit the chunk into both bundles even where nothing routes to it, since Rollup cannot
- * prove the call is free of side effects. Keeping them apart is what makes "the OneOps build does
- * not contain the platform pages" true rather than merely intended.
- */
-export function protectedShell(children: RouteObject[]): RouteObject {
-  return {
-    element: <ProtectedRoute />,
-    errorElement: <RouteErrorBoundary />,
-    children: [{ element: <AppShell />, children }],
-  };
-}

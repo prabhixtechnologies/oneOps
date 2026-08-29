@@ -16,7 +16,7 @@ final class BiometricGate {
         lastError = nil
     }
 
-    func authenticate(reason: String = "Unlock Prabhix Operator") async -> Bool {
+    func authenticate(reason: String = "Unlock \(AppConfig.appLabel)") async -> Bool {
         lastError = nil
         let context = LAContext()
         var error: NSError?
@@ -46,7 +46,7 @@ struct BiometricUnlockView: View {
         VStack(spacing: 24) {
             Image(systemName: "lock.shield")
                 .font(.system(size: 48))
-            Text("Unlock Prabhix Operator")
+            Text("Unlock \(AppConfig.appLabel)")
                 .font(.title2.bold())
             Text("Verify to access customer conversations")
                 .foregroundStyle(.secondary)

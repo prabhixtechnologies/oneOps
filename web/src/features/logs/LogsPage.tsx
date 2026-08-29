@@ -82,10 +82,11 @@ export default function LogsPage() {
   // contain this control at all; the authority check is what the server enforces regardless of which
   // build is asking.
   const { me } = useAuth();
-  const { isViewingOther } = useViewingOrg();
-  // Impersonation wins. The banner says which customer is on screen, and a page ignoring it to show
-  // every tenant's events would contradict the one indicator that is meant to be trusted.
-  const canCrossOrg = IS_ADMIN_APP && me?.platformAdmin === true && !isViewingOther;
+  const { isCustomerOrg } = useViewingOrg();
+  // The customer being supported wins. In OneOps this page can be reached while staff are inside a
+  // customer's organization, and showing every tenant's events there would contradict the banner —
+  // the one indicator of whose data is on screen that is meant to be trusted.
+  const canCrossOrg = IS_ADMIN_APP && me?.platformAdmin === true && !isCustomerOrg;
   const crossOrg = canCrossOrg && allOrgs;
 
   const filters = useMemo(

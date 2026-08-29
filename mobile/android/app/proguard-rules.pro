@@ -70,3 +70,12 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# ---------------------------------------------------------------------------
+# Tink, via androidx.security-crypto (EncryptedSharedPreferences in TokenStore)
+# ---------------------------------------------------------------------------
+# Tink carries Error Prone's compile-time annotations, which are not on the runtime classpath. They
+# were reaching R8 transitively through Firebase; now that Firebase is a OneOps-only dependency, the
+# admin build has to declare this itself. Annotations are erased at runtime, so there is nothing to
+# keep here - only the warning to silence.
+-dontwarn com.google.errorprone.annotations.**

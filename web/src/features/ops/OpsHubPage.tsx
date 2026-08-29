@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   AlertTriangle,
   Building2,
+  ExternalLink,
   Mail,
   RefreshCw,
   ShieldAlert,
@@ -17,7 +18,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePlatformOverview } from "@/features/ops/api";
 import { ApplicationsTab, LeadsTab, SubscribersTab } from "@/features/ops/SitePipeline";
 import { TenantsTab } from "@/features/ops/TenantsTab";
+import { useAuth } from "@/lib/auth";
+import { staffHandoffUrl } from "@/lib/staff-handoff";
 import { cn } from "@/lib/utils";
+
+/**
+ * Where Prabhix's own work happens, which is not here.
+ *
+ * <p>The company is a customer of its own product: its inbox, chat and shop are OneOps pointed at
+ * the Prabhix organization, reached with the same sign-in. Saying so on the page staff open every
+ * day is cheaper than explaining repeatedly why this console has no inbox.
+ */
+function OwnWorkspaceLink() {
+  const { organization } = useAuth();
+
+  return (
+    <Button size="sm" variant="secondary" asChild>
+      <a href={staffHandoffUrl(organization?.id ?? "", "/")} target="_blank" rel="noopener noreferrer">
+        <Building2 className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+        Open {organization?.name ?? "your workspace"}
+        <ExternalLink className="ml-1 h-3 w-3" aria-hidden="true" />
+      </a>
+    </Button>
+  );
+}
 
 export default function OpsHubPage() {
   const [tab, setTab] = useState("overview");
@@ -27,6 +51,7 @@ export default function OpsHubPage() {
       <PageHeader
         title="Ops Hub"
         description="Platform-wide operations across every tenant — counts, backlogs and the marketing pipeline"
+        actions={<OwnWorkspaceLink />}
       />
 
       <Tabs value={tab} onValueChange={setTab}>
