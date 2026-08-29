@@ -28,11 +28,19 @@ class SesTransportTest {
         return new SesTransport(props, mimeBuilder);
     }
 
-    @Test
-    void isHealthyWithoutStaticKeysBecauseTheInstanceRoleSuppliesThem() {
-        assertTrue(transport("ap-south-1", "").healthy(),
-                "SES on EC2 has no access keys; requiring them would disable the transport");
-    }
+    /*
+     * There used to be a case here asserting that a transport with no static access keys is healthy,
+     * from when healthy() only checked that a region was set. Once it became a live probe the same
+     * assertion turned into a network call: it built a real SesV2Client, resolved whatever credentials
+     * the machine happened to have, and passed on a developer laptop with an ~/.aws/credentials file
+     * while failing on CI, which has none. It was also asserting the opposite of current behaviour —
+     * no resolvable credentials now means unusable, deliberately, since that is an EC2 instance with
+     * no role attached and every send from it is rejected.
+     *
+     * SesTransportHealthTest covers the real intent against a mocked client: healthyWhenReadsAreDenied
+     * for a least-privilege send-only role, and unhealthyWithoutCredentials for the failure this one
+     * was accidentally hiding.
+     */
 
     @Test
     void isUnhealthyWithoutARegion() {
