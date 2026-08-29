@@ -117,17 +117,28 @@ async function check(path: string, schema: ZodTypeAny) {
   });
 
   if (!res.ok) {
-    return { path, status: res.status, ok: false, detail: await res.text() };
+    return { path, status: res.status, ok: false, empty: false, detail: await res.text() };
   }
 
   const json: unknown = await res.json();
+
+  // An endpoint that returns no rows validates trivially, which is worth knowing: passing here says
+  // nothing about the item schema. Every mismatch this file was written to find was inside a list
+  // item, so a green run over empty collections is not evidence that those pages work.
+  const empty = Array.isArray(json)
+    ? json.length === 0
+    : Array.isArray((json as { items?: unknown[] })?.items)
+      ? (json as { items: unknown[] }).items.length === 0
+      : false;
+
   const parsed = schema.safeParse(json);
-  if (parsed.success) return { path, status: res.status, ok: true, detail: "" };
+  if (parsed.success) return { path, status: res.status, ok: true, empty, detail: "" };
 
   return {
     path,
     status: res.status,
     ok: false,
+    empty,
     detail: parsed.error.errors
       .map((e) => `${e.path.join(".") || "root"}: ${e.message}`)
       .join(" | "),
@@ -192,12 +203,18 @@ describe.skipIf(!enabled)("live API matches client schemas", () => {
     }
 
     const failures = results.filter((r) => !r.ok);
-    // eslint-disable-next-line no-console
-    console.log(
-      `\nchecked ${results.length} endpoints, ${failures.length} failed\n` +
-        failures.map((f) => `  FAIL ${f.path} [${f.status}] ${f.detail.slice(0, 400)}`).join("\n"),
-    );
+    const unexercised = results.filter((r) => r.ok && r.empty);
 
-    expect(failures).toEqual([]);
+    // Written straight to stdout because vitest intercepts console.log, and the coverage caveat
+    // below is the whole point of running this — a pass over empty collections proves very little.
+    const report =
+      `\ncontract check: ${results.length} endpoints, ${failures.length} failed\n` +
+      failures.map((f) => `  FAIL  ${f.path} [${f.status}] ${f.detail.slice(0, 400)}`).join("\n") +
+      `\n${unexercised.length} returned no rows, so their item schemas are NOT verified:\n` +
+      unexercised.map((r) => `  EMPTY ${r.path}`).join("\n") +
+      "\n";
+    process.stdout.write(report);
+
+    expect(failures, report).toEqual([]);
   }, 180_000);
 });

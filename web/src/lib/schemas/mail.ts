@@ -26,7 +26,8 @@ export const threadSummarySchema = z.object({
   assigneeUserId: z.string().nullable().optional(),
   assigneeTeamId: z.string().nullable().optional(),
   customerEmail: z.string().nullable().optional(),
-  snippet: z.string(),
+  // mail_threads.snippet is nullable; subject and last_message_at above are not, so they stay strict.
+  snippet: z.string().nullish(),
   messageCount: z.number(),
   unreadCount: z.number(),
   hasAttachments: z.boolean(),
@@ -41,8 +42,10 @@ export const messageSummarySchema = z.object({
   direction: z.enum(["INBOUND", "OUTBOUND"]),
   fromAddress: z.string(),
   fromName: z.string().nullable().optional(),
-  subject: z.string(),
-  snippet: z.string().optional(),
+  // mail_messages.subject is nullable, unlike the thread subject, which the resolver defaults to
+  // "(no subject)". A message parsed without a Subject header would otherwise break thread detail.
+  subject: z.string().nullish(),
+  snippet: z.string().nullish(),
   bodyText: z.string().nullable().optional(),
   bodyHtml: z.string().nullable().optional(),
   deliveryStatus: z.string().optional(),
