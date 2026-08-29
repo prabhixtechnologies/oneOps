@@ -187,6 +187,15 @@ prabhix:
       issuer: ${JWT_ISSUER:prabhix-platform}
       access-token-ttl: ${JWT_ACCESS_TTL:PT15M}
       refresh-token-ttl: ${JWT_REFRESH_TTL:P30D}
+    # Tokens issued by Prabhix Identity, verified against its published JWKS. Blank disables it and
+    # only HS256 tokens minted here are accepted, which is the state until identity is running.
+    # Both families are accepted at once so the changeover signs nobody out. See docs/IDENTITY.md.
+    identity:
+      issuer: ${IDENTITY_ISSUER:}
+      # Only if the key set is not at {issuer}/.well-known/jwks.json.
+      jwks-uri: ${IDENTITY_JWKS_URI:}
+      jwks-cache-ttl: ${IDENTITY_JWKS_CACHE_TTL:PT10M}
+      jwks-min-refresh-interval: ${IDENTITY_JWKS_MIN_REFRESH:PT30S}
     # Sliding-window limits enforced in Redis, per IP and per organization.
     rate-limit:
       enabled: ${RATE_LIMIT_ENABLED:true}

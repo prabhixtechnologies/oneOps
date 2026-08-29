@@ -29,7 +29,8 @@ class ChatTokenServiceTest {
                 "dev-only-insecure-secret-change-me-0123456789abcdefghijklmnop",
                 "prabhix-platform", Duration.ofMinutes(15), Duration.ofDays(30));
         PrabhixProperties.Security security = new PrabhixProperties.Security(
-                jwt, new PrabhixProperties.Security.RateLimit(true, 10, 600),
+                jwt, TestProperties.identityDisabled(),
+                new PrabhixProperties.Security.RateLimit(true, 10, 600),
                 new PrabhixProperties.Security.Password(10, 12),
                 TestProperties.sessionCookie());
         PrabhixProperties properties = new PrabhixProperties(

@@ -16,6 +16,21 @@ public interface OrganizationMembershipRepository extends JpaRepository<Organiza
 
     Optional<OrganizationMembership> findByOrganizationIdAndUserId(UUID organizationId, UUID userId);
 
+    /**
+     * Whether this pairing is a live membership, for the request-time tenant check.
+     *
+     * <p>An {@code exists} rather than a fetch because it runs on every request carrying
+     * {@code X-Prabhix-Org} and nothing about the row itself is needed — the permissions come from
+     * {@code PermissionResolver}, behind its own cache.
+     */
+    boolean existsByOrganizationIdAndUserIdAndStatus(
+            UUID organizationId, UUID userId, MembershipStatus status);
+
+    default boolean existsActiveMembership(UUID organizationId, UUID userId) {
+        return existsByOrganizationIdAndUserIdAndStatus(
+                organizationId, userId, MembershipStatus.ACTIVE);
+    }
+
     List<OrganizationMembership> findByUserIdAndStatus(UUID userId, MembershipStatus status);
 
     List<OrganizationMembership> findByOrganizationIdAndUserIdIn(UUID organizationId, Set<UUID> userIds);

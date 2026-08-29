@@ -56,6 +56,7 @@ class RateLimitFilterTest {
         PrabhixProperties properties = TestProperties.withSecurity(
                 new PrabhixProperties.Security(
                         TestProperties.security(java.time.Duration.ofMinutes(15)).jwt(),
+                        TestProperties.identityDisabled(),
                         new PrabhixProperties.Security.RateLimit(true, AUTH_LIMIT, API_LIMIT),
                         null,
                         TestProperties.sessionCookie()));

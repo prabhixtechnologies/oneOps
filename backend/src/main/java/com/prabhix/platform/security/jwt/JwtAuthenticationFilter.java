@@ -6,9 +6,13 @@ import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.observability.taxonomy.LogEventCode;
+import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
+import com.prabhix.platform.org.service.PermissionResolver;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.tenant.ImpersonationAuditor;
 import com.prabhix.platform.security.tenant.TenantContext;
+import com.prabhix.platform.user.domain.User;
+import com.prabhix.platform.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,6 +52,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final StructuredEventLogger eventLogger;
     private final ImpersonationAuditor impersonationAuditor;
+    private final PermissionResolver permissionResolver;
+    private final OrganizationMembershipRepository membershipRepository;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -70,7 +77,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         "This session was signed out. Sign in again.");
             }
 
-            PrabhixPrincipal effective = applyRequestedOrganization(principal, request);
+            PrabhixPrincipal effective = parsed.source() == JwtService.TokenSource.IDENTITY
+                    ? authorizeIdentityToken(principal, request)
+                    : applyRequestedOrganization(principal, request);
 
             var authentication = new UsernamePasswordAuthenticationToken(
                     effective, null, effective.authorities());
@@ -98,6 +107,61 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Must run even on the error path — these threads are pooled and reused.
             SecurityContextHolder.clearContext();
             TenantContext.clear();
+        }
+    }
+
+    /**
+     * Builds authority for an identity token, which carries none of its own.
+     *
+     * <p>The organization comes from {@code X-Prabhix-Org} and is validated against membership, and
+     * the permissions come from this database for that pairing. Nothing here is read from the token
+     * beyond the subject, so a token cannot assert access it was not granted — and a role revoked a
+     * second ago is gone on the next request rather than when the token happens to expire.
+     *
+     * <p>A request with no organization header is allowed through unscoped. That is what
+     * {@code /users/me}, the organization list and the sign-in follow-ups need before anyone has
+     * chosen a tenant, and the authorization rules refuse everything tenant-scoped anyway because the
+     * permission set for a null organization holds only platform-level grants.
+     */
+    private PrabhixPrincipal authorizeIdentityToken(PrabhixPrincipal principal,
+                                                    HttpServletRequest request) {
+        // The mirror row. Absent means identity knows this person and the platform does not, which is
+        // an import or provisioning gap rather than a credential problem, so it says so plainly.
+        User user = userRepository.findById(principal.userId())
+                .filter(candidate -> !candidate.isDeleted())
+                .orElseThrow(() -> ApiException.of(ErrorCode.UNAUTHENTICATED,
+                        "This account is not provisioned on the platform"));
+
+        UUID requestedOrg = requestedOrganization(request);
+        boolean platformAdmin = user.isPlatformAdmin();
+
+        if (requestedOrg != null && !platformAdmin
+                && !membershipRepository.existsActiveMembership(requestedOrg, principal.userId())) {
+            log.warn("Cross-tenant attempt: user {} is not an active member of org {}",
+                    principal.userId(), requestedOrg);
+            throw ApiException.of(ErrorCode.CROSS_TENANT_ACCESS,
+                    "You are not a member of that organization.");
+        }
+
+        return new PrabhixPrincipal(
+                principal.userId(),
+                principal.email(),
+                principal.displayName(),
+                requestedOrg,
+                permissionResolver.resolve(principal.userId(), requestedOrg),
+                principal.sessionId(),
+                platformAdmin);
+    }
+
+    private UUID requestedOrganization(HttpServletRequest request) {
+        String requested = request.getHeader(ORG_HEADER);
+        if (requested == null || requested.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(requested.trim());
+        } catch (IllegalArgumentException ex) {
+            throw ApiException.of(ErrorCode.MALFORMED_REQUEST, ORG_HEADER + " is not a valid id");
         }
     }
 

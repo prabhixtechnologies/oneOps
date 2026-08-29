@@ -7,9 +7,13 @@ import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Permission;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwsHeader;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.LocatorAdapter;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
@@ -17,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -43,11 +48,15 @@ public class JwtService {
 
     private final PrabhixProperties properties;
     private final Environment environment;
+    private final IdentityKeySource identityKeys;
     private final SecretKey signingKey;
 
-    public JwtService(PrabhixProperties properties, Environment environment) {
+    public JwtService(PrabhixProperties properties,
+                      Environment environment,
+                      IdentityKeySource identityKeys) {
         this.properties = properties;
         this.environment = environment;
+        this.identityKeys = identityKeys;
         this.signingKey = Keys.hmacShaKeyFor(
                 properties.security().jwt().secret().getBytes(StandardCharsets.UTF_8));
     }
@@ -125,23 +134,34 @@ public class JwtService {
      * @throws ApiException with {@link ErrorCode#TOKEN_EXPIRED} or {@link ErrorCode#TOKEN_INVALID}
      */
     public ParsedToken parseDetailed(String token) {
-        Claims claims = parseClaims(token);
+        Verified verified = parseVerified(token);
+        Claims claims = verified.claims();
 
-        if (!TYPE_ACCESS.equals(claims.get(CLAIM_TYPE, String.class))) {
+        // Only tokens this service issued carry a type claim. An identity token has no equivalent,
+        // and its refresh tokens are opaque rather than JWTs, so there is no second JWT shape it
+        // could be confused with.
+        if (verified.source() == TokenSource.PLATFORM
+                && !TYPE_ACCESS.equals(claims.get(CLAIM_TYPE, String.class))) {
             throw ApiException.of(ErrorCode.TOKEN_INVALID, "Wrong token type for this endpoint");
         }
+
+        // An identity token states who you are and nothing about what you may do. Organization and
+        // permissions are left empty here and filled in per request by JwtAuthenticationFilter from
+        // this database, so a claim in the token can never be the source of authority.
+        boolean fromIdentity = verified.source() == TokenSource.IDENTITY;
 
         PrabhixPrincipal principal = new PrabhixPrincipal(
                 uuid(claims.getSubject()),
                 claims.get(CLAIM_EMAIL, String.class),
                 claims.get(CLAIM_NAME, String.class),
-                uuid(claims.get(CLAIM_ORG, String.class)),
-                readPermissions(claims),
+                fromIdentity ? null : uuid(claims.get(CLAIM_ORG, String.class)),
+                fromIdentity ? Set.of() : readPermissions(claims),
                 uuid(claims.get(CLAIM_SESSION, String.class)),
-                Boolean.TRUE.equals(claims.get(CLAIM_PLATFORM_ADMIN, Boolean.class)));
+                !fromIdentity && Boolean.TRUE.equals(claims.get(CLAIM_PLATFORM_ADMIN, Boolean.class)));
 
         Date issuedAt = claims.getIssuedAt();
-        return new ParsedToken(principal, issuedAt == null ? null : issuedAt.toInstant());
+        return new ParsedToken(principal, issuedAt == null ? null : issuedAt.toInstant(),
+                verified.source());
     }
 
     /** The JWT id, used as the deny-list key when a session is revoked mid-TTL. */
@@ -150,18 +170,79 @@ public class JwtService {
     }
 
     private Claims parseClaims(String token) {
+        return parseVerified(token).claims();
+    }
+
+    /**
+     * Verifies the signature and the issuer, and reports which issuer it turned out to be.
+     *
+     * <p>Two signature families are accepted, and the token is never allowed to choose between them.
+     * The key is selected by the {@code alg} in the header, and jjwt then enforces that the key
+     * matches the algorithm family — an HMAC key can only satisfy a MAC algorithm and a public key
+     * only a signature algorithm. That is what closes the RS256-to-HS256 confusion attack: identity's
+     * public key is, by design, public, so if it could be presented back as an HMAC secret then
+     * anyone could mint a platform-admin token. Feeding a {@code PublicKey} to
+     * {@link io.jsonwebtoken.JwtParserBuilder#verifyWith(javax.crypto.SecretKey)} is not possible
+     * here, and that is deliberate rather than incidental.
+     *
+     * <p>Issuer is checked after parsing rather than with {@code requireIssuer}, because there are now
+     * two acceptable issuers and a token must match the one belonging to the key that verified it —
+     * not merely one of the two.
+     */
+    private Verified parseVerified(String token) {
+        String platformIssuer = properties.security().jwt().issuer();
+        var identity = properties.security().identity();
+
         try {
-            return Jwts.parser()
-                    .verifyWith(signingKey)
-                    .requireIssuer(properties.security().jwt().issuer())
+            Jws<Claims> jws = Jwts.parser()
+                    .keyLocator(new LocatorAdapter<Key>() {
+                        @Override
+                        protected Key locate(JwsHeader header) {
+                            if (Jwts.SIG.HS256.getId().equals(header.getAlgorithm())) {
+                                return signingKey;
+                            }
+                            if (Jwts.SIG.RS256.getId().equals(header.getAlgorithm())) {
+                                if (!identity.enabled()) {
+                                    throw new SignatureException(
+                                            "This deployment does not trust an identity issuer");
+                                }
+                                return identityKeys.verificationKey(header.getKeyId())
+                                        .orElseThrow(() -> new SignatureException(
+                                                "No published identity key with id "
+                                                        + header.getKeyId()));
+                            }
+                            // Anything else, including "none", never reaches a key.
+                            throw new SignatureException(
+                                    "Unsupported token algorithm " + header.getAlgorithm());
+                        }
+                    })
                     .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
+                    .parseSignedClaims(token);
+
+            boolean fromIdentity = Jwts.SIG.RS256.getId().equals(jws.getHeader().getAlgorithm());
+            String expectedIssuer = fromIdentity ? identity.issuer() : platformIssuer;
+            if (!expectedIssuer.equals(jws.getPayload().getIssuer())) {
+                throw ApiException.of(ErrorCode.TOKEN_INVALID, "That token is not valid");
+            }
+
+            return new Verified(jws.getPayload(),
+                    fromIdentity ? TokenSource.IDENTITY : TokenSource.PLATFORM);
         } catch (ExpiredJwtException ex) {
             throw ApiException.of(ErrorCode.TOKEN_EXPIRED, "Your session has expired");
         } catch (JwtException | IllegalArgumentException ex) {
             throw ApiException.of(ErrorCode.TOKEN_INVALID, "That token is not valid");
         }
+    }
+
+    private record Verified(Claims claims, TokenSource source) {
+    }
+
+    /** Which issuer signed a token, and therefore whether its claims may be trusted for authority. */
+    public enum TokenSource {
+        /** Signed HS256 by this service. Carries organization and permissions. */
+        PLATFORM,
+        /** Signed RS256 by Prabhix Identity. Carries identity only. */
+        IDENTITY
     }
 
     private Set<Permission> readPermissions(Claims claims) {
@@ -197,7 +278,9 @@ public class JwtService {
     /**
      * @param issuedAt the {@code iat} claim, or null for a token minted without one. JWT dates
      *                 carry second precision, so this is truncated relative to the real issue time.
+     * @param source which issuer signed it. An {@link TokenSource#IDENTITY} principal arrives with no
+     *     organization and no permissions, and the caller is responsible for resolving both.
      */
-    public record ParsedToken(PrabhixPrincipal principal, Instant issuedAt) {
+    public record ParsedToken(PrabhixPrincipal principal, Instant issuedAt, TokenSource source) {
     }
 }

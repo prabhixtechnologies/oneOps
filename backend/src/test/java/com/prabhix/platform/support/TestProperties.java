@@ -43,11 +43,30 @@ public final class TestProperties {
 
     public static PrabhixProperties.Security security(Duration accessTokenTtl,
                                                      Duration refreshTokenTtl) {
+        return security(accessTokenTtl, refreshTokenTtl, identityDisabled());
+    }
+
+    public static PrabhixProperties.Security security(Duration accessTokenTtl,
+                                                     Duration refreshTokenTtl,
+                                                     PrabhixProperties.Security.Identity identity) {
         return new PrabhixProperties.Security(
                 new PrabhixProperties.Security.Jwt(
                         "test-jwt-secret-long-enough-for-hmac-sha256-0123456789abcdefgh",
                         "prabhix-platform", accessTokenTtl, refreshTokenTtl),
-                null, null, sessionCookie());
+                identity, null, null, sessionCookie());
+    }
+
+    /** A blank issuer, which is how every deployment starts and what most tests want. */
+    public static PrabhixProperties.Security.Identity identityDisabled() {
+        return new PrabhixProperties.Security.Identity(
+                "", "", Duration.ofMinutes(10), Duration.ofSeconds(30));
+    }
+
+    /** Trusts an identity issuer, for the tests that present an RS256 token. */
+    public static PrabhixProperties.Security.Identity identityTrusting(String issuer) {
+        return new PrabhixProperties.Security.Identity(
+                issuer, issuer + "/.well-known/jwks.json",
+                Duration.ofMinutes(10), Duration.ofSeconds(30));
     }
 
     /** Host-only and insecure, matching how a browser accepts cookies on localhost. */

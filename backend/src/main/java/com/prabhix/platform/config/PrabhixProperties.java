@@ -40,9 +40,53 @@ public record PrabhixProperties(
 
     public record Security(
             @DefaultValue Jwt jwt,
+            @DefaultValue Identity identity,
             @DefaultValue RateLimit rateLimit,
             @DefaultValue Password password,
             @DefaultValue SessionCookie sessionCookie) {
+
+        /**
+         * Trust for tokens issued by Prabhix Identity, verified against its published JWKS.
+         *
+         * <p>Blank {@code issuer} disables it, which is the default and the state of every deployment
+         * until identity is actually running. While disabled the backend accepts only its own HS256
+         * tokens, exactly as before.
+         *
+         * <p>Both signature families are accepted at once on purpose. An access token lives 15 minutes
+         * and a refresh token 30 days, so a hard switch would sign out everyone holding a token minted
+         * a moment earlier. Accepting both means the changeover is invisible, and HS256 can be dropped
+         * once no token that old can still be in circulation.
+         *
+         * <p>An identity token deliberately carries no organization and no permissions. Those are
+         * resolved per request from this database instead — which is also strictly better than the
+         * HS256 path, where permissions freeze into the token at sign-in and a revoked role keeps
+         * working until it expires.
+         */
+        public record Identity(
+                @DefaultValue("") String issuer,
+                /** Defaults to {@code {issuer}/.well-known/jwks.json}; set only if that is not where it is. */
+                @DefaultValue("") String jwksUri,
+                /**
+                 * How long a fetched key set is reused. An unknown key id forces a refresh regardless,
+                 * so this is the ceiling on how long a *retired* key stays accepted, not on how long a
+                 * new one takes to be noticed.
+                 */
+                @DefaultValue("PT10M") Duration jwksCacheTtl,
+                /** Floor between refreshes, so a stream of tokens naming absent key ids cannot be used to hammer identity. */
+                @DefaultValue("PT30S") Duration jwksMinRefreshInterval) {
+
+            public boolean enabled() {
+                return issuer != null && !issuer.isBlank();
+            }
+
+            public String effectiveJwksUri() {
+                if (jwksUri != null && !jwksUri.isBlank()) {
+                    return jwksUri;
+                }
+                String base = issuer.endsWith("/") ? issuer.substring(0, issuer.length() - 1) : issuer;
+                return base + "/.well-known/jwks.json";
+            }
+        }
 
         /**
          * The browser session cookie that lets one sign-in cover every console hostname.
