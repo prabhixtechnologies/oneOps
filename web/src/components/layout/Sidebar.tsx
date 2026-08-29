@@ -1,31 +1,5 @@
-import { useEffect } from "react";
-import {
-  Activity,
-  CreditCard,
-  FileText,
-  Flag,
-  FolderOpen,
-  Globe,
-  Inbox,
-  LayoutDashboard,
-  LogOut,
-  Mail,
-  MessageSquare,
-  Moon,
-  ScrollText,
-  Search,
-  Settings,
-  Sun,
-  Tag,
-  Users,
-  Briefcase,
-  ShoppingBag,
-  Receipt,
-  Percent,
-  Store,
-  Sparkles,
-  BarChart3,
-} from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { LogOut, Moon, Search, Sun } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { Button } from "@/components/ui/button";
@@ -33,36 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
+import { useAppMode } from "@/lib/app-mode";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { PERMISSIONS } from "@/lib/permissions";
-
-const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/chat", icon: MessageSquare, label: "Live Chat", permission: PERMISSIONS.CHAT_READ },
-  { to: "/visitors", icon: Activity, label: "Visitors", permission: PERMISSIONS.VISITOR_READ },
-  { to: "/inbox", icon: Inbox, label: "Shared Inbox" },
-  { to: "/mailboxes", icon: Mail, label: "Mailboxes", permission: PERMISSIONS.MAIL_MAILBOX_READ },
-  { to: "/domains", icon: Globe, label: "Mail Domains", permission: PERMISSIONS.MAIL_DOMAIN_READ },
-  { to: "/templates", icon: FileText, label: "Templates", permission: PERMISSIONS.MAIL_TEMPLATE_READ },
-  { to: "/tags", icon: Tag, label: "Mail tags", permission: PERMISSIONS.MAIL_READ },
-  { to: "/canned-replies", icon: MessageSquare, label: "Canned replies", permission: PERMISSIONS.MAIL_READ },
-  { to: "/files", icon: FolderOpen, label: "Files", permission: PERMISSIONS.FILE_READ },
-  { to: "/commerce", icon: Store, label: "Shop dashboard", permission: PERMISSIONS.COMMERCE_ORDER_READ },
-  { to: "/commerce/products", icon: ShoppingBag, label: "Products", permission: PERMISSIONS.COMMERCE_CATALOG_READ },
-  { to: "/commerce/orders", icon: Receipt, label: "Orders", permission: PERMISSIONS.COMMERCE_ORDER_READ },
-  { to: "/commerce/customers", icon: Users, label: "Customers", permission: PERMISSIONS.COMMERCE_CUSTOMER_READ },
-  { to: "/commerce/discounts", icon: Percent, label: "Discounts", permission: PERMISSIONS.COMMERCE_DISCOUNT_MANAGE },
-  { to: "/commerce/settings", icon: Store, label: "Shop settings", permission: PERMISSIONS.COMMERCE_SETTINGS_MANAGE },
-  { to: "/members", icon: Users, label: "Members & Roles", permission: PERMISSIONS.ORG_MEMBER_READ },
-  { to: "/billing", icon: CreditCard, label: "Billing", permission: PERMISSIONS.BILLING_READ },
-  { to: "/ai/settings", icon: Sparkles, label: "AI settings", permission: PERMISSIONS.AI_CONFIGURE },
-  { to: "/ai/usage", icon: BarChart3, label: "AI usage", permission: PERMISSIONS.AI_USAGE_READ },
-  { to: "/audit", icon: FileText, label: "Audit Log", permission: PERMISSIONS.AUDIT_READ },
-  { to: "/logs", icon: ScrollText, label: "Event Logs", permission: PERMISSIONS.LOG_READ },
-  { to: "/flags", icon: Flag, label: "Feature flags" },
-  { to: "/ops", icon: Briefcase, label: "Ops Hub" },
-  { to: "/settings", icon: Settings, label: "Settings" },
-];
+import { navGroupsFor, type NavItem } from "./nav-config";
 
 interface SidebarProps {
   onOpenCommand: () => void;
@@ -74,6 +21,8 @@ interface SidebarProps {
 export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
   const { me } = useAuth();
+  const mode = useAppMode();
+  const groups = useMemo(() => navGroupsFor(mode), [mode]);
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -81,7 +30,7 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
       isActive ? "bg-surface text-primary" : "text-text-muted",
     );
 
-  const navLink = (item: (typeof navItems)[number]) => (
+  const navLink = (item: NavItem) => (
     <NavLink
       key={item.to}
       to={item.to}
@@ -94,61 +43,78 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
     </NavLink>
   );
 
+  const renderItem = (item: NavItem) => {
+    if (item.platformAdminOnly && !me?.platformAdmin) return null;
+    const link = navLink(item);
+    if (!item.permission) return link;
+    return (
+      <PermissionGate key={item.to} permission={item.permission}>
+        {link}
+      </PermissionGate>
+    );
+  };
+
   return (
     <aside
-        className={cn(
-          "flex h-full w-full flex-col border-r border-border bg-surface-muted/50 lg:w-52",
-          className,
+      className={cn(
+        "flex h-full w-full flex-col border-r border-border bg-surface-muted/50 lg:w-52",
+        className,
+      )}
+    >
+      <div className="flex h-14 items-center gap-2 border-b border-border px-3 lg:px-4">
+        <LogoMark className="h-8 w-8 shrink-0" />
+        <span className="text-sm font-semibold">Prabhix</span>
+        {mode === "admin" && (
+          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+            Admin
+          </span>
         )}
-      >
-        <div className="flex h-14 items-center gap-2 border-b border-border px-3 lg:px-4">
-          <LogoMark className="h-8 w-8 shrink-0" />
-          <span className="text-sm font-semibold">Prabhix</span>
-        </div>
+      </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-2" aria-label="Main navigation">
-          {navItems.map((item) => {
-            if (item.to === "/ops" && !me?.platformAdmin) return null;
-            const link = navLink(item);
-            if (item.permission) {
-              return (
-                <PermissionGate key={item.to} permission={item.permission}>
-                  {link}
-                </PermissionGate>
-              );
-            }
-            return link;
-          })}
-        </nav>
+      <nav className="flex-1 overflow-y-auto p-2" aria-label="Main navigation">
+        {groups.map((group) => {
+          const items = group.items.map(renderItem).filter(Boolean);
+          // A group whose every link is hidden by permissions would otherwise leave a stray heading.
+          if (items.length === 0) return null;
+          return (
+            <div key={group.heading} className="mb-3 space-y-1 last:mb-0">
+              <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted/70">
+                {group.heading}
+              </p>
+              {items}
+            </div>
+          );
+        })}
+      </nav>
 
-        <div className="space-y-1 border-t border-border p-2 pb-[env(safe-area-inset-bottom)]">
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-3" onClick={onOpenCommand}>
-            <Search className="h-4 w-4" aria-hidden="true" />
-            <span>Search</span>
-            <kbd className="ml-auto hidden rounded bg-surface px-1.5 text-[10px] lg:inline">⌘K</kbd>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-3"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
-          </Button>
-          <Separator className="my-1" />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-3 text-destructive"
-            onClick={onLogout}
-          >
-            <LogOut className="h-4 w-4" aria-hidden="true" />
-            <span>Sign out</span>
-          </Button>
-        </div>
-      </aside>
+      <div className="space-y-1 border-t border-border p-2 pb-[env(safe-area-inset-bottom)]">
+        <Button variant="ghost" size="sm" className="w-full justify-start gap-3" onClick={onOpenCommand}>
+          <Search className="h-4 w-4" aria-hidden="true" />
+          <span>Search</span>
+          <kbd className="ml-auto hidden rounded bg-surface px-1.5 text-[10px] lg:inline">⌘K</kbd>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-3"
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+        </Button>
+        <Separator className="my-1" />
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-3 text-destructive"
+          onClick={onLogout}
+        >
+          <LogOut className="h-4 w-4" aria-hidden="true" />
+          <span>Sign out</span>
+        </Button>
+      </div>
+    </aside>
   );
 }
 

@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label";
 import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
+import { passwordSchema } from "@/lib/password";
 
 const acceptSchema = z.object({
   fullName: z.string().min(2, "Enter your full name"),
-  password: z.string().min(10, "Password must be at least 10 characters"),
+  password: passwordSchema,
 });
 
 export function AcceptInvitePage() {

@@ -27,7 +27,7 @@ export function MagicLinkPage() {
           body: { token },
           skipAuth: true,
         });
-        await loginWithTokens(tokens.accessToken, tokens.refreshToken);
+        await loginWithTokens(tokens.accessToken);
         toast.success("Signed in successfully.");
         void navigate("/", { replace: true });
       } catch (err) {

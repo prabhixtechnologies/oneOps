@@ -35,12 +35,22 @@ public final class AuthDtos {
             String refreshToken) {
     }
 
+    /**
+     * @param refreshToken absent when the caller authenticated with the browser session cookie.
+     *                     Native clients have no cookie jar and keep using this field; browsers no
+     *                     longer store it anywhere, which is the point — a token in localStorage is
+     *                     readable by any script that gets injected onto the page.
+     * @param sessionId    which device session was just established. Not a credential (it is
+     *                     already returned by /auth/me and listed in Settings), and needed so the
+     *                     server can bind the shared session cookie to this session.
+     */
     public record TokenResponse(
             String accessToken,
             String refreshToken,
             long expiresInSeconds,
             UUID organizationId,
-            Set<String> permissions) {
+            Set<String> permissions,
+            UUID sessionId) {
     }
 
     public record AuthMeResponse(

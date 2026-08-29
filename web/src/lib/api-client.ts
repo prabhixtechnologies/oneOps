@@ -248,8 +248,22 @@ export function triggerBlobDownload(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * The message to show a person for a failed request.
+ *
+ * Validation failures arrive as a generic sentence plus a map naming each field and what was wrong
+ * with it, and dropping that map made every such failure read "Some fields need attention" with no
+ * hint as to which field or why. A change-password form rejected for being under the minimum length
+ * gave no clue that length was the problem, and the same blankness applied to every other form,
+ * because this one function feeds them all.
+ */
 export function getApiErrorMessage(err: unknown): string {
-  if (err instanceof ApiClientError) return err.message;
+  if (err instanceof ApiClientError) {
+    const detail = Object.entries(err.fieldErrors ?? {})
+      .map(([field, message]) => `${field}: ${message}`)
+      .join("; ");
+    return detail === "" ? err.message : `${err.message} (${detail})`;
+  }
   if (err instanceof Error) return err.message;
   return "Something went wrong";
 }

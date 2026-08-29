@@ -8,18 +8,29 @@ let clientConfig: {
   onUnauthorized: () => void;
 } | null = null;
 
+class FakeApiClientError extends Error {
+  constructor(readonly status: number) {
+    super(`status ${status}`);
+  }
+}
+
 vi.mock("@/lib/api-client", () => ({
   apiRequest: (...args: unknown[]) => apiRequest(...args),
+  ApiClientError: FakeApiClientError,
   configureApiClient: (config: typeof clientConfig) => {
     clientConfig = config;
   },
 }));
 
-const REFRESH_KEY = "prabhix_refresh_token";
+const SESSION_TOKEN_PATH = "/auth/session/token";
 
 /** Paths passed to apiRequest, in order. */
 function requestedPaths(): string[] {
   return apiRequest.mock.calls.map((call) => call[0] as string);
+}
+
+function countOf(path: string): number {
+  return requestedPaths().filter((p) => p === path).length;
 }
 
 async function renderProvider() {
@@ -48,27 +59,34 @@ async function renderProvider() {
   return () => snapshot;
 }
 
-describe("AuthProvider with a refresh token the server rejects", () => {
-  beforeEach(() => {
-    apiRequest.mockReset();
-    clientConfig = null;
-    localStorage.clear();
-    vi.resetModules();
-  });
+const AUTH_ME = {
+  userId: "u1",
+  email: "a@example.com",
+  displayName: "A",
+  organizationId: "o1",
+  sessionId: "s1",
+  permissions: [],
+  platformAdmin: false,
+};
 
+beforeEach(() => {
+  apiRequest.mockReset();
+  clientConfig = null;
+  localStorage.clear();
+  vi.resetModules();
+});
+
+describe("AuthProvider when the browser has no usable session", () => {
   it("signs the visitor out quietly rather than reporting a failure", async () => {
-    localStorage.setItem(REFRESH_KEY, "stale-token");
-    apiRequest.mockRejectedValue(new Error("401"));
+    apiRequest.mockRejectedValue(new FakeApiClientError(401));
 
     const read = await renderProvider();
 
     expect(read().isAuthenticated).toBe(false);
-    expect(localStorage.getItem(REFRESH_KEY)).toBeNull();
   });
 
-  it("never presents the dead token to the logout endpoint", async () => {
-    localStorage.setItem(REFRESH_KEY, "stale-token");
-    apiRequest.mockRejectedValue(new Error("401"));
+  it("never presents a refused token to the logout endpoint", async () => {
+    apiRequest.mockRejectedValue(new FakeApiClientError(401));
 
     await renderProvider();
 
@@ -77,63 +95,74 @@ describe("AuthProvider with a refresh token the server rejects", () => {
     expect(requestedPaths()).not.toContain("/auth/logout");
   });
 
-  it("stops re-presenting a token already refused, so siblings cannot earn a rate limit", async () => {
-    localStorage.setItem(REFRESH_KEY, "stale-token");
-    apiRequest.mockRejectedValue(new Error("401"));
+  it("stops retrying once the server has said there is no session", async () => {
+    apiRequest.mockRejectedValue(new FakeApiClientError(401));
 
     await renderProvider();
-    expect(requestedPaths().filter((p) => p === "/auth/refresh")).toHaveLength(1);
+    expect(countOf(SESSION_TOKEN_PATH)).toBe(1);
 
-    // Bootstrap clears the token on failure, and even if a stale copy is put back the value is
-    // remembered as dead: replaying it reads as theft to the server and revokes the chain.
-    localStorage.setItem(REFRESH_KEY, "stale-token");
+    // Several queries 401ing at once each ask for a renewal. The single-flight guard only collapses
+    // concurrent attempts, so without remembering the refusal these arrive one at a time and earn a
+    // rate limit for a session that does not exist.
     await clientConfig?.refreshTokens();
     await clientConfig?.refreshTokens();
 
-    expect(requestedPaths().filter((p) => p === "/auth/refresh")).toHaveLength(1);
+    expect(countOf(SESSION_TOKEN_PATH)).toBe(1);
   });
 
-  it("does not call the API at all when there was never a stored token", async () => {
-    const read = await renderProvider();
+  it("keeps trying after a failure that was not a refusal", async () => {
+    // A 500 or a dropped connection says nothing about whether a session exists. Treating it as
+    // "signed out" would strand a signed-in person on the login page until they reloaded.
+    apiRequest.mockRejectedValue(new Error("network down"));
 
-    expect(read().isAuthenticated).toBe(false);
-    expect(apiRequest).not.toHaveBeenCalled();
+    await renderProvider();
+    expect(countOf(SESSION_TOKEN_PATH)).toBe(1);
+
+    await clientConfig?.refreshTokens();
+
+    expect(countOf(SESSION_TOKEN_PATH)).toBe(2);
   });
 });
 
-describe("AuthProvider when the refresh succeeds", () => {
+describe("AuthProvider when the session cookie is good", () => {
   beforeEach(() => {
-    apiRequest.mockReset();
-    clientConfig = null;
-    localStorage.clear();
-    vi.resetModules();
-  });
-
-  it("exchanges the token once and then loads the session", async () => {
-    localStorage.setItem(REFRESH_KEY, "good-token");
     apiRequest.mockImplementation((path: string) => {
-      if (path === "/auth/refresh") {
-        return Promise.resolve({ accessToken: "access-1", refreshToken: "rotated-1" });
+      if (path === SESSION_TOKEN_PATH) {
+        // No refreshToken in the response, and none needed: this is the shape the server returns
+        // for a cookie exchange.
+        return Promise.resolve({ accessToken: "access-1", expiresInSeconds: 900 });
       }
-      if (path === "/auth/me") {
-        return Promise.resolve({
-          userId: "u1",
-          email: "a@example.com",
-          displayName: "A",
-          organizationId: "o1",
-          sessionId: "s1",
-          permissions: [],
-          platformAdmin: false,
-        });
-      }
+      if (path === "/auth/me") return Promise.resolve(AUTH_ME);
       return Promise.resolve(null);
     });
+  });
 
+  it("exchanges the cookie once and then loads the session", async () => {
     const read = await renderProvider();
 
     expect(read().isAuthenticated).toBe(true);
-    expect(localStorage.getItem(REFRESH_KEY)).toBe("rotated-1");
-    expect(requestedPaths().filter((p) => p === "/auth/refresh")).toHaveLength(1);
+    expect(countOf(SESSION_TOKEN_PATH)).toBe(1);
     expect(requestedPaths()).toContain("/auth/me");
+  });
+
+  it("stores no session credential in localStorage", async () => {
+    await renderProvider();
+
+    // The point of the cookie: the credential that outlives the page is HttpOnly and unreachable
+    // from script. A refresh token used to sit here, readable by anything injected onto the page.
+    expect(Object.keys(localStorage)).toHaveLength(0);
+  });
+
+  it("collapses concurrent renewals into a single request", async () => {
+    await renderProvider();
+    const before = countOf(SESSION_TOKEN_PATH);
+
+    await Promise.all([
+      clientConfig?.refreshTokens(),
+      clientConfig?.refreshTokens(),
+      clientConfig?.refreshTokens(),
+    ]);
+
+    expect(countOf(SESSION_TOKEN_PATH)).toBe(before + 1);
   });
 });

@@ -1,0 +1,102 @@
+version: 2
+
+# Automated dependency updates and vulnerability patches.
+#
+# Nothing watched dependencies before this: a published advisory in a transitive package would have
+# sat here indefinitely, because no build step and no schedule ever looked. Every ecosystem in the
+# repo is listed, since an unlisted one is silently unwatched — the failure mode is no signal rather
+# than an error, which is exactly the kind that goes unnoticed for a year.
+#
+# Grouping matters as much as coverage. Ungrouped, this raises dozens of single-package pull requests
+# a week across five manifests, they get ignored as noise, and the setup is worse than none because
+# it looks like it is working. Patch and minor updates therefore arrive as one pull request per
+# ecosystem; majors come separately, since those need reading.
+#
+# Note that this file only governs *updates*. Alerting on advisories is a repository setting
+# (Settings > Code security > Dependabot alerts) and has to be switched on there once.
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      backend-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      backend-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    labels: [dependencies, backend]
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      web-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      web-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    labels: [dependencies, web]
+
+  - package-ecosystem: npm
+    directory: /marketing
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      marketing-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      marketing-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    labels: [dependencies, marketing]
+
+  - package-ecosystem: gradle
+    directory: /mobile/android
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      android-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      android-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    labels: [dependencies, mobile]
+
+  # Actions pinned by tag drift out of support quietly, and a deprecated runner action fails the
+  # whole pipeline the day it is switched off rather than warning first.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    labels: [dependencies, ci]
+
+  # Base images are where most inherited CVEs live, and they are invisible to the language
+  # ecosystems above: nothing else in this file would notice nginx or the JRE going stale.
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /web
+      - /marketing
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      base-images:
+        patterns: ["*"]
+    labels: [dependencies, docker]

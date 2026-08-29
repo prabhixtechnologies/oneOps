@@ -38,11 +38,21 @@ public final class TestProperties {
     }
 
     public static PrabhixProperties.Security security(Duration accessTokenTtl) {
+        return security(accessTokenTtl, Duration.ofDays(30));
+    }
+
+    public static PrabhixProperties.Security security(Duration accessTokenTtl,
+                                                     Duration refreshTokenTtl) {
         return new PrabhixProperties.Security(
                 new PrabhixProperties.Security.Jwt(
                         "test-jwt-secret-long-enough-for-hmac-sha256-0123456789abcdefgh",
-                        "prabhix-platform", accessTokenTtl, Duration.ofDays(30)),
-                null, null);
+                        "prabhix-platform", accessTokenTtl, refreshTokenTtl),
+                null, null, sessionCookie());
+    }
+
+    /** Host-only and insecure, matching how a browser accepts cookies on localhost. */
+    public static PrabhixProperties.Security.SessionCookie sessionCookie() {
+        return new PrabhixProperties.Security.SessionCookie("pbx_session", "", false, "Lax");
     }
 
     public static PrabhixProperties.Limits limits() {

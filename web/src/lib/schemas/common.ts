@@ -59,10 +59,13 @@ export function arraySchema<T extends z.ZodTypeAny>(itemSchema: T) {
 
 export const authTokensSchema = z.object({
   accessToken: z.string(),
-  refreshToken: z.string(),
+  // Absent when the browser authenticated with the shared session cookie, and unused by this app
+  // either way: the console no longer stores a refresh token anywhere. Native clients still get one.
+  refreshToken: z.string().nullish(),
   expiresInSeconds: z.number(),
   organizationId: z.string().optional(),
   permissions: z.array(z.string()).optional(),
+  sessionId: z.string().optional(),
 });
 
 export const authMeSchema = z.object({

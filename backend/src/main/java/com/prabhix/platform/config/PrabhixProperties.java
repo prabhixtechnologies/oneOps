@@ -41,7 +41,31 @@ public record PrabhixProperties(
     public record Security(
             @DefaultValue Jwt jwt,
             @DefaultValue RateLimit rateLimit,
-            @DefaultValue Password password) {
+            @DefaultValue Password password,
+            @DefaultValue SessionCookie sessionCookie) {
+
+        /**
+         * The browser session cookie that lets one sign-in cover every console hostname.
+         *
+         * <p>{@code domain} must be the parent of every host that should share the session
+         * ({@code .prabhixtechnologies.com}), and blank in local development, where a host-only
+         * cookie on localhost is what works. Setting it to a domain the response is not served from
+         * makes the browser drop the cookie silently, which presents as "login does nothing".
+         *
+         * <p>{@code SameSite=Lax} is what keeps this off the CSRF surface: the cookie is not
+         * attached to cross-site POSTs, so a form on another origin cannot drive the exchange
+         * endpoint, and no other endpoint reads cookies at all.
+         */
+        public record SessionCookie(
+                @DefaultValue("pbx_session") String name,
+                @DefaultValue("") String domain,
+                @DefaultValue("true") boolean secure,
+                @DefaultValue("Lax") String sameSite) {
+
+            public String domainOrNull() {
+                return domain == null || domain.isBlank() ? null : domain;
+            }
+        }
 
         public record Jwt(
                 @NotBlank @DefaultValue("dev-only-insecure-secret-change-me-0123456789abcdefghijklmnop")

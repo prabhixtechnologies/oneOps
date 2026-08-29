@@ -11,11 +11,10 @@ import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { ackResponseSchema, authTokensSchema } from "@/lib/schemas/common";
 import { useAuth } from "@/lib/auth";
 import { GOOGLE_SSO_ENABLED } from "@/lib/config";
+import { passwordSchema as password } from "@/lib/password";
 
 const emailSchema = z.object({ email: z.string().email("Enter a valid email") });
-const passwordSchema = emailSchema.extend({
-  password: z.string().min(10, "Password must be at least 10 characters"),
-});
+const passwordSchema = emailSchema.extend({ password });
 const otpSchema = emailSchema.extend({
   code: z.string().min(4, "Enter the verification code"),
 });
@@ -87,7 +86,7 @@ export function LoginPage() {
         body: { email: data.email, code: data.code },
         skipAuth: true,
       });
-      await loginWithTokens(tokens.accessToken, tokens.refreshToken);
+      await loginWithTokens(tokens.accessToken);
       void navigate("/");
     } catch (err) {
       handleError(err);

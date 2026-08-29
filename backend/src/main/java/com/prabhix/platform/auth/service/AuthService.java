@@ -172,7 +172,67 @@ public class AuthService {
                 newRaw,
                 access.expiresInSeconds(),
                 orgId,
-                permissions.stream().map(Permission::name).collect(Collectors.toUnmodifiableSet()));
+                permissions.stream().map(Permission::name).collect(Collectors.toUnmodifiableSet()),
+                session.getId());
+    }
+
+    /**
+     * Mints an access token from the shared browser session cookie.
+     *
+     * <p>Deliberately unlike {@link #refresh(String)}: nothing is consumed, nothing is rotated, and
+     * no new refresh token is handed out. That is what makes it safe for two console hostnames to
+     * call it at the same instant — the failure this replaces was two apps racing on one rotating
+     * refresh token and having the session revoked as a replay.
+     *
+     * <p>The response carries no {@code refreshToken}. A browser has no need of one now that the
+     * cookie can be exchanged again, and not returning one keeps it out of {@code localStorage},
+     * where any injected script could have read it.
+     */
+    @Transactional
+    public TokenResponse exchangeSessionCookie(String rawCookieToken) {
+        DeviceSession session = deviceSessionRepository.findByCookieTokenHash(sha256(rawCookieToken))
+                .orElseThrow(AuthService::noSessionCookie);
+
+        // Distinguishing these two is not worth doing for the caller — both mean "sign in again" —
+        // but the distinction matters in the log, where a revoked session is an expected
+        // consequence of someone signing out and an expired cookie is just the passage of time.
+        if (!session.isActive()) {
+            eventLogger.log(LogEventCode.AUTH_REQUEST_UNAUTHENTICATED,
+                    Map.of("reason", "session_revoked", "sessionId", session.getId()), false);
+            throw ApiException.of(ErrorCode.TOKEN_REVOKED, "This session was signed out");
+        }
+        if (!session.hasUsableCookie(Instant.now())) {
+            throw noSessionCookie();
+        }
+
+        User user = userService.requireActive(session.getUserId());
+        session.setLastSeenAt(Instant.now());
+        deviceSessionRepository.save(session);
+
+        UUID orgId = resolveActiveOrganization(user.getId(), user.getDefaultOrganizationId());
+        Set<Permission> permissions = permissionResolver.resolve(user.getId(), orgId);
+
+        PrabhixPrincipal principal = new PrabhixPrincipal(
+                user.getId(), user.getEmail(), user.effectiveDisplayName(),
+                orgId, permissions, session.getId(), user.isPlatformAdmin());
+        IssuedToken access = jwtService.issue(principal);
+
+        // Not persisted, for the same reason as a refresh: this happens on the access-token
+        // interval for every open tab, and rows for it would bury what an operator reads.
+        eventLogger.log(LogEventCode.AUTH_TOKEN_REFRESHED,
+                Map.of("userId", user.getId(), "sessionId", session.getId(), "via", "cookie"), false);
+
+        return new TokenResponse(
+                access.token(),
+                null,
+                access.expiresInSeconds(),
+                orgId,
+                permissions.stream().map(Permission::name).collect(Collectors.toUnmodifiableSet()),
+                session.getId());
+    }
+
+    static ApiException noSessionCookie() {
+        return ApiException.of(ErrorCode.UNAUTHENTICATED, "No active session for this browser");
     }
 
     @Transactional
@@ -182,6 +242,11 @@ public class AuthService {
                 if (session.getUserId().equals(userId) && session.getRevokedAt() == null) {
                     session.setRevokedAt(Instant.now());
                     session.setRevokedReason("logout");
+                    // Cleared as well as revoked. The revocation alone is enough to refuse the
+                    // exchange, but dropping the hash means the cookie value the browser may still
+                    // be holding no longer corresponds to any row at all.
+                    session.setCookieTokenHash(null);
+                    session.setCookieExpiresAt(null);
                     deviceSessionRepository.save(session);
                 }
             });
@@ -269,7 +334,8 @@ public class AuthService {
                 rawRefresh,
                 access.expiresInSeconds(),
                 orgId,
-                permissions.stream().map(Permission::name).collect(Collectors.toUnmodifiableSet()));
+                permissions.stream().map(Permission::name).collect(Collectors.toUnmodifiableSet()),
+                session.getId());
     }
 
     private DeviceSession resolveSession(UUID userId,

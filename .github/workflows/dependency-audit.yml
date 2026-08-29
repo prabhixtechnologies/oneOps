@@ -1,0 +1,59 @@
+name: Dependency audit
+
+# Weekly alarm for known-vulnerable packages, and a button to press before a release.
+#
+# Deliberately not attached to pull requests. An advisory published on a Tuesday is not a defect in
+# whatever branch happens to be open, and failing unrelated pull requests over it teaches everyone
+# to ignore a red check — which costs more than the audit was ever going to save. A scheduled run
+# that fails is unambiguous: something needs attention now, and nobody is blocked while it gets it.
+on:
+  schedule:
+    # Mondays 04:00 UTC, ahead of the Dependabot pull requests raised the same morning, so the audit
+    # says what is wrong and the pull requests are already sitting there to fix it.
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+jobs:
+  npm:
+    name: npm audit (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [web, marketing]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # High and critical only. Including moderate means auditing development-only transitive
+      # packages that cannot be reached by anything a visitor sends, and the report stops being read.
+      - name: Audit
+        run: npm audit --audit-level=high
+
+  # Maven and Gradle advisories are covered by Dependabot alerts (.github/dependabot.yml), which
+  # reads the lockfiles directly. OWASP dependency-check is not used here on purpose: it needs an
+  # NVD API key to avoid being rate-limited into a 30-minute run, and a scanner that times out
+  # intermittently is indistinguishable from one that found nothing.
+  summary:
+    name: Coverage note
+    runs-on: ubuntu-latest
+    needs: [npm]
+    if: always()
+    steps:
+      - name: Note what this job does and does not cover
+        run: |
+          echo "npm: audited web and marketing (high+)."
+          echo "maven/gradle/docker: watched by Dependabot, which requires Dependabot alerts to be"
+          echo "enabled under Settings > Code security. If that switch is off, nothing is watching them."

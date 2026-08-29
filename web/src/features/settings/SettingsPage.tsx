@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { PASSWORD_MIN_LENGTH, PASSWORD_RULE } from "@/lib/password";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
   useApiKeys,
@@ -89,6 +90,12 @@ export default function SettingsPage() {
   };
 
   const onChangePassword = async () => {
+    // Checked here as well as shown under the field, because the server's rejection names the
+    // constraint rather than the rule ("size must be between 10 and 128").
+    if (newPassword.length < PASSWORD_MIN_LENGTH) {
+      toast.error(PASSWORD_RULE);
+      return;
+    }
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -194,8 +201,19 @@ export default function SettingsPage() {
               <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>New password</Label>
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              <Label htmlFor="new-password">New password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                minLength={PASSWORD_MIN_LENGTH}
+                autoComplete="new-password"
+                aria-describedby="new-password-rule"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <p id="new-password-rule" className="text-xs text-text-muted">
+                {PASSWORD_RULE}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Confirm new password</Label>

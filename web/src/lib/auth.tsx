@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest, configureApiClient } from "./api-client";
+import { ApiClientError, apiRequest, configureApiClient } from "./api-client";
 import {
   arraySchema,
   authMeSchema,
@@ -21,11 +21,18 @@ import {
   type UserProfile,
 } from "./schemas/common";
 
-const REFRESH_KEY = "prabhix_refresh_token";
+/**
+ * Exchanges the shared session cookie for an access token.
+ *
+ * <p>This replaced a refresh token kept in localStorage, for two reasons. localStorage is scoped to
+ * one origin, so the admin console could not see a session established on the OneOps console and
+ * demanded its own login; and anything in localStorage is readable by injected script, whereas the
+ * cookie behind this endpoint is HttpOnly and cannot be read at all.
+ */
+const SESSION_TOKEN_PATH = "/auth/session/token";
 
 interface AuthState {
   accessToken: string | null;
-  refreshToken: string | null;
   me: AuthMe | null;
   profile: UserProfile | null;
   organization: OrganizationView | null;
@@ -35,7 +42,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  loginWithTokens: (accessToken: string, refreshToken: string) => Promise<void>;
+  loginWithTokens: (accessToken: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
   switchOrg: (orgId: string) => Promise<void>;
@@ -61,39 +68,30 @@ async function fetchOrganization(id: string): Promise<OrganizationView> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
-  const [refreshToken, setRefreshTokenState] = useState<string | null>(() =>
-    localStorage.getItem(REFRESH_KEY),
-  );
   const [me, setMe] = useState<AuthMe | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [organization, setOrganization] = useState<OrganizationView | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Tokens live in refs as well as state. The refs are what the callbacks below read; the state
-  // exists only so the tree re-renders. Reading a token from state inside a callback would change
-  // that callback's identity on every rotation, and since one of those callbacks is a dependency
-  // of the bootstrap effect, rotating a token would re-trigger the bootstrap and refresh again.
+  // The token lives in a ref as well as state. The ref is what the callbacks below read; the state
+  // exists only so the tree re-renders. Reading it from state inside a callback would change that
+  // callback's identity on every renewal, and since one of those callbacks is a dependency of the
+  // bootstrap effect, renewing a token would re-trigger the bootstrap and renew again.
   const accessTokenRef = useRef<string | null>(null);
-  const refreshTokenRef = useRef<string | null>(localStorage.getItem(REFRESH_KEY));
   const orgIdRef = useRef<string | null>(null);
 
-  // The refresh token the server last rejected. Without this, every query that 401s starts its
-  // own refresh with a token already known to be dead: the single-flight guard below only
-  // collapses *concurrent* attempts, so a page with several queries walks through them one at a
-  // time and earns a 429 for the trouble.
-  const deadRefreshToken = useRef<string | null>(null);
+  // Set when the server has said there is no session for this browser. Without it, every query
+  // that 401s starts its own exchange: the single-flight guard below only collapses *concurrent*
+  // attempts, so a page with several queries walks through them one at a time and earns a 429.
+  //
+  // Deliberately only set on a refusal. A network error or a 500 is temporary, and treating it as
+  // "signed out" would strand a signed-in person on the login page until they reloaded.
+  const sessionGone = useRef(false);
 
-  const setTokens = useCallback((access: string | null, refresh: string | null) => {
-    accessTokenRef.current = access;
-    refreshTokenRef.current = refresh;
-    setAccessTokenState(access);
-    setRefreshTokenState(refresh);
-    if (refresh) {
-      localStorage.setItem(REFRESH_KEY, refresh);
-      deadRefreshToken.current = null;
-    } else {
-      localStorage.removeItem(REFRESH_KEY);
-    }
+  const setAccessToken = useCallback((token: string | null) => {
+    accessTokenRef.current = token;
+    setAccessTokenState(token);
+    if (token) sessionGone.current = false;
   }, []);
 
   const loadSession = useCallback(async () => {
@@ -111,71 +109,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const applyTokens = useCallback(
-    async (access: string, refresh: string) => {
-      setTokens(access, refresh);
+    async (access: string) => {
+      setAccessToken(access);
       await loadSession();
     },
-    [loadSession, setTokens],
+    [loadSession, setAccessToken],
   );
 
   /** Drops local credentials without touching the network. */
   const clearSession = useCallback(() => {
-    setTokens(null, null);
+    setAccessToken(null);
     setMe(null);
     setProfile(null);
     setOrganization(null);
     orgIdRef.current = null;
     queryClient.clear();
-  }, [queryClient, setTokens]);
+  }, [queryClient, setAccessToken]);
 
   const logout = useCallback(async () => {
     try {
       if (accessTokenRef.current) {
+        // The server clears the cookie on this call, so the other console is signed out too.
         await apiRequest("/auth/logout", { parse: () => undefined }, { method: "POST" });
       }
     } catch {
       // ignore logout errors
     }
+    sessionGone.current = true;
     clearSession();
   }, [clearSession]);
 
-  // A refresh token is single-use: the server rotates it and treats a second presentation of the
-  // same token as theft, revoking every session the user has. loadSession() fans out three
-  // requests at once, so without this guard one expired access token yields three simultaneous
-  // 401s, three refreshes spending the same token, and an immediate forced logout.
+  // Collapses concurrent exchanges into one request. The cookie does not rotate, so several
+  // exchanges would all succeed — this is about not firing one per query on a page that has just
+  // found its access token expired.
   const refreshInFlight = useRef<Promise<boolean> | null>(null);
 
-  // Exchanges the stored refresh token for a new pair. Deliberately does not reload the session:
-  // doing that inside the single-flight promise meant a 401 from /auth/me would ask for a refresh,
-  // be handed back the very promise that was waiting on it, and deadlock — leaving refreshInFlight
-  // set forever so no later refresh could run either.
+  // Deliberately does not reload the session: doing that inside the single-flight promise meant a
+  // 401 from /auth/me would ask for a refresh, be handed back the very promise that was waiting on
+  // it, and deadlock — leaving refreshInFlight set forever so no later refresh could run either.
   const refreshSession = useCallback(async (): Promise<boolean> => {
     const existing = refreshInFlight.current;
     if (existing) return existing;
-
-    // localStorage wins over the ref so that a second tab picks up a token rotated by the first
-    // instead of replaying the one it captured when it mounted.
-    const token = localStorage.getItem(REFRESH_KEY) ?? refreshTokenRef.current;
-    if (!token || token === deadRefreshToken.current) return false;
+    if (sessionGone.current) return false;
 
     const attempt = (async () => {
       try {
-        const tokens = await apiRequest(
-          "/auth/refresh",
-          authTokensSchema,
-          {
-            method: "POST",
-            body: { refreshToken: token },
-            skipAuth: true,
-            skipOrg: true,
-          },
-        );
-        setTokens(tokens.accessToken, tokens.refreshToken);
+        const tokens = await apiRequest(SESSION_TOKEN_PATH, authTokensSchema, {
+          method: "POST",
+          // skipAuth matters beyond tidiness: it stops a 401 here from triggering the client's own
+          // refresh-and-retry, which would call straight back into this function.
+          skipAuth: true,
+          skipOrg: true,
+        });
+        setAccessToken(tokens.accessToken);
         return true;
-      } catch {
-        // Remember the failure so siblings stop presenting the same token. Replaying it reads as
-        // theft to the server, which revokes the chain it belongs to.
-        deadRefreshToken.current = token;
+      } catch (err) {
+        if (err instanceof ApiClientError && (err.status === 401 || err.status === 403)) {
+          sessionGone.current = true;
+        }
         return false;
       } finally {
         refreshInFlight.current = null;
@@ -184,11 +175,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     refreshInFlight.current = attempt;
     return attempt;
-  }, [setTokens]);
+  }, [setAccessToken]);
 
+  /**
+   * Adopts an access token obtained by a page that authenticated on its own — sign-up, magic link
+   * and one-time code all call their endpoint directly. Those responses set the session cookie
+   * server-side, so nothing needs storing here beyond the access token itself.
+   */
   const loginWithTokens = useCallback(
-    async (access: string, refresh: string) => {
-      await applyTokens(access, refresh);
+    async (access: string) => {
+      await applyTokens(access);
     },
     [applyTokens],
   );
@@ -205,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           skipOrg: true,
         },
       );
-      await applyTokens(tokens.accessToken, tokens.refreshToken);
+      await applyTokens(tokens.accessToken);
     },
     [applyTokens],
   );
@@ -217,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authTokensSchema,
         { method: "POST" },
       );
-      await applyTokens(tokens.accessToken, tokens.refreshToken);
+      await applyTokens(tokens.accessToken);
     },
     [applyTokens],
   );
@@ -241,12 +237,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const init = async () => {
       setIsLoading(true);
       try {
-        const stored = localStorage.getItem(REFRESH_KEY);
-        if (!stored) return;
-        refreshTokenRef.current = stored;
+        // Attempted unconditionally. There is nothing in localStorage to check first any more, and
+        // this single request is what makes one sign-in cover both consoles: opening the admin app
+        // after signing in to OneOps, the cookie is already present to exchange. A visitor who is
+        // not signed in pays one 401 for it.
         if (!(await refreshSession())) {
-          // A leftover token from a previous deploy or a revoked session is not an error worth
-          // reporting; the visitor simply is not signed in.
           clearSession();
           return;
         }
@@ -267,7 +262,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       accessToken,
-      refreshToken,
       me,
       profile,
       organization,
@@ -284,7 +278,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }),
     [
       accessToken,
-      refreshToken,
       me,
       profile,
       organization,

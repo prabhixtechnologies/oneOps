@@ -7,6 +7,7 @@ import com.prabhix.platform.auth.repository.RefreshTokenRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.support.TestProperties;
 import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
 import com.prabhix.platform.org.service.OrganizationService;
@@ -55,13 +56,8 @@ class AccountLockoutTest {
 
     @BeforeEach
     void setUp() {
-        PrabhixProperties properties = new PrabhixProperties(
-                null, null,
-                new PrabhixProperties.Security(
-                        new PrabhixProperties.Security.Jwt("secret", "issuer",
-                                Duration.ofMinutes(15), Duration.ofDays(30)),
-                        null, null),
-                null, null, null, null, null);
+        PrabhixProperties properties =
+                TestProperties.withSecurity(TestProperties.security(Duration.ofMinutes(15)));
         authService = new AuthService(
                 userService, organizationService, membershipRepository, permissionResolver,
                 deviceSessionRepository, refreshTokenRepository, passwordEncoder,

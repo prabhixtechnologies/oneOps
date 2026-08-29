@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:admin": "cross-env APP=admin vite",
     "build": "vite build",
+    "build:admin": "cross-env APP=admin vite build",
+    "security-headers": "node scripts/generate-security-headers.mjs dist security-headers.conf.template security-headers.generated.conf",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -48,6 +51,7 @@
     "@types/react": "19.2.8",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "4.5.2",
+    "cross-env": "^10.1.0",
     "jsdom": "^30.0.1",
     "tailwindcss": "4.3.3",
     "typescript": "5.8.3",

@@ -62,6 +62,10 @@ public class SecurityConfig {
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/api/v1/auth/refresh",
+            // The browser session cookie is the credential here, so there is no bearer token to
+            // check. Listing it as public is what lets a tab that has been open past its access
+            // token's lifetime get a new one instead of bouncing the person to the login page.
+            "/api/v1/auth/session/token",
             "/api/v1/auth/magic-link/**",
             "/api/v1/auth/otp/**",
             "/api/v1/auth/sso/**",
@@ -88,7 +92,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // No cookies are used for API auth, so there is no CSRF surface to protect.
+                // Left disabled after the shared session cookie was introduced, which is worth
+                // justifying rather than inheriting.
+                //
+                // Exactly one endpoint reads a cookie: POST /auth/session/token. Every other
+                // endpoint authenticates from an Authorization header or an API key, and a header
+                // is not something another origin's page can make the browser attach — that is the
+                // property CSRF tokens exist to recreate for cookie auth.
+                //
+                // The cookie is SameSite=Lax, so it is withheld from cross-site POSTs; a form on
+                // another site posting here therefore arrives with no credential and gets a 401.
+                // And the response is useless to an attacker's page regardless: reading it requires
+                // an Access-Control-Allow-Origin naming that origin, and the allow-list below names
+                // only our own hosts.
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->

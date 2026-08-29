@@ -4,6 +4,7 @@ import com.prabhix.platform.chat.config.ChatProperties;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.support.TestProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +30,8 @@ class ChatTokenServiceTest {
                 "prabhix-platform", Duration.ofMinutes(15), Duration.ofDays(30));
         PrabhixProperties.Security security = new PrabhixProperties.Security(
                 jwt, new PrabhixProperties.Security.RateLimit(true, 10, 600),
-                new PrabhixProperties.Security.Password(10, 12));
+                new PrabhixProperties.Security.Password(10, 12),
+                TestProperties.sessionCookie());
         PrabhixProperties properties = new PrabhixProperties(
                 null, null, security, null, null, null, null,
                 new PrabhixProperties.Limits(100000, 200, 26214400L, 25, 200));

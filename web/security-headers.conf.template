@@ -1,0 +1,27 @@
+# The console's response headers — the single definition of its Content-Security-Policy.
+#
+# This is a template, not a usable snippet: the placeholder in script-src below is filled in at
+# image build by scripts/generate-security-headers.mjs, which hashes every inline script in the
+# built HTML. That indirection buys two things:
+#
+#   - script-src no longer needs 'unsafe-inline'. With it, CSP stops most of what it exists to stop:
+#     any injected <script> runs. The console holds session tokens, so that is the one place the
+#     policy has to be real.
+#   - the hash cannot drift from the file it covers. Vite minifies the inline theme bootstrap during
+#     the build, so the hash of index.html in the repo is *not* the hash the browser computes, and a
+#     hand-maintained value would be wrong the moment esbuild changes its output by a byte. Deriving
+#     it from dist/ makes that class of mistake impossible.
+#
+# This file is included per-location as well as at server level: nginx's add_header inheritance is a
+# trap, where a location declaring even one add_header stops inheriting all the server-level ones.
+# Caddy defers to whatever arrives from here (`header ?Content-Security-Policy`), so this is the
+# policy the browser actually enforces — it is not duplicated in deploy/Caddyfile any more.
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+# style-src keeps 'unsafe-inline' deliberately: Radix and the chart components set style attributes
+# on elements they position at runtime, and a style attribute cannot be covered by a hash without
+# 'unsafe-hashes'. The exposure is restyling, not code execution, which is a different order of
+# problem from an inline <script>.
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' __INLINE_SCRIPT_HASHES__ https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.razorpay.com http://localhost:8080 https://*.prabhixtechnologies.com; frame-src https://checkout.razorpay.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self';" always;

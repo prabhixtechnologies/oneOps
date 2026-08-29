@@ -46,8 +46,30 @@ public class DeviceSession extends AuditableEntity {
     @Column(name = "revoked_reason", length = 64)
     private String revokedReason;
 
+    /**
+     * SHA-256 of the shared browser session cookie, or null for a session that has none — every
+     * phone, every API key session, and any web session created before this existed.
+     *
+     * <p>Unlike a refresh token this does not rotate, which is the entire point: two console
+     * hostnames exchanging it at the same moment must both succeed, where rotation would treat the
+     * second as a replay and revoke the session.
+     */
+    @Column(name = "cookie_token_hash", length = 64)
+    private String cookieTokenHash;
+
+    @Column(name = "cookie_expires_at")
+    private Instant cookieExpiresAt;
+
     public boolean isActive() {
         return revokedAt == null;
+    }
+
+    /** True when the cookie on this session is still usable to mint an access token. */
+    public boolean hasUsableCookie(Instant now) {
+        return isActive()
+                && cookieTokenHash != null
+                && cookieExpiresAt != null
+                && cookieExpiresAt.isAfter(now);
     }
 
     public enum DeviceType {

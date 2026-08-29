@@ -170,7 +170,9 @@ prabhix:
     api: ${API_URL:http://localhost:8080}
 
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173}
+    # 3000 marketing, 5173 OneOps console, 5174 admin console. All three send credentials, so this
+    # can never become "*" — a wildcard origin is rejected by browsers for credentialed requests.
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:5174}
 
   security:
     jwt:
@@ -187,6 +189,15 @@ prabhix:
     password:
       min-length: 10
       bcrypt-strength: 12
+    # Shared browser session. The domain must be the parent of every console hostname that should
+    # share one sign-in, and empty locally, where a cookie scoped to "localhost" is what browsers
+    # accept. Lifetime follows jwt.refresh-token-ttl above, so there is one knob for how long a
+    # signed-in browser stays signed in.
+    session-cookie:
+      name: ${SESSION_COOKIE_NAME:pbx_session}
+      domain: ${SESSION_COOKIE_DOMAIN:}
+      secure: ${SESSION_COOKIE_SECURE:true}
+      same-site: ${SESSION_COOKIE_SAME_SITE:Lax}
 
   otp:
     length: 6

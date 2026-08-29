@@ -9,11 +9,12 @@ import { Label } from "@/components/ui/label";
 import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { authTokensSchema } from "@/lib/schemas/common";
 import { useAuth } from "@/lib/auth";
+import { passwordSchema } from "@/lib/password";
 
 const schema = z.object({
   fullName: z.string().min(2, "Enter your full name"),
   email: z.string().email("Enter a valid email"),
-  password: z.string().min(10, "Password must be at least 10 characters"),
+  password: passwordSchema,
   organizationName: z.string().min(2, "Enter your organization name"),
 });
 
@@ -31,7 +32,7 @@ export function SignupPage() {
         body: data,
         skipAuth: true,
       });
-      await loginWithTokens(tokens.accessToken, tokens.refreshToken);
+      await loginWithTokens(tokens.accessToken);
       toast.success("Welcome to Prabhix!");
       void navigate("/");
     } catch (err) {

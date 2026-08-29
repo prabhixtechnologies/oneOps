@@ -1,10 +1,45 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 
+/**
+ * Which of the two consoles to build: the OneOps product or the private admin app.
+ *
+ * <p>Both are built from this one source tree. `APP=admin` swaps the entry script in `index.html`,
+ * so each build pulls in only the routes its entry imports and the OneOps bundle does not contain
+ * the platform admin pages at all. The output filename stays `index.html` either way, which keeps
+ * the nginx config and the CSP hash generator identical for both images.
+ */
+const APP = process.env.APP === "admin" ? "admin" : "oneops";
+
+const ENTRY = {
+  oneops: { script: "/src/main.tsx", title: "Prabhix — Team Inbox &amp; Operations" },
+  admin: { script: "/src/main-admin.tsx", title: "Prabhix Admin" },
+} as const;
+
+function appEntryPlugin(): Plugin {
+  return {
+    name: "prabhix-app-entry",
+    transformIndexHtml: {
+      // The order belongs on the hook, not on the plugin: Vite sorts index-HTML hooks by this
+      // property alone. Without it the swap lands after Vite has already collected the entry
+      // script, which silently produces an admin-titled page running the OneOps bundle.
+      order: "pre",
+      handler(html) {
+        if (APP === "oneops") return html;
+        return html
+          .replace(ENTRY.oneops.script, ENTRY[APP].script)
+          // Matched by element rather than by its text, which contains an em dash and so would
+          // depend on this file and index.html agreeing about encoding.
+          .replace(/<title>[^<]*<\/title>/, `<title>${ENTRY[APP].title}</title>`);
+      },
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [appEntryPlugin(), react(), tailwindcss()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -56,6 +91,9 @@ export default defineConfig({
     },
   },
   server: {
+    // Distinct ports so both consoles can run at once, which is the only way to check locally that
+    // one sign-in covers both. Both are in the backend's CORS allowlist.
+    port: APP === "admin" ? 5174 : 5173,
     proxy: {
       "/api": {
         target: "http://localhost:8080",

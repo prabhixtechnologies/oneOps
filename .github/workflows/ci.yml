@@ -48,8 +48,18 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Build
+      # The suite existed but nothing ran it here, so a failing test only showed up for whoever
+      # happened to run vitest locally.
+      - name: Test
+        run: npm run test
+
+      - name: Build OneOps
         run: npm run build
+
+      # Built separately because the two entry points import different route tables, so a break in
+      # the admin-only pages does not show up in the OneOps build at all.
+      - name: Build admin
+        run: npm run build:admin
 
   marketing:
     name: Marketing (Next.js)
@@ -72,6 +82,9 @@ jobs:
 
       - name: Typecheck
         run: npx tsc --noEmit
+
+      - name: Test
+        run: npm run test
 
       - name: Build
         run: npm run build
@@ -118,12 +131,31 @@ jobs:
           # Vite inlines these at build time; each must also be declared as an ARG in web/Dockerfile
           # or it is silently discarded.
           build-args: |
+            APP=oneops
             VITE_API_URL=https://api.prabhixtechnologies.com
             VITE_RAZORPAY_KEY_ID=${{ vars.RAZORPAY_KEY_ID }}
             VITE_GOOGLE_SSO_ENABLED=false
           tags: |
             prabhixtechnologies/prabhix-web:latest
             prabhixtechnologies/prabhix-web:${{ steps.meta.outputs.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Same context and Dockerfile as web; APP picks the entry point, so the two images differ only
+      # in which routes they contain. No Razorpay key — the admin app has no checkout.
+      - name: Build and push admin
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          push: true
+          build-args: |
+            APP=admin
+            VITE_API_URL=https://api.prabhixtechnologies.com
+            VITE_GOOGLE_SSO_ENABLED=false
+          tags: |
+            prabhixtechnologies/prabhix-admin:latest
+            prabhixtechnologies/prabhix-admin:${{ steps.meta.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

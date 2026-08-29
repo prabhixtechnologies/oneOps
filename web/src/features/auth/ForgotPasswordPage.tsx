@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
 import { ackResponseSchema } from "@/lib/schemas/common";
+import { passwordSchema } from "@/lib/password";
 
 const schema = z.object({ email: z.string().email() });
 
@@ -49,7 +50,7 @@ export function ForgotPasswordPage() {
 
 const resetSchema = z
   .object({
-    password: z.string().min(10, "Password must be at least 10 characters"),
+    password: passwordSchema,
     confirm: z.string(),
   })
   .refine((d) => d.password === d.confirm, {
