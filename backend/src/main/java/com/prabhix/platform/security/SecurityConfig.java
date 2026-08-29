@@ -7,11 +7,15 @@ import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.observability.filter.AccessLogFilter;
 import com.prabhix.platform.observability.filter.CorrelationIdFilter;
 import com.prabhix.platform.observability.filter.MdcPrincipalEnrichmentFilter;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.security.apikey.ApiKeyAuthenticationFilter;
 import com.prabhix.platform.security.jwt.JwtAuthenticationFilter;
 import com.prabhix.platform.security.ratelimit.RateLimitFilter;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -33,6 +37,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @EnableMethodSecurity
@@ -47,6 +52,9 @@ public class SecurityConfig {
     private final AccessLogFilter accessLogFilter;
     private final PrabhixProperties properties;
     private final ObjectMapper objectMapper;
+    // Resolved per request rather than injected directly: the logger sits on top of JPA, and this
+    // configuration is built early enough that a hard dependency risks an initialisation cycle.
+    private final ObjectProvider<StructuredEventLogger> eventLoggerProvider;
 
     /** Endpoints reachable without a token. Everything not listed requires authentication. */
     private static final String[] PUBLIC_PATHS = {
@@ -100,9 +108,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasAuthority("PLATFORM_ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(handling -> handling
-                        .authenticationEntryPoint((request, response, ex) ->
-                                writeError(response, ErrorCode.UNAUTHENTICATED,
-                                        "Authentication is required", request.getRequestURI()))
+                        .authenticationEntryPoint((request, response, ex) -> {
+                            recordUnauthenticated(request);
+                            writeError(response, ErrorCode.UNAUTHENTICATED,
+                                    "Authentication is required", request.getRequestURI());
+                        })
                         .accessDeniedHandler((request, response, ex) ->
                                 writeError(response, ErrorCode.PERMISSION_DENIED,
                                         "You do not have permission to perform this action",
@@ -167,6 +177,33 @@ public class SecurityConfig {
         provider.setPasswordEncoder(passwordEncoder);
         provider.setHideUserNotFoundExceptions(true);
         return provider;
+    }
+
+    /**
+     * Records a rejection at the security boundary.
+     *
+     * <p>Until this existed such a request left no trace anywhere: the access log skips
+     * {@code /auth/**} as sensitive, and this entry point writes the response itself rather than
+     * raising through {@code GlobalExceptionHandler}. A client that failed to authenticate was
+     * therefore invisible, which made "it says authentication is required" impossible to
+     * diagnose from the server side.
+     *
+     * <p>Only persisted when a credential was actually presented. A public host takes a constant
+     * stream of anonymous probes for things like {@code /actuator/env}, and a row for each would
+     * bury the case worth reading: a token or API key that was sent and refused.
+     */
+    private void recordUnauthenticated(HttpServletRequest request) {
+        StructuredEventLogger eventLogger = eventLoggerProvider.getIfAvailable();
+        if (eventLogger == null) {
+            return;
+        }
+        boolean credentialsPresented = request.getHeader("Authorization") != null
+                || request.getHeader(ApiKeyAuthenticationFilter.API_KEY_HEADER) != null;
+        eventLogger.log(LogEventCode.AUTH_REQUEST_UNAUTHENTICATED,
+                Map.of("path", request.getRequestURI(),
+                        "method", request.getMethod(),
+                        "credentialsPresented", credentialsPresented),
+                credentialsPresented);
     }
 
     private void writeError(HttpServletResponse response,

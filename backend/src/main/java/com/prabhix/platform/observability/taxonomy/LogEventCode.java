@@ -27,6 +27,7 @@ public enum LogEventCode {
     AUTH_PASSWORD_RESET_REQUESTED("auth.password.reset_requested", LogCategory.AUTH, LogSeverity.INFO, false, true),
     AUTH_PASSWORD_RESET_COMPLETED("auth.password.reset_completed", LogCategory.AUTH, LogSeverity.INFO, true, false),
     AUTH_ACCOUNT_LOCKED("auth.account.locked", LogCategory.AUTH, LogSeverity.WARN, true, false),
+    AUTH_REQUEST_UNAUTHENTICATED("auth.request.unauthenticated", LogCategory.AUTH, LogSeverity.INFO, true, false),
     AUTH_SSO_STARTED("auth.sso.started", LogCategory.AUTH, LogSeverity.INFO, false, false),
     AUTH_SSO_COMPLETED("auth.sso.completed", LogCategory.AUTH, LogSeverity.INFO, false, false),
     AUTH_SSO_FAILED("auth.sso.failed", LogCategory.AUTH, LogSeverity.WARN, true, false),

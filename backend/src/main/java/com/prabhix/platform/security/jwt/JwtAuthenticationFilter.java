@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.prabhix.platform.common.error.ApiError;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.tenant.TenantContext;
 import jakarta.servlet.FilterChain;
@@ -20,6 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -42,6 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final TokenDenyList denyList;
     private final ObjectMapper objectMapper;
+    private final StructuredEventLogger eventLogger;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -136,6 +140,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private void writeError(HttpServletRequest request,
                             HttpServletResponse response,
                             ApiException ex) throws IOException {
+        // A credential was presented and refused. That is worth a row: it separates an expired or
+        // revoked token from a client that simply never sent one, and this path writes the
+        // response itself, so nothing else in the stack would ever record it.
+        eventLogger.logNow(LogEventCode.AUTH_REQUEST_UNAUTHENTICATED,
+                Map.of("path", request.getRequestURI(),
+                        "method", request.getMethod(),
+                        "credentialsPresented", true,
+                        "errorCode", ex.getCode().name()));
+
         response.setStatus(ex.getCode().status().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
