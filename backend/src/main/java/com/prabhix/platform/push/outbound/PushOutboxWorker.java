@@ -1,6 +1,6 @@
 package com.prabhix.platform.push.outbound;
 
-import com.prabhix.platform.mail.util.OutboxBackoff;
+import com.prabhix.platform.common.util.OutboxBackoff;
 import com.prabhix.platform.push.config.PushProperties;
 import com.prabhix.platform.push.domain.PushOutbox;
 import com.prabhix.platform.push.domain.PushEnums;

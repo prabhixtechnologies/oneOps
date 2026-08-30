@@ -6,8 +6,7 @@ import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.web.Cursor;
 import com.prabhix.platform.common.web.CursorPage;
 import com.prabhix.platform.config.PrabhixProperties;
-import com.prabhix.platform.mail.domain.MailEnums.OutboxStatus;
-import com.prabhix.platform.mail.repository.MailOutboxRepository;
+import com.prabhix.platform.common.spi.MailQueueMetrics;
 import com.prabhix.platform.observability.repository.EventLogRepository;
 import com.prabhix.platform.ops.dto.OpsDtos;
 import com.prabhix.platform.org.domain.Organization;
@@ -21,12 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
-
 /**
  * Cross-tenant counts and the tenant directory behind the ops hub.
  *
@@ -41,17 +37,9 @@ public class PlatformOverviewService {
     private static final Duration RECENT_WINDOW = Duration.ofDays(30);
     private static final Duration ACTIVITY_WINDOW = Duration.ofHours(24);
 
-    /** Anything not yet handed to a transport, including rows a worker has claimed mid-flight. */
-    private static final Set<OutboxStatus> MAIL_IN_FLIGHT =
-            EnumSet.of(OutboxStatus.PENDING, OutboxStatus.CLAIMED, OutboxStatus.SENDING);
-
-    /** DEAD counts as failed: attempts are exhausted, so it needs a human either way. */
-    private static final Set<OutboxStatus> MAIL_FAILED =
-            EnumSet.of(OutboxStatus.FAILED, OutboxStatus.DEAD);
-
     private final OrganizationRepository organizationRepository;
     private final UserRepository userRepository;
-    private final MailOutboxRepository mailOutboxRepository;
+    private final MailQueueMetrics mailQueue;
     private final DeviceSessionRepository deviceSessionRepository;
     private final EventLogRepository eventLogRepository;
     private final PrabhixProperties properties;
@@ -79,9 +67,10 @@ public class PlatformOverviewService {
                 userRepository.countByPlatformAdminTrueAndDeletedAtIsNull(),
                 userRepository.countByCreatedAtGreaterThanEqualAndDeletedAtIsNull(recentSince));
 
+        MailQueueMetrics.OutboxDepth mail = mailQueue.outboxDepth();
         OpsDtos.QueueDepths queues = new OpsDtos.QueueDepths(
-                mailOutboxRepository.countByStatusIn(MAIL_IN_FLIGHT),
-                mailOutboxRepository.countByStatusIn(MAIL_FAILED),
+                mail.inFlight(),
+                mail.failed(),
                 deviceSessionRepository.countByRevokedAtIsNull());
 
         OpsDtos.ActivityCounts activity = new OpsDtos.ActivityCounts(

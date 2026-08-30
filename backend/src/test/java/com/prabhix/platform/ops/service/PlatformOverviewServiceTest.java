@@ -4,7 +4,7 @@ import com.prabhix.platform.auth.repository.DeviceSessionRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.web.CursorPage;
-import com.prabhix.platform.mail.repository.MailOutboxRepository;
+import com.prabhix.platform.common.spi.MailQueueMetrics;
 import com.prabhix.platform.observability.repository.EventLogRepository;
 import com.prabhix.platform.ops.dto.OpsDtos;
 import com.prabhix.platform.org.domain.Organization;
@@ -38,7 +38,7 @@ class PlatformOverviewServiceTest {
 
     @Mock private OrganizationRepository organizationRepository;
     @Mock private UserRepository userRepository;
-    @Mock private MailOutboxRepository mailOutboxRepository;
+    @Mock private MailQueueMetrics mailQueue;
     @Mock private DeviceSessionRepository deviceSessionRepository;
     @Mock private EventLogRepository eventLogRepository;
 
@@ -47,7 +47,7 @@ class PlatformOverviewServiceTest {
     @BeforeEach
     void setUp() {
         service = new PlatformOverviewService(
-                organizationRepository, userRepository, mailOutboxRepository,
+                organizationRepository, userRepository, mailQueue,
                 deviceSessionRepository, eventLogRepository, TestProperties.defaults());
     }
 
@@ -62,7 +62,9 @@ class PlatformOverviewServiceTest {
         when(userRepository.countByLockedUntilAfterAndDeletedAtIsNull(any())).thenReturn(1L);
         when(userRepository.countByPlatformAdminTrueAndDeletedAtIsNull()).thenReturn(2L);
         when(userRepository.countByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any())).thenReturn(5L);
-        when(mailOutboxRepository.countByStatusIn(any())).thenReturn(7L);
+        // Distinct values. The previous stub answered both counts with 7, so the two could have been
+        // reported in the wrong order and the assertions below would still have passed.
+        when(mailQueue.outboxDepth()).thenReturn(new MailQueueMetrics.OutboxDepth(7L, 2L));
         when(deviceSessionRepository.countByRevokedAtIsNull()).thenReturn(19L);
         when(eventLogRepository.countErrorsSince(any())).thenReturn(4L);
         when(eventLogRepository.countSecurityEventsSince(any())).thenReturn(6L);
@@ -75,7 +77,7 @@ class PlatformOverviewServiceTest {
         assertEquals(1L, overview.accounts().lockedOut());
         assertEquals(2L, overview.accounts().platformAdmins());
         assertEquals(7L, overview.queues().mailPending());
-        assertEquals(7L, overview.queues().mailFailed());
+        assertEquals(2L, overview.queues().mailFailed());
         assertEquals(19L, overview.queues().activeSessions());
         assertEquals(4L, overview.activity().errorsLast24h());
         assertEquals(6L, overview.activity().securityEventsLast24h());

@@ -1,4 +1,4 @@
-package com.prabhix.platform.ai.domain;
+package com.prabhix.platform.mail.domain;
 
 import com.prabhix.platform.common.entity.TenantScopedEntity;
 import jakarta.persistence.Column;

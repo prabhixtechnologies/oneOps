@@ -1,17 +1,18 @@
-package com.prabhix.platform.ai.service;
+package com.prabhix.platform.mail.ai;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import com.prabhix.platform.ai.domain.MailThreadAiSuggestion;
 import com.prabhix.platform.ai.dto.AiDtos;
-import com.prabhix.platform.ai.repository.MailThreadAiSuggestionRepository;
+import com.prabhix.platform.ai.service.AiOrchestrator;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.mail.domain.MailMessage;
 import com.prabhix.platform.mail.domain.MailTag;
 import com.prabhix.platform.mail.domain.MailThread;
+import com.prabhix.platform.mail.domain.MailThreadAiSuggestion;
 import com.prabhix.platform.mail.repository.MailCannedReplyRepository;
 import com.prabhix.platform.mail.repository.MailMessageRepository;
 import com.prabhix.platform.mail.repository.MailTagRepository;
+import com.prabhix.platform.mail.repository.MailThreadAiSuggestionRepository;
 import com.prabhix.platform.mail.repository.MailThreadRepository;
 import com.prabhix.platform.org.repository.OrganizationRepository;
 import com.prabhix.platform.security.PrabhixPrincipal;

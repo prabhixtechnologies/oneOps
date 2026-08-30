@@ -1,6 +1,6 @@
-package com.prabhix.platform.ai.repository;
+package com.prabhix.platform.mail.repository;
 
-import com.prabhix.platform.ai.domain.MailThreadAiSuggestion;
+import com.prabhix.platform.mail.domain.MailThreadAiSuggestion;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

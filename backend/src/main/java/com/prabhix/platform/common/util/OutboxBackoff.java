@@ -1,9 +1,14 @@
-package com.prabhix.platform.mail.util;
+package com.prabhix.platform.common.util;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 
-/** Exponential backoff with jitter for outbox retries. */
+/**
+ * Exponential backoff with jitter for outbox retries.
+ *
+ * <p>Lived in {@code mail.util} and was used by the push outbox from there, which made push
+ * depend on mail for arithmetic. Two outboxes want the same retry curve and neither owns it.
+ */
 public final class OutboxBackoff {
 
     private static final Duration BASE = Duration.ofSeconds(30);

@@ -9,7 +9,7 @@ import com.prabhix.platform.mail.repository.MailOutboxRepository;
 import com.prabhix.platform.mail.outbound.transport.LoggingTransport;
 import com.prabhix.platform.mail.outbound.transport.MailTransportRouter;
 import com.prabhix.platform.mail.util.MailJson;
-import com.prabhix.platform.mail.util.OutboxBackoff;
+import com.prabhix.platform.common.util.OutboxBackoff;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

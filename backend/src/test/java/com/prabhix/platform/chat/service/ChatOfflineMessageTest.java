@@ -11,8 +11,7 @@ import com.prabhix.platform.chat.repository.ChatSettingsRepository;
 import com.prabhix.platform.common.spi.EntitlementGate;
 import com.prabhix.platform.files.service.AttachmentValidationService;
 import com.prabhix.platform.config.PrabhixProperties;
-import com.prabhix.platform.mail.domain.Mailbox;
-import com.prabhix.platform.mail.repository.MailboxRepository;
+import com.prabhix.platform.common.spi.MailboxDirectory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +37,7 @@ class ChatOfflineMessageTest {
     @Mock private ChatTokenService tokenService;
     @Mock private ChatAssignmentRouter assignmentRouter;
     @Mock private AttachmentValidationService attachmentValidationService;
-    @Mock private MailboxRepository mailboxRepository;
+    @Mock private MailboxDirectory mailboxes;
     @Mock private EntitlementGate entitlements;
     @Mock private ApplicationEventPublisher events;
     @Mock private ChatMessageIdempotencyService idempotencyService;
@@ -56,7 +55,7 @@ class ChatOfflineMessageTest {
         messageService = new ChatMessageService(
                 conversationRepository, messageRepository, settingsRepository,
                 tokenService, assignmentRouter, attachmentValidationService,
-                mailboxRepository, entitlements, properties, events, idempotencyService);
+                mailboxes, entitlements, properties, events, idempotencyService);
         when(idempotencyService.execute(any(), any(), any(), any()))
                 .thenAnswer(inv -> ((java.util.function.Supplier<?>) inv.getArgument(3)).get());
     }
@@ -77,10 +76,6 @@ class ChatOfflineMessageTest {
         settings.setAvailability(ChatEnums.Availability.OFFLINE);
         settings.setOfflineMailboxId(mailboxId);
 
-        Mailbox mailbox = new Mailbox();
-        mailbox.setId(mailboxId);
-        mailbox.setAddress("support@example.com");
-
         when(conversationRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(conversationId, orgId))
                 .thenReturn(Optional.of(conversation));
         when(settingsRepository.findByOrganizationId(orgId)).thenReturn(Optional.of(settings));
@@ -90,8 +85,7 @@ class ChatOfflineMessageTest {
             return msg;
         });
         when(conversationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(mailboxRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(mailboxId, orgId))
-                .thenReturn(Optional.of(mailbox));
+        when(mailboxes.addressOf(orgId, mailboxId)).thenReturn(Optional.of("support@example.com"));
 
         ChatTokenService.ConversationToken token = new ChatTokenService.ConversationToken(
                 orgId, conversationId, UUID.randomUUID());

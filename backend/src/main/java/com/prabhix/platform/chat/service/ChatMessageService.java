@@ -23,7 +23,7 @@ import com.prabhix.platform.chat.repository.ChatConversationRepository;
 import com.prabhix.platform.chat.repository.ChatMessageRepository;
 import com.prabhix.platform.chat.repository.ChatSettingsRepository;
 import com.prabhix.platform.chat.util.ChatCursor;
-import com.prabhix.platform.mail.repository.MailboxRepository;
+import com.prabhix.platform.common.spi.MailboxDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -44,7 +44,7 @@ public class ChatMessageService {
     private final ChatTokenService tokenService;
     private final ChatAssignmentRouter assignmentRouter;
     private final AttachmentValidationService attachmentValidationService;
-    private final MailboxRepository mailboxRepository;
+    private final MailboxDirectory mailboxes;
     private final EntitlementGate entitlements;
     private final PrabhixProperties properties;
     private final ApplicationEventPublisher events;
@@ -212,12 +212,11 @@ public class ChatMessageService {
         if (settings == null || settings.getOfflineMailboxId() == null) {
             return;
         }
-        mailboxRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(
-                settings.getOfflineMailboxId(), conversation.getOrganizationId())
-                .ifPresent(mailbox ->
+        mailboxes.addressOf(conversation.getOrganizationId(), settings.getOfflineMailboxId())
+                .ifPresent(address ->
                 events.publishEvent(MailRequested.forOrganization(
                         conversation.getOrganizationId(),
-                        mailbox.getAddress(),
+                        address,
                         "chat.offline-message",
                         Map.of(
                                 "visitorName", conversation.getVisitorName() == null ? "Visitor" : conversation.getVisitorName(),

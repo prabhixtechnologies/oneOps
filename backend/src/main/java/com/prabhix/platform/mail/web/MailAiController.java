@@ -1,7 +1,7 @@
 package com.prabhix.platform.mail.web;
 
 import com.prabhix.platform.ai.dto.AiDtos;
-import com.prabhix.platform.ai.service.MailAiService;
+import com.prabhix.platform.mail.ai.MailAiService;
 import com.prabhix.platform.security.CurrentUser;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Authorize;
