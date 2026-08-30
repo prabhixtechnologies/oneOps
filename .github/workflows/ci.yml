@@ -622,13 +622,24 @@ jobs:
           # NEXT_PUBLIC_* is inlined at build time, so this is the only place the production
           # values can be set. ORG_SLUG and ORG_ID identify Prabhix's own tenant and are what
           # turn the storefront, chat widget and visitor beacon on.
+          #
+          # Written as literals rather than read from repository variables, which is how they were
+          # set before. Two things went wrong with variables and both are silent. The variables were
+          # not set at all, and an unset one expands to an empty string, so the site shipped with no
+          # storefront, chat or beacon and the build passed. Then a build from before they were lost
+          # baked in a slug and id from a database that has since been rebuilt, so the live site
+          # addressed an organization that no longer exists and every public call 404'd.
+          #
+          # These are not environment-specific and not secret: deploy/seed.sql defines this exact id
+          # and slug, so a literal here cannot drift from the row it points at the way a variable
+          # nobody can see did.
           build-args: |
             NEXT_PUBLIC_API_URL=https://api.prabhixtechnologies.com
             NEXT_PUBLIC_SITE_URL=https://prabhixtechnologies.com
             NEXT_PUBLIC_CONSOLE_URL=https://oneops.prabhixtechnologies.com
             NEXT_PUBLIC_MOBISTACK_URL=https://mobistack.prabhixtechnologies.com
-            NEXT_PUBLIC_ORG_SLUG=${{ vars.PRABHIX_ORG_SLUG }}
-            NEXT_PUBLIC_ORG_ID=${{ vars.PRABHIX_ORG_ID }}
+            NEXT_PUBLIC_ORG_SLUG=prabhix-platform
+            NEXT_PUBLIC_ORG_ID=00000000-0000-4000-8000-000000000001
           tags: |
             ${{ steps.meta.outputs.base }}/marketing:latest
             ${{ steps.meta.outputs.base }}/marketing:${{ steps.meta.outputs.sha }}
