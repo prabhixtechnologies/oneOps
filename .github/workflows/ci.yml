@@ -355,7 +355,13 @@ jobs:
           done
 
           # The product must not be in the staff console.
-          for needle in '/commerce/orders' '/mail/threads' '/chat/conversations' '/billing/subscription'; do
+          #
+          # '/mail/threads' used to be on this list and is not any more: mail left OneOps for
+          # Mailroom, so the string is absent from both bundles and the check would have been
+          # asserting nothing. '/visitors/analytics' replaced it. Note the path, not the bare
+          # '/visitors' -- the staff console does route on that prefix, so the shorter string is
+          # present on both sides and would fail this check for the wrong reason.
+          for needle in '/commerce/orders' '/commerce/products' '/visitors/analytics' '/chat/conversations' '/billing/subscription'; do
             check dist-oneops dist-admin "$needle"
           done
 
@@ -449,7 +455,13 @@ jobs:
           # twice, and neither time was visible — the screens were unreachable while the Retrofit
           # APIs, the Room database and the SSE client were all still compiled in, because a Hilt
           # provider in src/main kept them reachable from both graphs.
-          for needle in 'chat/conversations' 'mail/threads' 'chat/stream' 'prabhix_operator.db' 'outbound_flush'; do
+          # 'mail/threads' used to be on this list and is not any more: mail left OneOps for
+          # Mailroom, so the string is absent from both APKs and the check would have been asserting
+          # nothing. Nothing replaced it, because the phone app has no commerce or visitor endpoints
+          # to substitute. The four that remain still cover the two ways this broke before — a
+          # Retrofit API and an SSE client reachable from both graphs, and the Room database and
+          # offline outbox compiled into both.
+          for needle in 'chat/conversations' 'chat/stream' 'prabhix_operator.db' 'outbound_flush'; do
             if ! grep -qa "$needle" /tmp/oneops.dex; then
               echo "::error::'$needle' is missing from the OneOps APK, so testing for its absence in admin proves nothing. Update this list."
               fail=1
