@@ -6,6 +6,7 @@ import com.prabhix.platform.common.web.CursorPage;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.mail.domain.*;
 import com.prabhix.platform.mail.dto.ThreadDtos;
+import com.prabhix.platform.mail.mailbox.MailboxAccess;
 import com.prabhix.platform.mail.repository.*;
 import com.prabhix.platform.mail.util.ThreadCursor;
 import com.prabhix.platform.security.PrabhixPrincipal;
@@ -27,9 +28,24 @@ public class ThreadService {
     private final MailMessageRepository messageRepository;
     private final MailThreadNoteRepository noteRepository;
     private final MailThreadEventRepository eventRepository;
-    private final MailboxMemberRepository memberRepository;
+    private final MailThreadTagRepository threadTagRepository;
+    private final MailboxRepository mailboxRepository;
+    private final MailboxAccess mailboxAccess;
     private final SlaService slaService;
     private final PrabhixProperties properties;
+
+    /**
+     * Statuses that take a thread out of the queue.
+     *
+     * <p>SPAM and TRASH count, which is the point of naming the set rather than testing for RESOLVED:
+     * a thread binned as spam is no longer open work, and leaving it in {@code open_thread_count}
+     * makes the mailbox badge permanently overstate the backlog.
+     */
+    private static final java.util.Set<MailEnums.ThreadStatus> CLOSED_STATUSES = java.util.EnumSet.of(
+            MailEnums.ThreadStatus.RESOLVED,
+            MailEnums.ThreadStatus.CLOSED,
+            MailEnums.ThreadStatus.SPAM,
+            MailEnums.ThreadStatus.TRASH);
 
     @Transactional(readOnly = true)
     public CursorPage<ThreadDtos.ThreadSummary> list(PrabhixPrincipal principal,
@@ -56,7 +72,12 @@ public class ThreadService {
                     cursor.timestamp(), cursor.id(), limit);
         }
 
-        return CursorPage.of(fetched, limit - 1, this::toSummary, ThreadCursor::encode);
+        // Tags for the whole page in one query, before the per-row mapper runs. Resolving them inside
+        // toSummary would be a query per thread.
+        var tagsByThread = tagsFor(fetched.stream().map(MailThread::getId).toList());
+        return CursorPage.of(fetched, limit - 1,
+                t -> toSummary(t, tagsByThread.getOrDefault(t.getId(), List.of())),
+                ThreadCursor::encode);
     }
 
     @Transactional(readOnly = true)
@@ -73,23 +94,90 @@ public class ThreadService {
         var events = eventRepository.findByThreadIdOrderByCreatedAtAsc(threadId)
                 .stream().map(this::toEvent).toList();
 
-        return new ThreadDtos.ThreadDetail(toSummary(thread), messages, notes, events);
+        return new ThreadDtos.ThreadDetail(
+                toSummary(thread, tagsFor(List.of(threadId)).getOrDefault(threadId, List.of())),
+                messages, notes, events);
     }
 
     @Transactional
     public ThreadDtos.ThreadSummary update(PrabhixPrincipal principal, UUID threadId,
                                            ThreadDtos.UpdateThreadRequest request) {
         MailThread thread = loadVisible(principal, threadId);
-        if (request.status() != null) {
-            thread.setStatus(request.status());
-            if (request.status() == MailEnums.ThreadStatus.PENDING_CUSTOMER) {
+
+        if (request.status() != null && request.status() != thread.getStatus()) {
+            MailEnums.ThreadStatus from = thread.getStatus();
+            MailEnums.ThreadStatus to = request.status();
+            thread.setStatus(to);
+
+            if (to == MailEnums.ThreadStatus.PENDING_CUSTOMER) {
                 slaService.pauseIfPendingCustomer(thread);
             }
+            applyResolution(thread, from, to, principal);
+            appendEvent(thread, MailEnums.ThreadEventType.STATUS_CHANGED,
+                    from.name(), to.name(), principal);
         }
-        if (request.priority() != null) {
+
+        if (request.priority() != null && request.priority() != thread.getPriority()) {
+            MailEnums.Priority from = thread.getPriority();
             thread.setPriority(request.priority());
+            appendEvent(thread, MailEnums.ThreadEventType.PRIORITY_CHANGED,
+                    from.name(), request.priority().name(), principal);
         }
-        return toSummary(threadRepository.save(thread));
+
+        MailThread saved = threadRepository.save(thread);
+        return toSummary(saved, tagsFor(List.of(saved.getId())).getOrDefault(saved.getId(), List.of()));
+    }
+
+    /**
+     * Records who closed a thread and when, and keeps the mailbox's open counter honest.
+     *
+     * <p>Both halves were missing rather than wrong. {@code resolved_at} and {@code resolved_by} were
+     * columns that no code ever wrote, so "when was this resolved and by whom" was unanswerable
+     * except by reading the event log. And {@code open_thread_count} was incremented on the first
+     * inbound message and never decremented, so it only ever grew: a mailbox that had handled
+     * everything still showed its lifetime total as open work.
+     *
+     * <p>Reopening is handled too, in the same place, because a resolve that cannot be undone
+     * symmetrically is how the counter drifted in the first place.
+     */
+    private void applyResolution(MailThread thread,
+                                 MailEnums.ThreadStatus from,
+                                 MailEnums.ThreadStatus to,
+                                 PrabhixPrincipal principal) {
+        boolean wasClosed = CLOSED_STATUSES.contains(from);
+        boolean nowClosed = CLOSED_STATUSES.contains(to);
+        if (wasClosed == nowClosed) {
+            return;
+        }
+
+        if (nowClosed) {
+            thread.setResolvedAt(Instant.now());
+            thread.setResolvedBy(principal.userId());
+        } else {
+            thread.setResolvedAt(null);
+            thread.setResolvedBy(null);
+        }
+
+        mailboxRepository.findById(thread.getMailboxId()).ifPresent(mb -> {
+            int current = mb.getOpenThreadCount();
+            // Floored rather than allowed negative: the counter is denormalised, so it can already be
+            // behind reality on data that predates this, and a negative badge is a worse lie than a
+            // stale zero.
+            mb.setOpenThreadCount(nowClosed ? Math.max(0, current - 1) : current + 1);
+            mailboxRepository.save(mb);
+        });
+    }
+
+    private void appendEvent(MailThread thread, MailEnums.ThreadEventType type,
+                             String fromValue, String toValue, PrabhixPrincipal principal) {
+        MailThreadEvent event = new MailThreadEvent();
+        event.setOrganizationId(thread.getOrganizationId());
+        event.setThreadId(thread.getId());
+        event.setEventType(type);
+        event.setFromValue(fromValue);
+        event.setToValue(toValue);
+        event.setActorUserId(principal.userId());
+        eventRepository.save(event);
     }
 
     @Transactional
@@ -142,22 +230,48 @@ public class ThreadService {
         throw ApiException.forbidden("You do not have access to this thread");
     }
 
+    /**
+     * Delegated to {@link MailboxAccess} rather than resolved here.
+     *
+     * <p>This method used to duplicate the access rule and pass an empty team list, so the helpdesk
+     * queue and the mail client disagreed about which mailboxes a person could see the moment access
+     * came from a team. One of the two answers had to be authoritative; it is the one that also
+     * guards folders, flags, drafts and compose.
+     */
     private UUID[] resolveMailboxIds(PrabhixPrincipal principal, boolean readAll) {
         if (readAll) {
             return new UUID[0];
         }
-        List<UUID> ids = memberRepository.findAccessibleMailboxIds(
-                principal.requireOrganizationId(), principal.userId(), List.of());
-        return ids.toArray(UUID[]::new);
+        return mailboxAccess.accessibleMailboxIds(principal).toArray(UUID[]::new);
     }
 
-    private ThreadDtos.ThreadSummary toSummary(MailThread t) {
+    /**
+     * The tags on each of the given threads, keyed by thread id.
+     *
+     * <p>One query for the whole page. Callers pass every id they are about to map, so the mapper can
+     * stay a pure function of a thread and a list.
+     */
+    private java.util.Map<UUID, List<ThreadDtos.TagRef>> tagsFor(List<UUID> threadIds) {
+        if (threadIds.isEmpty()) {
+            return java.util.Map.of();
+        }
+        var byThread = new java.util.HashMap<UUID, List<ThreadDtos.TagRef>>();
+        for (var row : threadTagRepository.findTagsForThreads(threadIds)) {
+            byThread.computeIfAbsent(row.getThreadId(), k -> new ArrayList<>())
+                    .add(new ThreadDtos.TagRef(row.getTagId(), row.getSlug(), row.getName(),
+                            row.getColour()));
+        }
+        return byThread;
+    }
+
+    private ThreadDtos.ThreadSummary toSummary(MailThread t, List<ThreadDtos.TagRef> tags) {
         return new ThreadDtos.ThreadSummary(
                 t.getId(), t.getMailboxId(), t.getReferenceKey(), t.getSubject(),
                 t.getStatus(), t.getPriority(), t.getAssigneeUserId(), t.getAssigneeTeamId(),
                 t.getCustomerEmail(), t.getSnippet(), t.getMessageCount(), t.getUnreadCount(),
                 t.isHasAttachments(), t.getLastMessageAt(), t.getLastMessageDirection(),
-                t.getSlaDueAt(), t.getSlaBreachedAt());
+                t.getSlaDueAt(), t.getSlaBreachedAt(), t.getFirstResponseAt(), t.getResolvedAt(),
+                tags);
     }
 
     private ThreadDtos.MessageSummary toMessage(MailMessage m) {

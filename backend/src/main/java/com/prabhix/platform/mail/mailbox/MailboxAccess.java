@@ -6,6 +6,7 @@ import com.prabhix.platform.mail.domain.Mailbox;
 import com.prabhix.platform.mail.repository.MailThreadRepository;
 import com.prabhix.platform.mail.repository.MailboxMemberRepository;
 import com.prabhix.platform.mail.repository.MailboxRepository;
+import com.prabhix.platform.org.repository.TeamMemberRepository;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Permission;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,25 @@ public class MailboxAccess {
     private final MailboxRepository mailboxRepository;
     private final MailboxMemberRepository memberRepository;
     private final MailThreadRepository threadRepository;
+    private final TeamMemberRepository teamMemberRepository;
+
+    /**
+     * The ids of every mailbox this person may read, or an empty list for a holder of
+     * {@code MAIL_READ_ALL} — for whom "which ids" is the wrong question and callers check the
+     * permission instead.
+     *
+     * <p>Resolves the caller's teams first. {@code findAccessibleMailboxIds} has always taken a list
+     * of team ids, and every caller passed {@code List.of()}, so a mailbox granted to a team was
+     * invisible to that team's members: the grant could be written through the members table and
+     * then had no effect on anything. Team grants are the reason to have teams, so an empty list
+     * turned the feature off while leaving it configurable.
+     */
+    @Transactional(readOnly = true)
+    public List<UUID> accessibleMailboxIds(PrabhixPrincipal principal) {
+        UUID orgId = principal.requireOrganizationId();
+        List<UUID> teamIds = teamMemberRepository.findTeamIdsByUser(orgId, principal.userId());
+        return memberRepository.findAccessibleMailboxIds(orgId, principal.userId(), teamIds);
+    }
 
     /**
      * Every mailbox this person can see. Members plus, for a holder of {@code MAIL_READ_ALL}, everything
@@ -41,7 +61,7 @@ public class MailboxAccess {
         if (principal.has(Permission.MAIL_READ_ALL)) {
             return mailboxRepository.findByOrganizationIdAndDeletedAtIsNullOrderByName(orgId);
         }
-        List<UUID> ids = memberRepository.findAccessibleMailboxIds(orgId, principal.userId(), List.of());
+        List<UUID> ids = accessibleMailboxIds(principal);
         if (ids.isEmpty()) {
             return List.of();
         }
@@ -58,7 +78,10 @@ public class MailboxAccess {
         if (principal.has(Permission.MAIL_READ_ALL)) {
             return mailbox;
         }
-        if (!memberRepository.existsByMailboxIdAndUserId(mailboxId, principal.userId())) {
+        // Was existsByMailboxIdAndUserId, which only ever sees direct user grants. A person whose
+        // access came from a team was refused here while visibleMailboxes listed the mailbox for
+        // them, so the mailbox appeared in the sidebar and then 403'd on open.
+        if (!accessibleMailboxIds(principal).contains(mailboxId)) {
             throw ApiException.forbidden("You do not have access to this mailbox");
         }
         return mailbox;

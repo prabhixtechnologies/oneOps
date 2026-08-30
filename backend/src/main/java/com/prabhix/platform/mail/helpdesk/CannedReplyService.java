@@ -28,6 +28,26 @@ public class CannedReplyService {
                 .stream().map(this::toDto).toList();
     }
 
+    /**
+     * Counts one use of a canned reply. Best effort by design.
+     *
+     * <p>Called from the reply path, which has already built and queued the outbound message. An
+     * unknown or deleted id is ignored rather than raised: the reply is the thing that matters, and
+     * failing a customer-facing send because a statistic could not be recorded would be a poor
+     * trade. Silently skipped for a reply that names no canned reply at all.
+     */
+    @Transactional
+    public void recordUse(UUID organizationId, UUID cannedReplyId) {
+        if (cannedReplyId == null) {
+            return;
+        }
+        repository.findByIdAndOrganizationIdAndDeletedAtIsNull(cannedReplyId, organizationId)
+                .ifPresent(reply -> {
+                    reply.setUsageCount(reply.getUsageCount() + 1);
+                    repository.save(reply);
+                });
+    }
+
     @Transactional
     public CannedReplyDtos.CannedReplyResponse create(UUID organizationId,
                                                       CannedReplyDtos.CreateRequest request) {

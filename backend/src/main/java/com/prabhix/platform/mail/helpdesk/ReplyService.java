@@ -47,6 +47,7 @@ public class ReplyService {
     private final StoredFileRepository storedFileRepository;
     private final MailDispatcher mailDispatcher;
     private final AssignmentService assignmentService;
+    private final CannedReplyService cannedReplyService;
     private final SlaService slaService;
     private final AttachmentValidationService attachmentValidationService;
     private final PrabhixProperties properties;
@@ -144,6 +145,7 @@ public class ReplyService {
         }
         threadRepository.save(thread);
         slaService.onOutboundReply(thread);
+        cannedReplyService.recordUse(orgId, request.cannedReplyId());
 
         return new ThreadDtos.MessageSummary(
                 outbound.getId(), outbound.getDirection(), outbound.getFromAddress(), null,
