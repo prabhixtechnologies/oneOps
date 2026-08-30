@@ -164,7 +164,7 @@ class ThreadResolutionTest {
     void summaryCarriesTheThreadsTags() {
         stubThread(MailEnums.ThreadStatus.OPEN);
         UUID tagId = UUID.randomUUID();
-        when(threadTagRepository.findTagsForThreads(List.of(threadId)))
+        when(threadTagRepository.findTagsForThreads(orgId, List.of(threadId)))
                 .thenReturn(List.of(tagRow(tagId, "billing", "Billing", "#ff0000")));
 
         ThreadDtos.ThreadSummary summary = threadService.update(principal(), threadId,

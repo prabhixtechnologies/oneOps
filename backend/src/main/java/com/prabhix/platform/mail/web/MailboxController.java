@@ -90,11 +90,63 @@ public class MailboxController {
         return mailboxService.addMember(principal.requireOrganizationId(), id, request);
     }
 
-    @DeleteMapping("/{id}/members/{userId}")
+    @PatchMapping("/{id}/members/{memberId}")
+    @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
+    public MailboxDtos.MailboxMemberResponse updateMember(
+            @CurrentUser PrabhixPrincipal principal,
+            @PathVariable UUID id,
+            @PathVariable UUID memberId,
+            @Valid @RequestBody MailboxDtos.UpdateMailboxMemberRequest request) {
+        return mailboxService.updateMember(principal.requireOrganizationId(), id, memberId, request);
+    }
+
+    /**
+     * Revokes one grant, named by its membership id.
+     *
+     * <p>Sits alongside the older {@code /members/by-user/{userId}} route rather than replacing it:
+     * only a membership id can name a team grant, and only a user id is available to a caller that
+     * has just looked someone up in the directory.
+     */
+    @DeleteMapping("/{id}/members/{memberId}")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public void removeMember(@CurrentUser PrabhixPrincipal principal,
-                               @PathVariable UUID id,
-                               @PathVariable UUID userId) {
-        mailboxService.removeMember(principal.requireOrganizationId(), id, userId);
+                             @PathVariable UUID id,
+                             @PathVariable UUID memberId) {
+        mailboxService.removeMember(principal.requireOrganizationId(), id, memberId);
+    }
+
+    @DeleteMapping("/{id}/members/by-user/{userId}")
+    @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
+    public void removeMemberByUser(@CurrentUser PrabhixPrincipal principal,
+                                   @PathVariable UUID id,
+                                   @PathVariable UUID userId) {
+        mailboxService.removeMemberByUser(principal.requireOrganizationId(), id, userId);
+    }
+
+    @PostMapping("/{id}/routing-rules")
+    @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
+    public MailboxDtos.RoutingRuleResponse createRoutingRule(
+            @CurrentUser PrabhixPrincipal principal,
+            @PathVariable UUID id,
+            @Valid @RequestBody MailboxDtos.SaveRoutingRuleRequest request) {
+        return mailboxService.createRoutingRule(principal.requireOrganizationId(), id, request);
+    }
+
+    @PatchMapping("/{id}/routing-rules/{ruleId}")
+    @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
+    public MailboxDtos.RoutingRuleResponse updateRoutingRule(
+            @CurrentUser PrabhixPrincipal principal,
+            @PathVariable UUID id,
+            @PathVariable UUID ruleId,
+            @Valid @RequestBody MailboxDtos.SaveRoutingRuleRequest request) {
+        return mailboxService.updateRoutingRule(principal.requireOrganizationId(), id, ruleId, request);
+    }
+
+    @DeleteMapping("/{id}/routing-rules/{ruleId}")
+    @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
+    public void deleteRoutingRule(@CurrentUser PrabhixPrincipal principal,
+                                  @PathVariable UUID id,
+                                  @PathVariable UUID ruleId) {
+        mailboxService.deleteRoutingRule(principal.requireOrganizationId(), id, ruleId);
     }
 }

@@ -74,7 +74,7 @@ public class ThreadService {
 
         // Tags for the whole page in one query, before the per-row mapper runs. Resolving them inside
         // toSummary would be a query per thread.
-        var tagsByThread = tagsFor(fetched.stream().map(MailThread::getId).toList());
+        var tagsByThread = tagsFor(orgId, fetched.stream().map(MailThread::getId).toList());
         return CursorPage.of(fetched, limit - 1,
                 t -> toSummary(t, tagsByThread.getOrDefault(t.getId(), List.of())),
                 ThreadCursor::encode);
@@ -95,7 +95,7 @@ public class ThreadService {
                 .stream().map(this::toEvent).toList();
 
         return new ThreadDtos.ThreadDetail(
-                toSummary(thread, tagsFor(List.of(threadId)).getOrDefault(threadId, List.of())),
+                toSummary(thread, tagsFor(orgId, List.of(threadId)).getOrDefault(threadId, List.of())),
                 messages, notes, events);
     }
 
@@ -125,7 +125,8 @@ public class ThreadService {
         }
 
         MailThread saved = threadRepository.save(thread);
-        return toSummary(saved, tagsFor(List.of(saved.getId())).getOrDefault(saved.getId(), List.of()));
+        return toSummary(saved, tagsFor(saved.getOrganizationId(), List.of(saved.getId()))
+                .getOrDefault(saved.getId(), List.of()));
     }
 
     /**
@@ -251,12 +252,12 @@ public class ThreadService {
      * <p>One query for the whole page. Callers pass every id they are about to map, so the mapper can
      * stay a pure function of a thread and a list.
      */
-    private java.util.Map<UUID, List<ThreadDtos.TagRef>> tagsFor(List<UUID> threadIds) {
+    private java.util.Map<UUID, List<ThreadDtos.TagRef>> tagsFor(UUID orgId, List<UUID> threadIds) {
         if (threadIds.isEmpty()) {
             return java.util.Map.of();
         }
         var byThread = new java.util.HashMap<UUID, List<ThreadDtos.TagRef>>();
-        for (var row : threadTagRepository.findTagsForThreads(threadIds)) {
+        for (var row : threadTagRepository.findTagsForThreads(orgId, threadIds)) {
             byThread.computeIfAbsent(row.getThreadId(), k -> new ArrayList<>())
                     .add(new ThreadDtos.TagRef(row.getTagId(), row.getSlug(), row.getName(),
                             row.getColour()));

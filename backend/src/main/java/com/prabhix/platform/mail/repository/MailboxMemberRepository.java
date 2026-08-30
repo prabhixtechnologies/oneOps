@@ -20,5 +20,9 @@ public interface MailboxMemberRepository extends JpaRepository<MailboxMember, UU
 
     boolean existsByMailboxIdAndUserId(UUID mailboxId, UUID userId);
 
+    boolean existsByMailboxIdAndTeamId(UUID mailboxId, UUID teamId);
+
     java.util.Optional<MailboxMember> findByMailboxIdAndUserId(UUID mailboxId, UUID userId);
+
+    java.util.Optional<MailboxMember> findByIdAndMailboxIdAndOrganizationId(UUID id, UUID mailboxId, UUID organizationId);
 }

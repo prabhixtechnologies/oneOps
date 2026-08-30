@@ -1,8 +1,13 @@
 package com.prabhix.platform.mail.dto;
 
 import com.prabhix.platform.mail.domain.MailEnums;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 import java.util.List;
@@ -31,7 +36,16 @@ public final class MailboxDtos {
             String description,
             int memberCount,
             int openThreadCount,
-            String slaPolicyId,
+            /**
+             * Minutes allowed for a first response, and for resolution. Null means no target.
+             *
+             * <p>These replace a single {@code slaPolicyId} string that was never a policy id: it was
+             * {@code String.valueOf(slaFirstResponseMins)}, so a screen showing "SLA policy" was
+             * showing a number of minutes with no way to write it back. The resolution target existed
+             * on the row and was not exposed at all.
+             */
+            Integer slaFirstResponseMins,
+            Integer slaResolutionMins,
             String signature,
             Instant createdAt,
             /**
@@ -47,7 +61,20 @@ public final class MailboxDtos {
             BusinessHoursResponse businessHours) {
     }
 
-    public record MailboxMemberResponse(UUID userId, String name, String email) {
+    /**
+     * One grant of access to a mailbox: either to a person or to a team.
+     *
+     * <p>Addressed by {@code id}, the membership row, rather than by {@code userId}. A team grant has
+     * no user id, so a route keyed on the user could not name one — which is why team grants were
+     * unreachable over HTTP even though the table has always stored them.
+     */
+    public record MailboxMemberResponse(
+            UUID id,
+            UUID userId,
+            UUID teamId,
+            String name,
+            String email,
+            MailEnums.MemberAccessLevel accessLevel) {
     }
 
     public record RoutingRuleResponse(
@@ -83,12 +110,45 @@ public final class MailboxDtos {
             String description,
             String signature,
             BusinessHoursResponse businessHours,
+            /**
+             * Minutes, or 0 to clear the target. Null leaves it as it was, like every other field
+             * here — which is why clearing needs a value of its own rather than a null.
+             */
+            @Min(0) @Max(100000) Integer slaFirstResponseMins,
+            @Min(0) @Max(100000) Integer slaResolutionMins,
             String imapPassword,
             String smtpPassword) {
     }
 
+    /**
+     * Grants a mailbox to exactly one of a person or a team.
+     *
+     * <p>Both nullable at the type level and exactly one required by
+     * {@link #hasExactlyOneSubject()}: a record cannot express "one of these two" in annotations, and
+     * accepting both would create a row that is neither kind of grant.
+     */
     public record AddMailboxMemberRequest(
-            @NotNull UUID userId,
+            UUID userId,
+            UUID teamId,
             MailEnums.MemberAccessLevel accessLevel) {
+
+        @AssertTrue(message = "Give either a userId or a teamId, not both")
+        public boolean hasExactlyOneSubject() {
+            return (userId == null) != (teamId == null);
+        }
+    }
+
+    public record UpdateMailboxMemberRequest(@NotNull MailEnums.MemberAccessLevel accessLevel) {
+    }
+
+    public record SaveRoutingRuleRequest(
+            @NotBlank @Size(max = 160) String name,
+            @Size(max = 500) String description,
+            Boolean enabled,
+            @Min(0) @Max(10000) Integer priority,
+            MailEnums.MatchMode match,
+            @NotEmpty List<Map<String, Object>> conditions,
+            @NotEmpty List<Map<String, Object>> actions,
+            Boolean continueAfterMatch) {
     }
 }

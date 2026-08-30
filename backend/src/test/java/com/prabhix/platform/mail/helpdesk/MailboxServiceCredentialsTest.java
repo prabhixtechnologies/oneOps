@@ -33,6 +33,7 @@ class MailboxServiceCredentialsTest {
     @Mock private MailboxMemberRepository memberRepository;
     @Mock private MailRoutingRuleRepository routingRuleRepository;
     @Mock private OrganizationMembershipRepository membershipRepository;
+    @Mock private com.prabhix.platform.org.repository.TeamRepository teamRepository;
     @Mock private EntitlementGate entitlements;
 
     private MailboxCredentialsCipher cipher;
@@ -46,7 +47,7 @@ class MailboxServiceCredentialsTest {
         cipher = new MailboxCredentialsCipher(properties);
         service = new MailboxService(
                 mailboxRepository, memberRepository, routingRuleRepository,
-                membershipRepository, properties, entitlements, cipher);
+                membershipRepository, teamRepository, properties, entitlements, cipher);
     }
 
     @Test
@@ -84,7 +85,7 @@ class MailboxServiceCredentialsTest {
         when(mailboxRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.update(orgId, mailbox.getId(),
-                new MailboxDtos.UpdateMailboxRequest(null, null, null, null, "new-imap", null));
+                new MailboxDtos.UpdateMailboxRequest(null, null, null, null, null, null, "new-imap", null));
 
         assertEquals("new-imap", cipher.readImapPassword(mailbox));
     }
