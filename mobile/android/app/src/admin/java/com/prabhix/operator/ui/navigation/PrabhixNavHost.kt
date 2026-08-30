@@ -38,7 +38,6 @@ fun PrabhixNavHost(
     hasOrg: Boolean,
     @Suppress("UNUSED_PARAMETER") isPlatformAdmin: Boolean,
     @Suppress("UNUSED_PARAMETER") deepLinkChatId: String?,
-    @Suppress("UNUSED_PARAMETER") deepLinkMailId: String?,
     @Suppress("UNUSED_PARAMETER") onSessionEnded: () -> Unit = {},
 ) {
     val navController = rememberNavController()

@@ -6,10 +6,7 @@ import {
   FileText,
   Flag,
   FolderOpen,
-  Globe,
-  Inbox,
   LayoutDashboard,
-  Mail,
   MessageSquare,
   Percent,
   Receipt,
@@ -18,7 +15,6 @@ import {
   ShoppingBag,
   Sparkles,
   Store,
-  Tag,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -56,17 +52,6 @@ const tenantGroups: NavGroup[] = [
     items: [
       { to: "/chat", icon: MessageSquare, label: "Live Chat", permission: PERMISSIONS.CHAT_READ },
       { to: "/visitors", icon: Activity, label: "Visitors", permission: PERMISSIONS.VISITOR_READ },
-      { to: "/inbox", icon: Inbox, label: "Shared Inbox" },
-    ],
-  },
-  {
-    heading: "Mail",
-    items: [
-      { to: "/mailboxes", icon: Mail, label: "Mailboxes", permission: PERMISSIONS.MAIL_MAILBOX_READ },
-      { to: "/domains", icon: Globe, label: "Mail Domains", permission: PERMISSIONS.MAIL_DOMAIN_READ },
-      { to: "/templates", icon: FileText, label: "Templates", permission: PERMISSIONS.MAIL_TEMPLATE_READ },
-      { to: "/tags", icon: Tag, label: "Mail tags", permission: PERMISSIONS.MAIL_READ },
-      { to: "/canned-replies", icon: MessageSquare, label: "Canned replies", permission: PERMISSIONS.MAIL_READ },
     ],
   },
   {

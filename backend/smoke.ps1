@@ -181,8 +181,12 @@ T "DELETE /mail/tags/{id} detaches from threads" {
 Write-Host "`n=== Dashboard ===" -ForegroundColor Cyan
 $dash = Invoke-RestMethod "$base/dashboard" -Headers $HA -TimeoutSec 25
 T "GET /dashboard" { $dash }
-T "dashboard trend series populated" { if ($dash.threadsTrend.Count -lt 1) { throw "empty trend" }; $dash.threadsTrend }
-Write-Host ("        openThreads=" + $dash.kpis.openThreads + " seats=" + $dash.kpis.seatsUsed + "/" + $dash.kpis.seatsLimit + " trendPoints=" + $dash.threadsTrend.Count)
+T "dashboard trend series populated" {
+    if ($dash.ordersTrend.Count -lt 1) { throw "empty orders trend" }
+    if ($dash.visitorsTrend.Count -lt 1) { throw "empty visitors trend" }
+    $dash.ordersTrend
+}
+Write-Host ("        openChats=" + $dash.kpis.openConversations + " visitorsToday=" + $dash.kpis.visitorsToday + " orders30d=" + $dash.kpis.ordersLast30Days + " seats=" + $dash.kpis.seatsUsed + "/" + $dash.kpis.seatsLimit + " trendPoints=" + $dash.ordersTrend.Count)
 
 Write-Host "`n=== Org administration ===" -ForegroundColor Cyan
 $roles = Invoke-RestMethod "$base/roles" -Headers $HA -TimeoutSec 20

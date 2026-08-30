@@ -36,14 +36,13 @@ class MainActivity : FragmentActivity() {
 
         val deepLink = intent?.data
         val chatId = if (deepLink?.host == "chat") deepLink.lastPathSegment else null
-        val mailId = if (deepLink?.host == "mail") deepLink.lastPathSegment else null
 
         requestNotificationPermissionIfNeeded()
 
         if (tokenStore.session() != null && tokenStore.biometricEnabled()) {
-            promptBiometric(onSuccess = { render(chatId, mailId) })
+            promptBiometric(onSuccess = { render(chatId) })
         } else {
-            render(chatId, mailId)
+            render(chatId)
         }
     }
 
@@ -71,7 +70,7 @@ class MainActivity : FragmentActivity() {
             .launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    private fun render(chatId: String?, mailId: String?) {
+    private fun render(chatId: String?) {
         setContent {
             val dark = remember { mutableStateOf(false) }
             MaterialTheme(colorScheme = if (dark.value) darkColorScheme() else lightColorScheme()) {
@@ -81,7 +80,6 @@ class MainActivity : FragmentActivity() {
                     hasOrg = session?.organizationId != null,
                     isPlatformAdmin = session?.platformAdmin == true,
                     deepLinkChatId = chatId,
-                    deepLinkMailId = mailId,
                     onSessionEnded = { session = null },
                 )
             }

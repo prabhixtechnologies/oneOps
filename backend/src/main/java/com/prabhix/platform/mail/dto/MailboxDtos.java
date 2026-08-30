@@ -80,6 +80,7 @@ public final class MailboxDtos {
     public record RoutingRuleResponse(
             UUID id,
             String name,
+            String description,
             int priority,
             List<Map<String, Object>> conditions,
             String match,

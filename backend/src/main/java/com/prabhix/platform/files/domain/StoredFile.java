@@ -68,7 +68,9 @@ public class StoredFile extends TenantScopedEntity {
         EXPORT,
         IMPORT,
         INVOICE,
-        CHAT_ATTACHMENT
+        CHAT_ATTACHMENT,
+        /** A file somebody uploaded to the library, belonging to no other feature. */
+        DOCUMENT
     }
 
     public enum ScanStatus {

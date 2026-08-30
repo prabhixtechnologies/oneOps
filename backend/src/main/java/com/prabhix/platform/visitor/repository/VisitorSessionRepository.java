@@ -30,4 +30,19 @@ public interface VisitorSessionRepository extends JpaRepository<VisitorSession, 
             WHERE organization_id = :orgId AND started_at >= :since AND started_at < :until
             """, nativeQuery = true)
     long countSessionsInRange(UUID orgId, Instant since, Instant until);
+
+    @Query(value = """
+            SELECT count(*) FROM visitor_sessions
+            WHERE organization_id = :orgId AND started_at >= :since
+            """, nativeQuery = true)
+    long countSessionsSince(UUID orgId, Instant since);
+
+    @Query(value = """
+            SELECT CAST(started_at AS date) AS day, count(*) AS cnt
+            FROM visitor_sessions
+            WHERE organization_id = :orgId AND started_at >= :since
+            GROUP BY CAST(started_at AS date)
+            ORDER BY day
+            """, nativeQuery = true)
+    List<Object[]> countSessionsByDay(UUID orgId, Instant since);
 }

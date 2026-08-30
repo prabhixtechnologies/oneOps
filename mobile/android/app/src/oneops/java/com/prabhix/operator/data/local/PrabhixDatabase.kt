@@ -35,17 +35,6 @@ data class MessageEntity(
     val occurredAt: String,
 )
 
-@Entity(tableName = "mail_threads")
-data class MailThreadEntity(
-    @PrimaryKey val id: String,
-    val subject: String,
-    val status: String,
-    val snippet: String?,
-    val unreadCount: Int,
-    val lastMessageAt: String?,
-    val cachedAt: Long,
-)
-
 @Entity(tableName = "outbound_queue")
 data class OutboundMessageEntity(
     @PrimaryKey val clientId: String,
@@ -78,15 +67,6 @@ interface MessageDao {
 }
 
 @Dao
-interface MailThreadDao {
-    @Query("SELECT * FROM mail_threads ORDER BY lastMessageAt DESC")
-    fun observeAll(): Flow<List<MailThreadEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertAll(items: List<MailThreadEntity>)
-}
-
-@Dao
 interface OutboundQueueDao {
     @Query("SELECT * FROM outbound_queue ORDER BY createdAt ASC")
     suspend fun pending(): List<OutboundMessageEntity>
@@ -102,15 +82,13 @@ interface OutboundQueueDao {
     entities = [
         ConversationEntity::class,
         MessageEntity::class,
-        MailThreadEntity::class,
         OutboundMessageEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class PrabhixDatabase : RoomDatabase() {
     abstract fun conversationDao(): ConversationDao
     abstract fun messageDao(): MessageDao
-    abstract fun mailThreadDao(): MailThreadDao
     abstract fun outboundQueueDao(): OutboundQueueDao
 }

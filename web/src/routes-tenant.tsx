@@ -3,7 +3,7 @@ import { type RouteObject } from "react-router";
 import { SuspenseWrap } from "@/routes-shell";
 
 /**
- * The pages that operate on one organization's data: inbox, chat, visitors, shop, settings.
+ * The pages that operate on one organization's data: chat, visitors, shop, settings.
  *
  * <p>Imported only by {@link ./routes.tsx}, the OneOps product. Every page here needs an
  * organization to be meaningful, and OneOps always has exactly one — the account's own, or a
@@ -19,25 +19,12 @@ const ChatSettingsPage = lazy(() => import("@/features/chat/ChatSettingsPage"));
 const VisitorsPage = lazy(() => import("@/features/visitors/VisitorsPage"));
 const VisitorDetailPage = lazy(() => import("@/features/visitors/VisitorDetailPage"));
 const DashboardPage = lazy(() => import("@/features/dashboard/DashboardPage"));
-const InboxPage = lazy(() => import("@/features/inbox/InboxPage"));
-const MailboxesPage = lazy(() => import("@/features/mailboxes/MailboxesPage"));
-const MailboxDetailPage = lazy(() => import("@/features/mailboxes/MailboxDetailPage"));
-const DomainsPage = lazy(() => import("@/features/maildomains/DomainsPage"));
-const DomainDnsPage = lazy(() =>
-  import("@/features/maildomains/DomainsPage").then((m) => ({ default: m.DomainDnsPage })),
-);
-const TemplatesPage = lazy(() => import("@/features/templates/TemplatesPage"));
-const TemplateEditorPage = lazy(() =>
-  import("@/features/templates/TemplatesPage").then((m) => ({ default: m.TemplateEditorPage })),
-);
 const MembersPage = lazy(() => import("@/features/members/MembersPage"));
 const AuditPage = lazy(() => import("@/features/audit/AuditPage"));
 const LogsPage = lazy(() => import("@/features/logs/LogsPage"));
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage"));
 const FilesPage = lazy(() => import("@/features/files/FilesPage"));
 const FlagsPage = lazy(() => import("@/features/flags/FlagsPage"));
-const TagsPage = lazy(() => import("@/features/tags/TagsPage"));
-const CannedRepliesPage = lazy(() => import("@/features/canned-replies/CannedRepliesPage"));
 const CommerceDashboardPage = lazy(() => import("@/features/commerce/CommerceDashboardPage"));
 const CommerceProductsPage = lazy(() => import("@/features/commerce/CommerceProductsPage"));
 const ProductEditPage = lazy(() => import("@/features/commerce/ProductEditPage"));
@@ -56,15 +43,6 @@ export const tenantRoutes: RouteObject[] = [
   { path: "chat/settings", element: <SuspenseWrap><ChatSettingsPage /></SuspenseWrap> },
   { path: "visitors", element: <SuspenseWrap><VisitorsPage /></SuspenseWrap> },
   { path: "visitors/:id", element: <SuspenseWrap><VisitorDetailPage /></SuspenseWrap> },
-  { path: "inbox", element: <SuspenseWrap><InboxPage /></SuspenseWrap> },
-  { path: "mailboxes", element: <SuspenseWrap><MailboxesPage /></SuspenseWrap> },
-  { path: "mailboxes/:id", element: <SuspenseWrap><MailboxDetailPage /></SuspenseWrap> },
-  { path: "domains", element: <SuspenseWrap><DomainsPage /></SuspenseWrap> },
-  { path: "domains/:id", element: <SuspenseWrap><DomainDnsPage /></SuspenseWrap> },
-  { path: "templates", element: <SuspenseWrap><TemplatesPage /></SuspenseWrap> },
-  { path: "templates/:key", element: <SuspenseWrap><TemplateEditorPage /></SuspenseWrap> },
-  { path: "tags", element: <SuspenseWrap><TagsPage /></SuspenseWrap> },
-  { path: "canned-replies", element: <SuspenseWrap><CannedRepliesPage /></SuspenseWrap> },
   { path: "files", element: <SuspenseWrap><FilesPage /></SuspenseWrap> },
   { path: "members", element: <SuspenseWrap><MembersPage /></SuspenseWrap> },
   { path: "audit", element: <SuspenseWrap><AuditPage /></SuspenseWrap> },

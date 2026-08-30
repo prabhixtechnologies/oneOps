@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { LogOut, Mail, Moon, Search, Sun } from "lucide-react";
+import { Inbox, LogOut, Mail, Moon, Search, Sun } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { Button } from "@/components/ui/button";
@@ -111,12 +111,20 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
           <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
         </Button>
         {MAILROOM_URL && (
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-3" asChild>
-            <a href={MAILROOM_URL} target="_blank" rel="noopener noreferrer">
-              <Mail className="h-4 w-4" aria-hidden="true" />
-              <span>My mail</span>
-            </a>
-          </Button>
+          <>
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-3" asChild>
+              <a href={MAILROOM_URL} target="_blank" rel="noopener noreferrer">
+                <Mail className="h-4 w-4" aria-hidden="true" />
+                <span>My mail</span>
+              </a>
+            </Button>
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-3" asChild>
+              <a href={`${MAILROOM_URL}/queue`} target="_blank" rel="noopener noreferrer">
+                <Inbox className="h-4 w-4" aria-hidden="true" />
+                <span>Shared inbox</span>
+              </a>
+            </Button>
+          </>
         )}
         <Separator className="my-1" />
         <Button

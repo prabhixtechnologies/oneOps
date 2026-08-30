@@ -73,7 +73,7 @@ public class FileController {
     @PreAuthorize(Authorize.FILE_UPLOAD)
     public FileUploadResponse upload(@CurrentUser PrabhixPrincipal principal,
                                      @RequestParam("file") MultipartFile file,
-                                     @RequestParam(defaultValue = "MAIL_ATTACHMENT") StoredFile.FilePurpose purpose)
+                                     @RequestParam(defaultValue = "DOCUMENT") StoredFile.FilePurpose purpose)
             throws java.io.IOException {
         StoredFile stored = fileStorageService.store(
                 file.getBytes(),

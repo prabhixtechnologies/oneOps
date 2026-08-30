@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 import { apiRequest, apiRequestVoid } from "@/lib/api-client";
 import {
   chatCannedReplyListSchema,
@@ -11,6 +12,14 @@ import {
   conversationListPageSchema,
   conversationSummarySchema,
 } from "@/lib/schemas/chat";
+import { arraySchema } from "@/lib/schemas/common";
+
+const offlineMailboxOptionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+const offlineMailboxOptionsSchema = arraySchema(offlineMailboxOptionSchema);
 
 export function useChatConversations(filters: {
   queue?: string;
@@ -174,5 +183,13 @@ export function useDeleteChatCannedReply() {
   return useMutation({
     mutationFn: (id: string) => apiRequestVoid(`/chat/canned-replies/${id}`, { method: "DELETE" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["chat-canned-replies"] }),
+  });
+}
+
+/** Mailboxes eligible for offline-chat routing; ids only, not a mail console surface. */
+export function useOfflineMailboxOptions() {
+  return useQuery({
+    queryKey: ["mailboxes"],
+    queryFn: () => apiRequest("/mail/mailboxes", offlineMailboxOptionsSchema),
   });
 }

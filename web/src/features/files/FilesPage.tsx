@@ -5,7 +5,7 @@ import { PermissionGate } from "@/components/shared/PermissionGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useDeleteFile, useUploadFile } from "@/features/mail/api";
+import { useDeleteFile, useUploadFile } from "@/features/files/api";
 import { apiDownload, getApiErrorMessage, triggerBlobDownload } from "@/lib/api-client";
 import { PERMISSIONS } from "@/lib/permissions";
 import { formatBytes } from "@/lib/utils";
@@ -23,7 +23,7 @@ export default function FilesPage() {
 
   const onUpload = async (file: File) => {
     try {
-      const result = await upload.mutateAsync({ file, purpose: "MAIL_ATTACHMENT" });
+      const result = await upload.mutateAsync({ file, purpose: "DOCUMENT" });
       setLastUpload(result);
       setFileId(result.id);
       toast.success(`Uploaded ${result.filename}`);

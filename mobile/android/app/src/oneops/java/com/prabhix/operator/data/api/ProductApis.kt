@@ -10,7 +10,7 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
- * The product's HTTP surface: conversations, mail, visitors, the dashboard and the AI helpers.
+ * The product's HTTP surface: conversations, visitors, the dashboard and the AI helpers.
  *
  * In `src/oneops/` so the admin APK does not contain it. These paths are tenant-scoped, and the
  * staff app calls only the two cross-tenant endpoints under `/admin/platform`.
@@ -62,42 +62,6 @@ interface ChatApi {
     suspend fun cannedReplies(): List<CannedReplyView>
 }
 
-interface MailApi {
-    @GET("mail/threads")
-    suspend fun listThreads(
-        @Query("mailboxId") mailboxId: String? = null,
-        @Query("status") status: String? = null,
-        @Query("unreadOnly") unreadOnly: Boolean? = null,
-        @Query("q") q: String? = null,
-        @Query("cursor") cursor: String? = null,
-        @Query("limit") limit: Int? = null,
-    ): CursorPage<ThreadSummary>
-
-    @GET("mail/threads/{id}")
-    suspend fun getThread(@Path("id") id: String): ThreadDetail
-
-    @PATCH("mail/threads/{id}")
-    suspend fun updateThread(@Path("id") id: String, @Body body: UpdateThreadRequest): ThreadSummary
-
-    @POST("mail/threads/{id}/reply")
-    suspend fun reply(@Path("id") id: String, @Body body: ReplyRequest): MailMessageSummary
-
-    @POST("mail/threads/{id}/assign")
-    suspend fun assign(@Path("id") id: String, @Body body: MailAssignRequest)
-
-    @POST("mail/threads/{id}/tags")
-    suspend fun addTag(@Path("id") id: String, @Body body: ThreadTagRequest)
-
-    @GET("mail/mailboxes")
-    suspend fun mailboxes(): List<MailboxResponse>
-
-    @GET("mail/canned-replies")
-    suspend fun cannedReplies(): List<CannedReplyView>
-
-    @GET("mail/tags")
-    suspend fun tags(): List<TagResponse>
-}
-
 interface VisitorApi {
     @GET("visitors/live")
     suspend fun live(): List<LiveVisitor>
@@ -122,12 +86,4 @@ interface ChatAiApi {
 
     @POST("chat/conversations/{id}/ai/rewrite")
     suspend fun rewrite(@Path("id") id: String, @Body body: RewriteRequest): RewriteResult
-}
-
-interface MailAiApi {
-    @POST("mail/threads/{id}/ai/reply/suggest")
-    suspend fun suggestReply(@Path("id") id: String): DraftSuggestion
-
-    @POST("mail/threads/{id}/ai/summarize")
-    suspend fun summarize(@Path("id") id: String): TextResult
 }

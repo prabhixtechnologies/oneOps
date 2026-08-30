@@ -3,12 +3,13 @@ package com.prabhix.platform.dashboard.service;
 import com.prabhix.platform.audit.domain.AuditLog;
 import com.prabhix.platform.audit.repository.AuditLogRepository;
 import com.prabhix.platform.billing.domain.BillingEnums;
-import com.prabhix.platform.billing.domain.BillingSubscription;
+import com.prabhix.platform.chat.repository.ChatConversationRepository;
+import com.prabhix.platform.commerce.repository.CommerceOrderRepository;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;
 import com.prabhix.platform.dashboard.dto.DashboardDtos;
-import com.prabhix.platform.mail.repository.MailThreadRepository;
 import com.prabhix.platform.org.domain.Organization;
 import com.prabhix.platform.org.repository.OrganizationRepository;
+import com.prabhix.platform.visitor.repository.VisitorSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -25,35 +26,48 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * The operations overview for the OneOps console.
+ *
+ * The figures here are the ones OneOps is responsible for — storefront, live chat, visitors and
+ * the subscription. Mail queue and SLA numbers used to sit alongside them; they moved to Mailroom
+ * with the rest of the helpdesk, so nothing in this class reads the mail tables any more.
+ */
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
 
     private static final int TREND_DAYS = 14;
+    private static final int REVENUE_WINDOW_DAYS = 30;
     private static final List<BillingEnums.SubscriptionStatus> LIVE_STATUSES = List.of(
             BillingEnums.SubscriptionStatus.TRIALING,
             BillingEnums.SubscriptionStatus.ACTIVE,
             BillingEnums.SubscriptionStatus.PAST_DUE,
             BillingEnums.SubscriptionStatus.PAUSED);
 
-    private final MailThreadRepository threadRepository;
     private final OrganizationRepository organizationRepository;
     private final BillingSubscriptionRepository subscriptionRepository;
     private final AuditLogRepository auditLogRepository;
+    private final ChatConversationRepository conversationRepository;
+    private final VisitorSessionRepository visitorSessionRepository;
+    private final CommerceOrderRepository orderRepository;
 
     @Transactional(readOnly = true)
     public DashboardDtos.DashboardResponse getDashboard(UUID organizationId) {
         Organization org = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new IllegalStateException("Organization not found"));
 
-        Instant trendSince = Instant.now().minus(TREND_DAYS, ChronoUnit.DAYS);
-        Instant breachSince = Instant.now().minus(30, ChronoUnit.DAYS);
-        Instant responseSince = Instant.now().minus(90, ChronoUnit.DAYS);
+        Instant now = Instant.now();
+        Instant trendSince = now.minus(TREND_DAYS, ChronoUnit.DAYS);
+        Instant revenueSince = now.minus(REVENUE_WINDOW_DAYS, ChronoUnit.DAYS);
+        Instant dayStart = LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
 
         DashboardDtos.Kpis kpis = new DashboardDtos.Kpis(
-                threadRepository.countOpenThreads(organizationId),
-                threadRepository.avgFirstResponseMinutes(organizationId, responseSince),
-                threadRepository.countRecentSlaBreaches(organizationId, breachSince),
+                conversationRepository.countOpen(organizationId),
+                conversationRepository.countUnassigned(organizationId),
+                visitorSessionRepository.countSessionsSince(organizationId, dayStart),
+                orderRepository.countOrdersSince(organizationId, revenueSince),
+                orderRepository.sumRevenueSince(organizationId, revenueSince),
                 org.getMemberCount(),
                 org.getSeatLimit(),
                 resolveMrr(organizationId),
@@ -65,12 +79,12 @@ public class DashboardService {
                 .map(this::toActivity)
                 .toList();
 
-        List<DashboardDtos.ChartPoint> threadsTrend = buildTrend(
-                threadRepository.countThreadsByDay(organizationId, trendSince));
-        List<DashboardDtos.ChartPoint> responseTrend = buildTrend(
-                threadRepository.avgResponseMinutesByDay(organizationId, trendSince));
+        List<DashboardDtos.ChartPoint> ordersTrend = buildTrend(
+                orderRepository.countOrdersByDay(organizationId, trendSince));
+        List<DashboardDtos.ChartPoint> visitorsTrend = buildTrend(
+                visitorSessionRepository.countSessionsByDay(organizationId, trendSince));
 
-        return new DashboardDtos.DashboardResponse(kpis, activity, threadsTrend, responseTrend);
+        return new DashboardDtos.DashboardResponse(kpis, activity, ordersTrend, visitorsTrend);
     }
 
     private long resolveMrr(UUID organizationId) {

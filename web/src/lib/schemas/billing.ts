@@ -102,9 +102,11 @@ export const planPageSchema = pageResponseSchema(planSchema);
 export const paymentMethodListSchema = z.array(paymentMethodSchema);
 
 export const dashboardKpisSchema = z.object({
-  openThreads: z.number(),
-  avgFirstResponseMinutes: z.number(),
-  slaBreaches: z.number(),
+  openConversations: z.number(),
+  unassignedConversations: z.number(),
+  visitorsToday: z.number(),
+  ordersLast30Days: z.number(),
+  revenueLast30Days: z.number(),
   seatsUsed: z.number(),
   seatsLimit: z.number(),
   mrr: z.number(),
@@ -130,8 +132,8 @@ export const dashboardChartPointSchema = z.object({
 export const dashboardSchema = z.object({
   kpis: dashboardKpisSchema,
   recentActivity: z.array(dashboardActivitySchema),
-  threadsTrend: z.array(dashboardChartPointSchema),
-  responseTimeTrend: z.array(dashboardChartPointSchema),
+  ordersTrend: z.array(dashboardChartPointSchema),
+  visitorsTrend: z.array(dashboardChartPointSchema),
 });
 
 export type Dashboard = z.infer<typeof dashboardSchema>;

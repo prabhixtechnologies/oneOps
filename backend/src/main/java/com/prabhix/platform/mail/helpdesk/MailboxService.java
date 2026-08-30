@@ -353,6 +353,7 @@ public class MailboxService {
         return new MailboxDtos.RoutingRuleResponse(
                 rule.getId(),
                 rule.getName(),
+                rule.getDescription(),
                 rule.getPriority(),
                 MailJson.parseObjectList(rule.getConditions()),
                 rule.getMatchMode().name(),

@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { PERMISSIONS, hasPermission } from "@/lib/permissions";
-import { useFeatureFlags, useSetFeatureFlag } from "@/features/mail/api";
+import { useFeatureFlags, useSetFeatureFlag } from "@/features/flags/api";
 
 export default function FlagsPage() {
   const flagsQuery = useFeatureFlags();

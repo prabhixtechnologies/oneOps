@@ -3,15 +3,12 @@ import { apiRequest } from "@/lib/api-client";
 import {
   aiAssistResultSchema,
   aiAvailabilitySchema,
-  aiDraftSuggestionSchema,
   aiHandoffSummaryResultSchema,
   aiOrgSettingsSchema,
   aiPromptListSchema,
   aiPromptSchema,
   aiRewriteResultSchema,
   aiSentimentResultSchema,
-  aiTextResultSchema,
-  aiTriageSuggestionSchema,
   aiUsagePageSchema,
   aiUsageSummarySchema,
 } from "@/lib/schemas/ai";
@@ -22,7 +19,6 @@ export const aiQueryKeys = {
   prompts: ["ai", "prompts"] as const,
   usageSummary: ["ai", "usage", "summary"] as const,
   usage: (cursor?: string | null) => ["ai", "usage", cursor] as const,
-  mailTriage: (threadId: string) => ["ai", "mail", "triage", threadId] as const,
 };
 
 export function useAiStatus() {
@@ -104,42 +100,6 @@ export function useAiUsage() {
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
-  });
-}
-
-export function useMailThreadTriage(threadId: string | undefined) {
-  return useQuery({
-    queryKey: aiQueryKeys.mailTriage(threadId ?? ""),
-    queryFn: () => apiRequest(`/mail/threads/${threadId}/ai/triage`, aiTriageSuggestionSchema),
-    enabled: !!threadId,
-    staleTime: 30_000,
-  });
-}
-
-export function useMailSummarizeThread() {
-  return useMutation({
-    mutationFn: (threadId: string) =>
-      apiRequest(`/mail/threads/${threadId}/ai/summarize`, aiTextResultSchema, { method: "POST" }),
-  });
-}
-
-export function useMailTriageThread() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (threadId: string) =>
-      apiRequest(`/mail/threads/${threadId}/ai/triage`, aiTriageSuggestionSchema, { method: "POST" }),
-    onSuccess: (_, threadId) => void qc.invalidateQueries({ queryKey: aiQueryKeys.mailTriage(threadId) }),
-  });
-}
-
-export function useMailAdaptCannedReply() {
-  return useMutation({
-    mutationFn: ({ threadId, cannedReplyId }: { threadId: string; cannedReplyId: string }) =>
-      apiRequest(
-        `/mail/threads/${threadId}/ai/canned-replies/${cannedReplyId}/adapt`,
-        aiDraftSuggestionSchema,
-        { method: "POST" },
-      ),
   });
 }
 

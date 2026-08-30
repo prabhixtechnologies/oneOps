@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
 
 const SEVERITIES = ["all", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"] as const;
 const CATEGORIES = [
-  "all", "AUTH", "ORG", "MAIL", "BILLING", "COMMERCE", "CHAT",
+  "all", "AUTH", "ORG", "BILLING", "COMMERCE", "CHAT",
   "VISITOR", "FILE", "AI", "JOB", "INTEGRATION", "SECURITY", "PLATFORM",
 ] as const;
 

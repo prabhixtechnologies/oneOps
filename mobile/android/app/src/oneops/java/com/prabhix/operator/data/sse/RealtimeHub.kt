@@ -2,7 +2,6 @@ package com.prabhix.operator.data.sse
 
 import com.prabhix.operator.BuildConfig
 import com.prabhix.operator.data.api.ChatStreamPayload
-import com.prabhix.operator.data.api.MailStreamPayload
 import com.prabhix.operator.data.auth.TokenRefresher
 import com.prabhix.operator.data.auth.TokenStore
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +25,6 @@ import kotlin.random.Random
 
 sealed interface RealtimeEvent {
     data class Chat(val payload: ChatStreamPayload) : RealtimeEvent
-    data class Mail(val payload: MailStreamPayload) : RealtimeEvent
     data class Connection(val connected: Boolean) : RealtimeEvent
 }
 
@@ -42,7 +40,6 @@ class RealtimeHub @Inject constructor(
     val events: SharedFlow<RealtimeEvent> = _events
 
     private var chatSource: EventSource? = null
-    private var mailSource: EventSource? = null
     private var reconnectJob: Job? = null
     private val attempt = AtomicInteger(0)
 
@@ -51,7 +48,6 @@ class RealtimeHub @Inject constructor(
         reconnectJob = scope.launch {
             tokenRefresher.refreshIfNeeded()
             connectChat()
-            connectMail()
             _events.emit(RealtimeEvent.Connection(true))
             attempt.set(0)
         }
@@ -60,13 +56,11 @@ class RealtimeHub @Inject constructor(
     fun stop() {
         reconnectJob?.cancel()
         chatSource?.cancel()
-        mailSource?.cancel()
         chatSource = null
-        mailSource = null
         scope.launch { _events.emit(RealtimeEvent.Connection(false)) }
     }
 
-    /** Restarts both streams, after a sign-in or a change of organization. */
+    /** Restarts the stream, after a sign-in or a change of organization. */
     fun restart() {
         stop()
         start()
@@ -92,30 +86,6 @@ class RealtimeHub @Inject constructor(
                 json.decodeFromString(ChatStreamPayload.serializer(), data)
             }.onSuccess { payload ->
                 scope.launch { _events.emit(RealtimeEvent.Chat(payload)) }
-            }
-        })
-    }
-
-    private fun connectMail() {
-        mailSource?.cancel()
-        val session = tokenStore.session() ?: return
-        val request = Request.Builder()
-            .url("${BuildConfig.API_BASE_URL}/mail/stream")
-            .header("Authorization", "Bearer ${session.accessToken}")
-            .header("Accept", "text/event-stream")
-            .header("X-Correlation-Id", UUID.randomUUID().toString())
-            .header("X-Prabhix-Device", BuildConfig.DEVICE_HEADER)
-            .apply {
-                session.organizationId?.let { header("X-Prabhix-Org", it) }
-            }
-            .build()
-
-        mailSource = EventSources.createFactory(client).newEventSource(request, sseListener { data ->
-            if (data == "ping") return@sseListener
-            runCatching {
-                json.decodeFromString(MailStreamPayload.serializer(), data)
-            }.onSuccess { payload ->
-                scope.launch { _events.emit(RealtimeEvent.Mail(payload)) }
             }
         })
     }

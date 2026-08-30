@@ -17,10 +17,7 @@ import { useAuditLogs } from "@/features/org/api";
 const ACTION_FILTERS = [
   { value: "all", label: "All actions" },
   { value: "member.invited", label: "Member invited" },
-  { value: "thread.assigned", label: "Thread assigned" },
   { value: "role.updated", label: "Role updated" },
-  { value: "mailbox.created", label: "Mailbox created" },
-  { value: "domain.verified", label: "Domain verified" },
 ];
 
 export default function AuditPage() {

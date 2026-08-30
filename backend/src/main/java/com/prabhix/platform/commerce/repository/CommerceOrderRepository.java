@@ -63,6 +63,16 @@ public interface CommerceOrderRepository extends JpaRepository<CommerceOrder, UU
     long countOrdersSince(UUID orgId, Instant since);
 
     @Query(value = """
+            SELECT CAST(paid_at AS date) AS day, count(*) AS cnt
+            FROM commerce_orders
+            WHERE organization_id = :orgId AND status IN ('PAID', 'FULFILLED')
+              AND paid_at >= :since
+            GROUP BY CAST(paid_at AS date)
+            ORDER BY day
+            """, nativeQuery = true)
+    List<Object[]> countOrdersByDay(UUID orgId, Instant since);
+
+    @Query(value = """
             SELECT o.* FROM commerce_orders o
             WHERE o.customer_id = :customerId AND o.organization_id = :orgId
             ORDER BY o.created_at DESC

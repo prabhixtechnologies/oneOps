@@ -3,7 +3,6 @@ package com.prabhix.operator.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
@@ -26,8 +25,6 @@ import com.prabhix.operator.ui.auth.LoginScreen
 import com.prabhix.operator.ui.chat.ChatDetailScreen
 import com.prabhix.operator.ui.chat.ChatInboxScreen
 import com.prabhix.operator.ui.dashboard.DashboardScreen
-import com.prabhix.operator.ui.mail.MailDetailScreen
-import com.prabhix.operator.ui.mail.MailInboxScreen
 import com.prabhix.operator.ui.org.OrgSelectScreen
 import com.prabhix.operator.ui.visitors.VisitorsScreen
 
@@ -50,10 +47,6 @@ sealed class Route(val path: String) {
     data object ChatDetail : Route("chat/{id}") {
         fun create(id: String) = "chat/$id"
     }
-    data object Mail : Route("mail")
-    data object MailDetail : Route("mail/{id}") {
-        fun create(id: String) = "mail/$id"
-    }
     data object Visitors : Route("visitors")
 }
 
@@ -63,7 +56,6 @@ fun PrabhixNavHost(
     hasOrg: Boolean,
     @Suppress("UNUSED_PARAMETER") isPlatformAdmin: Boolean,
     deepLinkChatId: String?,
-    deepLinkMailId: String?,
     onSessionEnded: () -> Unit = {},
 ) {
     val navController = rememberNavController()
@@ -74,14 +66,12 @@ fun PrabhixNavHost(
         !isLoggedIn -> Route.Login.path
         !hasOrg -> Route.OrgSelect.path
         deepLinkChatId != null -> Route.ChatDetail.create(deepLinkChatId)
-        deepLinkMailId != null -> Route.MailDetail.create(deepLinkMailId)
         else -> Route.Chat.path
     }
 
     val tabs = listOf(
         Triple(Route.Dashboard.path, "Home", Icons.Default.Home),
         Triple(Route.Chat.path, "Chat", Icons.AutoMirrored.Filled.List),
-        Triple(Route.Mail.path, "Mail", Icons.Default.Email),
         Triple(Route.Visitors.path, "Live", Icons.Default.Group),
     )
 
@@ -139,9 +129,6 @@ fun PrabhixNavHost(
             composable(Route.Chat.path) {
                 ChatInboxScreen(onOpenConversation = { navController.navigate(Route.ChatDetail.create(it)) })
             }
-            composable(Route.Mail.path) {
-                MailInboxScreen(onOpenThread = { navController.navigate(Route.MailDetail.create(it)) })
-            }
             composable(Route.Visitors.path) {
                 VisitorsScreen(onStartChat = { navController.navigate(Route.Chat.path) })
             }
@@ -153,12 +140,6 @@ fun PrabhixNavHost(
                     conversationId = entry.arguments?.getString("id") ?: return@composable,
                     onBack = { navController.popBackStack() },
                 )
-            }
-            composable(
-                Route.MailDetail.path,
-                arguments = listOf(navArgument("id") { type = NavType.StringType }),
-            ) { entry ->
-                MailDetailScreen(threadId = entry.arguments?.getString("id") ?: return@composable)
             }
         }
     }

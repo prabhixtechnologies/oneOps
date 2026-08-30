@@ -75,24 +75,3 @@
     scrollbar-color: color-mix(in srgb, var(--text-muted) 40%, transparent) transparent;
   }
 }
-
-.email-html {
-  @apply text-sm leading-relaxed text-text;
-}
-
-.email-html a {
-  @apply text-primary underline-offset-2 hover:underline;
-}
-
-.email-html blockquote {
-  @apply border-l-2 border-border pl-3 text-text-muted;
-}
-
-.email-html img {
-  max-width: 100%;
-  height: auto;
-}
-
-.email-html pre {
-  @apply overflow-x-auto rounded-md bg-surface-muted p-3 text-xs;
-}

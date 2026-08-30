@@ -38,17 +38,15 @@ class PrabhixFirebaseMessagingService : FirebaseMessagingService() {
         val conversationId = message.data["conversationId"]
         val threadId = message.data["threadId"]
 
+        // Mailroom is a separate app; a thread-only payload has nowhere to land here.
+        if (conversationId == null && threadId != null) return
+
         ensureChannel()
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            val scheme = BuildConfig.DEEP_LINK_SCHEME
-            when {
-                conversationId != null -> {
-                    data = android.net.Uri.parse("$scheme://chat/$conversationId")
-                }
-                threadId != null -> {
-                    data = android.net.Uri.parse("$scheme://mail/$threadId")
-                }
+            if (conversationId != null) {
+                val scheme = BuildConfig.DEEP_LINK_SCHEME
+                data = android.net.Uri.parse("$scheme://chat/$conversationId")
             }
         }
         val pending = PendingIntent.getActivity(
@@ -63,16 +61,13 @@ class PrabhixFirebaseMessagingService : FirebaseMessagingService() {
             .setContentText(body)
             .setContentIntent(pending)
             .setAutoCancel(true)
-            .setPriority(when (type) {
-                "mail.sla_breach" -> NotificationCompat.PRIORITY_HIGH
-                else -> NotificationCompat.PRIORITY_DEFAULT
-            })
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
         val manager = getSystemService(NotificationManager::class.java)
         // Keyed by the thing the notification is about, so two conversations produce two
         // notifications. Keying by type alone would silently replace the first message with the
         // second, which is the failure mode where push looks like it works and still loses work.
-        val id = (conversationId ?: threadId ?: type).hashCode()
+        val id = (conversationId ?: type).hashCode()
         manager.notify(id, notification)
     }
 

@@ -54,4 +54,11 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
               AND assigned_agent_id = :agentId AND status IN ('OPEN', 'PENDING')
             """, nativeQuery = true)
     long countOpenForAgent(UUID orgId, UUID agentId);
+
+    @Query(value = """
+            SELECT count(*) FROM chat_conversations
+            WHERE organization_id = :orgId AND deleted_at IS NULL
+              AND status IN ('OPEN', 'PENDING')
+            """, nativeQuery = true)
+    long countOpen(UUID orgId);
 }

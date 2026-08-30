@@ -48,15 +48,7 @@ import {
 } from "./commerce";
 import { organizationViewSchema, userProfileSchema } from "./common";
 import { eventLogPageSchema } from "./logs";
-import {
-  cannedReplyListSchema,
-  domainListSchema,
-  effectiveFlagsSchema,
-  mailTagListSchema,
-  mailboxListSchema,
-  templateListSchema,
-  threadListPageSchema,
-} from "./mail";
+import { effectiveFlagsSchema } from "./flags";
 import {
   applicationPageSchema,
   leadPageSchema,
@@ -196,12 +188,6 @@ describe.skipIf(!enabled)("live API matches client schemas", () => {
       ["/commerce/customers?limit=20", customerListPageSchema],
       ["/commerce/discounts", discountListSchema],
       ["/commerce/settings", settingsViewSchema],
-      ["/mail/threads?limit=20", threadListPageSchema],
-      ["/mail/mailboxes", mailboxListSchema],
-      ["/mail/domains", domainListSchema],
-      ["/mail/templates", templateListSchema],
-      ["/mail/tags", mailTagListSchema],
-      ["/mail/canned-replies", cannedReplyListSchema],
       ["/visitors?limit=20", visitorListPageSchema],
       ["/visitors/live", liveVisitorListSchema],
       ["/visitors/analytics/summary?days=7", visitorAnalyticsSummarySchema],

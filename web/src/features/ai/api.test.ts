@@ -43,20 +43,4 @@ describe("AI API mutations", () => {
       },
     );
   });
-
-  it("posts mail canned reply adaptation", async () => {
-    const { useMailAdaptCannedReply } = await import("@/features/ai/api");
-    const mutate = useMailAdaptCannedReply().mutateAsync as (input: {
-      threadId: string;
-      cannedReplyId: string;
-    }) => Promise<unknown>;
-
-    await mutate({ threadId: "thread-1", cannedReplyId: "cr-9" });
-
-    expect(apiRequest).toHaveBeenCalledWith(
-      "/mail/threads/thread-1/ai/canned-replies/cr-9/adapt",
-      expect.anything(),
-      { method: "POST" },
-    );
-  });
 });

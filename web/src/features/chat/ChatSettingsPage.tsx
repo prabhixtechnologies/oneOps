@@ -30,16 +30,16 @@ import {
   useChatSettings,
   useCreateChatCannedReply,
   useDeleteChatCannedReply,
+  useOfflineMailboxOptions,
   useUpdateChatSettings,
 } from "@/features/chat/api";
-import { useMailboxes } from "@/features/mail/api";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export default function ChatSettingsPage() {
   const settingsQuery = useChatSettings();
   const updateSettings = useUpdateChatSettings();
-  const mailboxesQuery = useMailboxes();
+  const mailboxesQuery = useOfflineMailboxOptions();
   const cannedQuery = useChatCannedReplies();
   const createCanned = useCreateChatCannedReply();
   const deleteCanned = useDeleteChatCannedReply();

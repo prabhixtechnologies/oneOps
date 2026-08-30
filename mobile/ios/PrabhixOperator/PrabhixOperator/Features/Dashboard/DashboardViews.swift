@@ -9,9 +9,10 @@ struct DashboardView: View {
             ScrollView {
                 if let k = viewModel.dashboard?.kpis {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        KpiTile(title: "Open threads", value: "\(k.openThreads)")
-                        KpiTile(title: "SLA breaches", value: "\(k.slaBreaches)")
-                        KpiTile(title: "Avg response", value: String(format: "%.0f min", k.avgFirstResponseMinutes))
+                        KpiTile(title: "Open chats", value: "\(k.openConversations)")
+                        KpiTile(title: "Waiting", value: "\(k.unassignedConversations)")
+                        KpiTile(title: "Visitors today", value: "\(k.visitorsToday)")
+                        KpiTile(title: "Orders (30d)", value: "\(k.ordersLast30Days)")
                         KpiTile(title: "Seats", value: "\(k.seatsUsed)/\(k.seatsLimit)")
                     }
                     .padding()

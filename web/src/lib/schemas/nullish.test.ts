@@ -14,9 +14,11 @@ describe("response schemas tolerate omitted null fields", () => {
   it("accepts dashboard activity that has no actor", () => {
     const payload = {
       kpis: {
-        openThreads: 0,
-        avgFirstResponseMinutes: 0,
-        slaBreaches: 0,
+        openConversations: 0,
+        unassignedConversations: 0,
+        visitorsToday: 0,
+        ordersLast30Days: 0,
+        revenueLast30Days: 0,
         seatsUsed: 1,
         seatsLimit: 3,
         mrr: 0,
@@ -30,8 +32,8 @@ describe("response schemas tolerate omitted null fields", () => {
           createdAt: "2026-08-28T13:44:13.532677Z",
         },
       ],
-      threadsTrend: [{ date: "2026-08-16", value: 0 }],
-      responseTimeTrend: [{ date: "2026-08-16", value: 0 }],
+      ordersTrend: [{ date: "2026-08-16", value: 0 }],
+      visitorsTrend: [{ date: "2026-08-16", value: 0 }],
     };
 
     const parsed = dashboardSchema.parse(payload);
@@ -51,17 +53,19 @@ describe("response schemas tolerate omitted null fields", () => {
     expect(() =>
       dashboardSchema.parse({
         kpis: {
-          openThreads: 0,
-          avgFirstResponseMinutes: 0,
-          slaBreaches: 0,
+          openConversations: 0,
+          unassignedConversations: 0,
+          visitorsToday: 0,
+          ordersLast30Days: 0,
+          revenueLast30Days: 0,
           seatsUsed: 1,
           seatsLimit: 1,
           mrr: 0,
           currency: "INR",
         },
         recentActivity: [activity],
-        threadsTrend: [],
-        responseTimeTrend: [],
+        ordersTrend: [],
+        visitorsTrend: [],
       }),
     ).not.toThrow();
   });

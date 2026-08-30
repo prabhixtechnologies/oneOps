@@ -1,11 +1,9 @@
 import { API_V1 } from "./config";
 import type { AiStreamEvent } from "./schemas/ai";
 import type { ChatStreamEvent } from "./schemas/chat";
-import type { MailStreamEvent } from "./schemas/mail";
 import { aiStreamEventSchema } from "./schemas/ai";
 import { getAccessToken, getOrgId } from "./auth-token-bridge";
 
-export type StreamListener = (event: MailStreamEvent) => void;
 export type ChatStreamListener = (event: ChatStreamEvent) => void;
 export type AiStreamListener = (event: AiStreamEvent) => void;
 
@@ -111,19 +109,6 @@ function connectEventStream<T>({
 function parseAiStreamEvent(raw: unknown): AiStreamEvent | null {
   const parsed = aiStreamEventSchema.safeParse(raw);
   return parsed.success ? parsed.data : null;
-}
-
-export function connectMailStream(
-  onEvent: StreamListener,
-  onError?: (error: Error) => void,
-  onStateChange?: (state: StreamConnectionState) => void,
-): () => void {
-  return connectEventStream<MailStreamEvent>({
-    path: "/mail/stream",
-    onEvent,
-    onError,
-    onStateChange,
-  });
 }
 
 export function connectChatStream(

@@ -2,6 +2,7 @@ package com.prabhix.operator.ui.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -116,10 +117,18 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             dashboard?.kpis?.let { k ->
-                KpiCard("Open threads", "${k.openThreads}")
-                KpiCard("Avg first response", "${"%.0f".format(k.avgFirstResponseMinutes)} min")
-                KpiCard("SLA breaches", "${k.slaBreaches}")
-                KpiCard("Seats", "${k.seatsUsed} / ${k.seatsLimit}")
+                KpiRow(
+                    KpiCardData("Open chats", k.openConversations.toString()),
+                    KpiCardData("Waiting", k.unassignedConversations.toString()),
+                )
+                KpiRow(
+                    KpiCardData("Visitors today", k.visitorsToday.toString()),
+                    KpiCardData("Orders (30d)", k.ordersLast30Days.toString()),
+                )
+                KpiRow(
+                    KpiCardData("Revenue (30d)", formatMinor(k.revenueLast30Days, k.currency)),
+                    KpiCardData("Seats", "${k.seatsUsed} / ${k.seatsLimit}"),
+                )
             } ?: Text("Loading…")
             dashboard?.recentActivity?.take(5)?.forEach { item ->
                 Text("• ${item.description}", style = MaterialTheme.typography.bodyMedium)
@@ -128,12 +137,28 @@ fun DashboardScreen(
     }
 }
 
+private data class KpiCardData(val label: String, val value: String)
+
 @Composable
-private fun KpiCard(label: String, value: String) {
-    Card(Modifier.fillMaxSize()) {
+private fun KpiRow(left: KpiCardData, right: KpiCardData) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        KpiCard(left, Modifier.weight(1f))
+        KpiCard(right, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun KpiCard(data: KpiCardData, modifier: Modifier = Modifier) {
+    Card(modifier) {
         Column(Modifier.padding(16.dp)) {
-            Text(label, style = MaterialTheme.typography.labelLarge)
-            Text(value, style = MaterialTheme.typography.headlineSmall)
+            Text(data.label, style = MaterialTheme.typography.labelLarge)
+            Text(data.value, style = MaterialTheme.typography.headlineSmall)
         }
     }
+}
+
+/** The API sends money in the organization's minor unit, so it has to be scaled before display. */
+private fun formatMinor(minor: Long, currency: String): String {
+    val units = minor / 100
+    return if (currency == "INR") "₹$units" else "$units $currency"
 }

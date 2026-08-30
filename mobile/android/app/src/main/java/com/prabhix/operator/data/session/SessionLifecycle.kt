@@ -4,7 +4,7 @@ package com.prabhix.operator.data.session
  * What each app does when a session begins, ends, or is already present at launch.
  *
  * <p>Sign-in is shared — one screen, one endpoint, both apps — but what follows it is not. OneOps
- * opens the chat and mail streams, registers for push and schedules the outbound queue flush. The
+ * opens the chat stream, registers for push and schedules the outbound queue flush. The
  * admin app does none of that: it reads two cross-tenant endpoints on demand and has no
  * conversations to stream or send.
  *

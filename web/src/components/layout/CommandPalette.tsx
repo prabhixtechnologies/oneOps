@@ -2,10 +2,7 @@ import {
   Activity,
   CreditCard,
   FileText,
-  Globe,
-  Inbox,
   LayoutDashboard,
-  Mail,
   MessageSquare,
   Settings,
   Sparkles,
@@ -21,17 +18,12 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-  CommandShortcut,
 } from "@/components/ui/command";
 
 const pages = [
   { label: "Dashboard", to: "/", icon: LayoutDashboard },
   { label: "Live Chat", to: "/chat", icon: MessageSquare },
   { label: "Visitors", to: "/visitors", icon: Activity },
-  { label: "Shared Inbox", to: "/inbox", icon: Inbox },
-  { label: "Mailboxes", to: "/mailboxes", icon: Mail },
-  { label: "Mail Domains", to: "/domains", icon: Globe },
-  { label: "Templates", to: "/templates", icon: FileText },
   { label: "Members & Roles", to: "/members", icon: Users },
   { label: "Billing", to: "/billing", icon: CreditCard },
   { label: "AI settings", to: "/ai/settings", icon: Sparkles },
@@ -71,11 +63,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => run("/inbox?compose=true")}>
-            <Inbox className="h-4 w-4" />
-            Compose new reply
-            <CommandShortcut>R</CommandShortcut>
-          </CommandItem>
           <CommandItem onSelect={() => run("/members?invite=true")}>
             <Users className="h-4 w-4" />
             Invite team member

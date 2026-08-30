@@ -14,11 +14,11 @@ const mockedUseAuth = vi.mocked(useAuth);
 describe("PermissionGate", () => {
   it("renders children when the user has the required permission", () => {
     mockedUseAuth.mockReturnValue({
-      permissions: [PERMISSIONS.MAIL_SEND],
+      permissions: [PERMISSIONS.CHAT_REPLY],
     } as ReturnType<typeof useAuth>);
 
     render(
-      <PermissionGate permission={PERMISSIONS.MAIL_SEND}>
+      <PermissionGate permission={PERMISSIONS.CHAT_REPLY}>
         <button type="button">Send reply</button>
       </PermissionGate>,
     );
@@ -28,11 +28,11 @@ describe("PermissionGate", () => {
 
   it("hides children when the user lacks the required permission", () => {
     mockedUseAuth.mockReturnValue({
-      permissions: [PERMISSIONS.MAIL_READ],
+      permissions: [PERMISSIONS.CHAT_READ],
     } as ReturnType<typeof useAuth>);
 
     render(
-      <PermissionGate permission={PERMISSIONS.MAIL_SEND}>
+      <PermissionGate permission={PERMISSIONS.CHAT_REPLY}>
         <button type="button">Send reply</button>
       </PermissionGate>,
     );
@@ -46,7 +46,7 @@ describe("PermissionGate", () => {
     } as ReturnType<typeof useAuth>);
 
     render(
-      <PermissionGate permission={PERMISSIONS.MAIL_ASSIGN} fallback={<p>Read-only</p>}>
+      <PermissionGate permission={PERMISSIONS.CHAT_ASSIGN} fallback={<p>Read-only</p>}>
         <button type="button">Assign</button>
       </PermissionGate>,
     );

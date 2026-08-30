@@ -11,14 +11,17 @@ public final class DashboardDtos {
     public record DashboardResponse(
             Kpis kpis,
             List<ActivityItem> recentActivity,
-            List<ChartPoint> threadsTrend,
-            List<ChartPoint> responseTimeTrend) {
+            List<ChartPoint> ordersTrend,
+            List<ChartPoint> visitorsTrend) {
     }
 
+    /** Money is in the organization's minor unit, matching {@code currency}. */
     public record Kpis(
-            long openThreads,
-            double avgFirstResponseMinutes,
-            long slaBreaches,
+            long openConversations,
+            long unassignedConversations,
+            long visitorsToday,
+            long ordersLast30Days,
+            long revenueLast30Days,
             int seatsUsed,
             int seatsLimit,
             long mrr,

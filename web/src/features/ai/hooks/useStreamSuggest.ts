@@ -18,31 +18,6 @@ export function useStreamSuggest(options: UseStreamSuggestOptions = {}) {
     setStreaming(false);
   }, []);
 
-  const startMailSuggest = useCallback(
-    (threadId: string) => {
-      cancel();
-      setText("");
-      setStreaming(true);
-      cleanupRef.current = connectAiSuggestStream({
-        path: `/ai/mail/threads/${threadId}/reply/suggest/stream`,
-        threadId,
-        onDelta: (delta, finished) => {
-          if (delta) setText((prev) => prev + delta);
-          if (finished) setStreaming(false);
-        },
-        onError: (message) => {
-          onErrorRef.current?.(message);
-          setStreaming(false);
-        },
-        onComplete: () => {
-          cleanupRef.current = null;
-          setStreaming(false);
-        },
-      });
-    },
-    [cancel],
-  );
-
   const startChatSuggest = useCallback(
     (conversationId: string) => {
       cancel();
@@ -75,7 +50,6 @@ export function useStreamSuggest(options: UseStreamSuggestOptions = {}) {
     streaming,
     setText,
     cancel,
-    startMailSuggest,
     startChatSuggest,
   };
 }

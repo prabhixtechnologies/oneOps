@@ -17,7 +17,7 @@ import {
   variantViewSchema,
 } from "@/lib/schemas/commerce";
 import { arraySchema } from "@/lib/schemas/common";
-import { fileUploadSchema } from "@/lib/schemas/mail";
+import { fileUploadSchema, type FilePurpose } from "@/lib/schemas/files";
 import { z } from "zod";
 
 export function useCommerceDashboard() {
@@ -259,7 +259,7 @@ export function useUpdateDiscount(id: string) {
 
 export function useUploadCommerceFile() {
   return useMutation({
-    mutationFn: ({ file, purpose }: { file: File; purpose?: string }) =>
-      apiUpload("/files", file, fileUploadSchema, { purpose: purpose ?? "MAIL_ATTACHMENT" }),
+    mutationFn: ({ file, purpose }: { file: File; purpose?: FilePurpose }) =>
+      apiUpload("/files", file, fileUploadSchema, { purpose: purpose ?? "DOCUMENT" }),
   });
 }

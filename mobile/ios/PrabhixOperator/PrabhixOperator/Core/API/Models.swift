@@ -166,9 +166,11 @@ struct LiveVisitor: Decodable, Identifiable {
 }
 
 struct DashboardKpis: Decodable {
-    let openThreads: Int64
-    let avgFirstResponseMinutes: Double
-    let slaBreaches: Int64
+    let openConversations: Int64
+    let unassignedConversations: Int64
+    let visitorsToday: Int64
+    let ordersLast30Days: Int64
+    let revenueLast30Days: Int64
     let seatsUsed: Int
     let seatsLimit: Int
     let mrr: Int64
