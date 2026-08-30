@@ -42,6 +42,7 @@ class ReplyServiceTest {
     @Mock StoredFileRepository storedFileRepository;
     @Mock MailDispatcher mailDispatcher;
     @Mock AssignmentService assignmentService;
+    @Mock CannedReplyService cannedReplyService;
     @Mock SlaService slaService;
     @Mock AttachmentValidationService attachmentValidationService;
 
@@ -57,7 +58,7 @@ class ReplyServiceTest {
         PrabhixProperties props = TestProperties.defaults();
         replyService = new ReplyService(threadRepository, messageRepository, attachmentRepository,
                 mailboxRepository, aliasRepository, storedFileRepository, mailDispatcher,
-                assignmentService, slaService, attachmentValidationService, props);
+                assignmentService, cannedReplyService, slaService, attachmentValidationService, props);
     }
 
     @Test
@@ -75,7 +76,7 @@ class ReplyServiceTest {
         when(messageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ThreadDtos.ReplyRequest request = new ThreadDtos.ReplyRequest(
-                MailEnums.ReplyMode.REPLY_ALL, null, null, null, "<p>Thanks</p>", List.of());
+                MailEnums.ReplyMode.REPLY_ALL, null, null, null, "<p>Thanks</p>", List.of(), null);
         replyService.reply(principal, threadId, request);
 
         ArgumentCaptor<MailOutbox> outboxCaptor = ArgumentCaptor.forClass(MailOutbox.class);
@@ -99,7 +100,7 @@ class ReplyServiceTest {
         when(messageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ThreadDtos.ReplyRequest request = new ThreadDtos.ReplyRequest(
-                MailEnums.ReplyMode.REPLY, null, null, null, "<p>Hi</p>", List.of());
+                MailEnums.ReplyMode.REPLY, null, null, null, "<p>Hi</p>", List.of(), null);
         replyService.reply(principal, threadId, request);
 
         ArgumentCaptor<MailOutbox> outboxCaptor = ArgumentCaptor.forClass(MailOutbox.class);
@@ -115,7 +116,7 @@ class ReplyServiceTest {
                 .thenReturn(Optional.of(inboundMessage()));
 
         ThreadDtos.ReplyRequest request = new ThreadDtos.ReplyRequest(
-                MailEnums.ReplyMode.FORWARD, List.of(), null, null, "<p>Fwd</p>", List.of());
+                MailEnums.ReplyMode.FORWARD, List.of(), null, null, "<p>Fwd</p>", List.of(), null);
 
         ApiException ex = assertThrows(ApiException.class,
                 () -> replyService.reply(principal, threadId, request));
@@ -150,7 +151,7 @@ class ReplyServiceTest {
 
         ThreadDtos.ReplyRequest request = new ThreadDtos.ReplyRequest(
                 MailEnums.ReplyMode.FORWARD, List.of("dest@example.com"), null, null,
-                "<p>See below</p>", List.of());
+                "<p>See below</p>", List.of(), null);
         replyService.reply(principal, threadId, request);
 
         ArgumentCaptor<MailMessage> msgCaptor = ArgumentCaptor.forClass(MailMessage.class);
@@ -160,6 +161,32 @@ class ReplyServiceTest {
         assertTrue(html.contains("sender@example.com"));
         assertTrue(html.contains("Original"));
         verify(attachmentRepository, times(1)).save(any());
+    }
+
+    /**
+     * The body is sent verbatim and the canned reply is only counted, because the agent has usually
+     * edited the text. {@code usage_count} was shown in the admin list and never incremented, so every
+     * canned reply read as unused no matter how often it went out.
+     */
+    @Test
+    void replyCountsTheCannedReplyItStartedFrom() {
+        stubThreadAndMailbox();
+        MailMessage source = inboundMessage();
+        source.setFromAddress("customer@example.com");
+        when(messageRepository.findFirstByThreadIdAndDeletedAtIsNullOrderByOccurredAtDesc(threadId))
+                .thenReturn(Optional.of(source));
+        when(attachmentValidationService.requireCleanAttachments(eq(orgId), any())).thenReturn(List.of());
+        when(messageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        UUID cannedReplyId = UUID.randomUUID();
+
+        replyService.reply(principal, threadId, new ThreadDtos.ReplyRequest(
+                MailEnums.ReplyMode.REPLY, null, null, null, "<p>Edited text</p>",
+                List.of(), cannedReplyId));
+
+        verify(cannedReplyService).recordUse(orgId, cannedReplyId);
+        ArgumentCaptor<MailMessage> msgCaptor = ArgumentCaptor.forClass(MailMessage.class);
+        verify(messageRepository).save(msgCaptor.capture());
+        assertTrue(msgCaptor.getValue().getBodyHtml().contains("Edited text"));
     }
 
     private void stubThreadAndMailbox() {

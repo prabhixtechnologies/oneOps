@@ -4,6 +4,7 @@ import com.prabhix.platform.common.web.CursorPage;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.mail.domain.MailThread;
 import com.prabhix.platform.mail.dto.ThreadDtos;
+import com.prabhix.platform.mail.mailbox.MailboxAccess;
 import com.prabhix.platform.mail.repository.*;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Permission;
@@ -31,7 +32,9 @@ class ThreadTagFilterTest {
     @Mock private MailMessageRepository messageRepository;
     @Mock private MailThreadNoteRepository noteRepository;
     @Mock private MailThreadEventRepository eventRepository;
-    @Mock private MailboxMemberRepository memberRepository;
+    @Mock private MailThreadTagRepository threadTagRepository;
+    @Mock private MailboxRepository mailboxRepository;
+    @Mock private MailboxAccess mailboxAccess;
     @Mock private SlaService slaService;
 
     private ThreadService threadService;
@@ -43,7 +46,7 @@ class ThreadTagFilterTest {
                 new PrabhixProperties.Limits(100000, 200, 26214400L, 25, 200));
         threadService = new ThreadService(
                 threadRepository, messageRepository, noteRepository, eventRepository,
-                memberRepository, slaService, properties);
+                threadTagRepository, mailboxRepository, mailboxAccess, slaService, properties);
     }
 
     @Test
