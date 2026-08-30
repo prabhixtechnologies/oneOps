@@ -495,7 +495,11 @@ spring:
         max-redirects: 3
       ssl:
         enabled: true
+      # Reads go to the shard's upstream node and nowhere else. Stated rather than left to the
+      # default because of what the endpoint advertises, described below: a replica exists in the
+      # topology that cannot be connected to, so routing any read to it would fail.
       lettuce:
+        read-from: upstream
         cluster:
           refresh:
             # Directly relevant to the pub/sub problem the monitor exists for: without adaptive
@@ -503,3 +507,18 @@ spring:
             # notice that the node holding a subscribe connection has been replaced.
             adaptive: true
             period: 60s
+            # False, against the default, and the cutover does not work without it.
+            #
+            # ElastiCache Serverless answers CLUSTER SLOTS with two nodes for slots 0-16383: the
+            # upstream on 6379 and a replica on 6380. Port 6380 is not open. Left at the default,
+            # Lettuce treats every node it discovers as a source to refresh topology from, so every
+            # refresh — at startup and then once a minute — tries to open a connection to a port
+            # that refuses it, and logs a RedisConnectionException against
+            # `<host>/<unresolved>:6380`. The application still starts, because the cache is not on
+            # the readiness path, which is precisely what makes this worth pinning down: rate
+            # limiting, presence, the token deny list and the SSE fanout all quietly degrade.
+            #
+            # False confines refresh to the endpoint configured above, which is the only address
+            # that actually serves. Verified against the real endpoint: SET, GET and PUBLISH /
+            # SUBSCRIBE all succeed on 6379 over TLS.
+            dynamic-refresh-sources: false
