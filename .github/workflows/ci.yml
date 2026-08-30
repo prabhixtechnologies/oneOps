@@ -495,6 +495,34 @@ jobs:
       # to move registries, and they do not have to move together. Setting the AWS_CI_ROLE_ARN
       # variable is the whole cutover for this one, and clearing it is the whole rollback — neither
       # needs a commit, and a half-finished migration still builds.
+      # Prints the claims AWS will compare the trust policy against, and nothing else.
+      #
+      # This exists because the role assumption failed four times with "Not authorized to perform
+      # sts:AssumeRoleWithWebIdentity" while every visible input was correct: the role existed with
+      # no permissions boundary, the provider had the right URL and audience, the run was a push to
+      # main, and the job declared id-token: write. The sub condition was widened twice, ending at
+      # repo:prabhixtechnologies/* with a repository_owner equality check, and it still failed --
+      # so the mismatch is in a claim value, not the pattern.
+      #
+      # STS never says which claim it could not match, and CloudTrail's LookupEvents is not granted
+      # to the deployer, so the claim values are unobservable from either end. Guessing had already
+      # cost four runs.
+      #
+      # Only the decoded payload is echoed. The token itself is a bearer credential and is never
+      # printed; the claims are identifiers, and the job is already restricted to pushes on main.
+      - name: Show the OIDC claims AWS will see
+        if: vars.AWS_CI_ROLE_ARN != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('sts.amazonaws.com');
+            const payload = JSON.parse(
+              Buffer.from(token.split('.')[1], 'base64url').toString('utf8')
+            );
+            for (const key of ['iss', 'aud', 'sub', 'repository', 'repository_owner', 'ref', 'event_name', 'workflow_ref']) {
+              core.info(`${key} = ${JSON.stringify(payload[key])}`);
+            }
+
       - name: Configure AWS credentials
         if: vars.AWS_CI_ROLE_ARN != ''
         uses: aws-actions/configure-aws-credentials@v4
