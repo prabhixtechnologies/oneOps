@@ -522,13 +522,26 @@ jobs:
         id: meta
         run: |
           echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          # Two outputs rather than one, because the two registries do not name images the same way
+          # and an image name is `base` + `sep` + the service.
+          #
+          # On ECR the repositories are namespaced — `prabhix/backend` — and the slash is required
+          # rather than tidy: the deployer policy scopes ECR to `repository/prabhix/*`, and that
+          # pattern only matches a name containing a slash. Creating `prabhix-backend` came back
+          # AccessDenied against the real account while `prabhix/probe` succeeded.
+          #
+          # On Docker Hub a slash would mean a different account, so there the separator is a hyphen
+          # and the name stays `prabhixtechnologies/prabhix-backend`.
+          #
           # The ECR login action reports the registry host for the account the role belongs to, so
           # the account ID is never written down here and cannot drift from the role.
           registry='${{ steps.ecr.outputs.registry }}'
           if [ -n "$registry" ]; then
-            echo "prefix=$registry/" >> "$GITHUB_OUTPUT"
+            echo "base=$registry/prabhix" >> "$GITHUB_OUTPUT"
+            echo "sep=/" >> "$GITHUB_OUTPUT"
           else
-            echo "prefix=prabhixtechnologies/" >> "$GITHUB_OUTPUT"
+            echo "base=prabhixtechnologies/prabhix" >> "$GITHUB_OUTPUT"
+            echo "sep=-" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build and push backend
@@ -538,8 +551,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ steps.meta.outputs.prefix }}prabhix-backend:latest
-            ${{ steps.meta.outputs.prefix }}prabhix-backend:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.base }}${{ steps.meta.outputs.sep }}backend:latest
+            ${{ steps.meta.outputs.base }}${{ steps.meta.outputs.sep }}backend:${{ steps.meta.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -558,8 +571,8 @@ jobs:
             VITE_GOOGLE_SSO_ENABLED=false
             VITE_MAILROOM_URL=https://mail.prabhixtechnologies.com
           tags: |
-            ${{ steps.meta.outputs.prefix }}prabhix-web:latest
-            ${{ steps.meta.outputs.prefix }}prabhix-web:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.base }}${{ steps.meta.outputs.sep }}web:latest
+            ${{ steps.meta.outputs.base }}${{ steps.meta.outputs.sep }}web:${{ steps.meta.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -578,8 +591,8 @@ jobs:
             VITE_ONEOPS_URL=https://oneops.prabhixtechnologies.com
             VITE_MAILROOM_URL=https://mail.prabhixtechnologies.com
           tags: |
-            ${{ steps.meta.outputs.prefix }}prabhix-admin:latest
-            ${{ steps.meta.outputs.prefix }}prabhix-admin:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.base }}${{ steps.meta.outputs.sep }}admin:latest
+            ${{ steps.meta.outputs.base }}${{ steps.meta.outputs.sep }}admin:${{ steps.meta.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -600,7 +613,7 @@ jobs:
             NEXT_PUBLIC_ORG_SLUG=${{ vars.PRABHIX_ORG_SLUG }}
             NEXT_PUBLIC_ORG_ID=${{ vars.PRABHIX_ORG_ID }}
           tags: |
-            ${{ steps.meta.outputs.prefix }}prabhix-marketing:latest
-            ${{ steps.meta.outputs.prefix }}prabhix-marketing:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.base }}${{ steps.meta.outputs.sep }}marketing:latest
+            ${{ steps.meta.outputs.base }}${{ steps.meta.outputs.sep }}marketing:${{ steps.meta.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
