@@ -477,48 +477,42 @@ prabhix:
       tolerance: ${REALTIME_PUBSUB_MONITOR_TOLERANCE:PT90S}
 
 ---
-# ElastiCache Serverless for Valkey is always cluster mode and always TLS, so it cannot be reached
-# with the host/port settings above. Kept as its own profile rather than folded into `prod` so that
-# running the prod profile against a plain Redis container still works: activate with
-# SPRING_PROFILES_ACTIVE=prod,valkey.
+# ElastiCache Serverless for Valkey. Its own profile rather than folded into `prod` so that running
+# the prod profile against a plain Redis container still works: SPRING_PROFILES_ACTIVE=prod,valkey.
+#
+# Configured as a single standalone endpoint, NOT as a cluster, which is the opposite of what the
+# endpoint's own `redis_mode:cluster` suggests. The reason is specific and was measured rather than
+# guessed.
+#
+# ElastiCache Serverless answers CLUSTER SLOTS with two nodes for slots 0-16383: an upstream on 6379
+# and a replica on 6380. Port 6380 is not open — nothing listens on it. A cluster-aware Lettuce
+# client therefore builds a topology containing a node it can never reach, and every attempt to use
+# it fails with `RedisConnectionException: Unable to connect to <host>/<unresolved>:6380`. Confining
+# topology refresh to the configured endpoint with dynamic-refresh-sources=false is not enough: the
+# topology still contains the replica, so the failures come back on the next refresh regardless.
+#
+# What made this worth getting right rather than tolerating: the cache is not on the liveness path,
+# so the application started and reported healthy while rate limiting, presence, the token deny list
+# and the SSE fanout were all silently degraded. Readiness did eventually go 503, but only after the
+# deploy's health gate had already passed.
+#
+# Standalone is safe here because the endpoint is a proxy, not a node — it reports `run_id:0` — and
+# it serves every slot itself. Verified against the real endpoint before changing this: 200 keys
+# spanning the keyspace were written and read back through a client with redirect-following turned
+# off, with zero MOVED replies; SCAN returned all of them; and PUBLISH/SUBSCRIBE delivered. A
+# standalone client never asks for the topology, so it never learns about 6380.
 spring:
   config:
     activate:
       on-profile: valkey
   data:
     redis:
-      cluster:
-        # The one serverless endpoint. The driver discovers the topology behind it, so this is a
-        # single entry rather than a node list. No default: a blank endpoint should fail startup
-        # loudly, not fall back to localhost and look like a working cache with no data in it.
-        nodes: ${REDIS_CLUSTER_NODES}
-        max-redirects: 3
-      ssl:
-        enabled: true
-      # Reads go to the shard's upstream node and nowhere else. Stated rather than left to the
-      # default because of what the endpoint advertises, described below: a replica exists in the
-      # topology that cannot be connected to, so routing any read to it would fail.
-      lettuce:
-        read-from: upstream
-        cluster:
-          refresh:
-            # Directly relevant to the pub/sub problem the monitor exists for: without adaptive
-            # refresh the client keeps using a topology snapshot taken at startup, so it does not
-            # notice that the node holding a subscribe connection has been replaced.
-            adaptive: true
-            period: 60s
-            # False, against the default, and the cutover does not work without it.
-            #
-            # ElastiCache Serverless answers CLUSTER SLOTS with two nodes for slots 0-16383: the
-            # upstream on 6379 and a replica on 6380. Port 6380 is not open. Left at the default,
-            # Lettuce treats every node it discovers as a source to refresh topology from, so every
-            # refresh — at startup and then once a minute — tries to open a connection to a port
-            # that refuses it, and logs a RedisConnectionException against
-            # `<host>/<unresolved>:6380`. The application still starts, because the cache is not on
-            # the readiness path, which is precisely what makes this worth pinning down: rate
-            # limiting, presence, the token deny list and the SSE fanout all quietly degrade.
-            #
-            # False confines refresh to the endpoint configured above, which is the only address
-            # that actually serves. Verified against the real endpoint: SET, GET and PUBLISH /
-            # SUBSCRIBE all succeed on 6379 over TLS.
-            dynamic-refresh-sources: false
+      # rediss://, with two s, is what turns TLS on — the scheme carries it, so there is no separate
+      # ssl.enabled here. ElastiCache Serverless accepts TLS only, and a redis:// URL is refused.
+      #
+      # REDIS_CLUSTER_NODES keeps its name despite this no longer being a cluster configuration:
+      # it holds exactly the `host:port` this URL needs, it is what the compose files and the env
+      # examples already set, and renaming it across four repositories to express a client-side
+      # detail is not worth a migration. No default, so a blank value fails startup loudly instead
+      # of falling back to localhost and looking like a working cache that simply has no data.
+      url: rediss://${REDIS_CLUSTER_NODES}
