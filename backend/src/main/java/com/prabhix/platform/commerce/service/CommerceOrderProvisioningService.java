@@ -1,6 +1,6 @@
 package com.prabhix.platform.commerce.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.prabhix.platform.commerce.domain.CommerceCustomer;
 import com.prabhix.platform.commerce.domain.CommerceEnums;
 import com.prabhix.platform.commerce.domain.CommerceOrder;

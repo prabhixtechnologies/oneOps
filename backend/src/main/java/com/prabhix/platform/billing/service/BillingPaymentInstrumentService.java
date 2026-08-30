@@ -1,6 +1,6 @@
 package com.prabhix.platform.billing.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.prabhix.platform.billing.domain.BillingEnums;
 import com.prabhix.platform.billing.domain.BillingSubscription;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;

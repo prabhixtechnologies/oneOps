@@ -1,6 +1,6 @@
 package com.prabhix.platform.push.provider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.push.config.PushProperties;
 import com.prabhix.platform.push.domain.PushEnums;
 import com.prabhix.platform.push.provider.apns.ApnsPushProvider;

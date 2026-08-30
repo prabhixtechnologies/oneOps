@@ -6,14 +6,18 @@ spring:
     default: dev
 
   threads:
-    # Requires a Java 21 runtime. Left off by default so the app still boots on JDK 17.
+    # Needs a Java 21 or newer runtime; production runs 25. Left off by default so the app still
+    # boots on a JDK 17 built with -Djava.version=17.
     virtual:
       enabled: ${VIRTUAL_THREADS:false}
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/prabhix}
-    username: ${DB_USERNAME:prabhix}
-    password: ${DB_PASSWORD:prabhix}
+    # oneops, not prabhix: the database belongs to the product, and Prabhix is the company that sells
+    # it. Renamed with the move to RDS, where the platform, identity and mobistack databases sit on
+    # one instance and a name that says which product owns which is worth having.
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/oneops}
+    username: ${DB_USERNAME:oneops}
+    password: ${DB_PASSWORD:oneops}
     hikari:
       # Sized for many app instances behind PgBouncer rather than a few fat pools.
       maximum-pool-size: ${DB_POOL_MAX:20}
@@ -45,11 +49,17 @@ spring:
     # Migrations must reach Postgres directly. PgBouncer runs in transaction pooling mode, where
     # a session-level advisory lock cannot be held across statements, so Flyway's migration lock
     # would not protect concurrent deploys.
-    url: ${FLYWAY_URL:${DB_URL:jdbc:postgresql://localhost:5432/prabhix}}
-    user: ${FLYWAY_USER:${DB_USERNAME:prabhix}}
-    password: ${FLYWAY_PASSWORD:${DB_PASSWORD:prabhix}}
+    url: ${FLYWAY_URL:${DB_URL:jdbc:postgresql://localhost:5432/oneops}}
+    user: ${FLYWAY_USER:${DB_USERNAME:oneops}}
+    password: ${FLYWAY_PASSWORD:${DB_PASSWORD:oneops}}
     locations: classpath:db/migration
-    baseline-on-migrate: true
+    # Off, matching identity: these databases are created empty, so the only thing a baseline could
+    # do is mark an existing schema as already migrated and skip V1 silently. A schema that has
+    # tables but no history is a mistake worth failing on, not one to paper over.
+    #
+    # Safe with a prepared RDS database despite the extensions an administrator creates first:
+    # Flyway does not count extension-owned types and functions when deciding a schema is empty.
+    baseline-on-migrate: false
     validate-on-migrate: true
     # Migrations seed Thymeleaf email templates whose bodies contain ${...} variables.
     # Flyway would try to resolve those as its own placeholders and fail the migration.
@@ -95,10 +105,37 @@ spring:
     # so emitting nulls breaks far more than it fixes. CursorPage.nextCursor opts out locally because
     # it is a protocol field clients branch on.
     default-property-inclusion: non_null
-    serialization:
-      write-dates-as-timestamps: false
+    #
+    # Jackson 3 split the feature flags across several enums, and Spring binds each block below to a
+    # different one. A key under the wrong block is not ignored: binding fails, the mapper cannot be
+    # built, and the application does not start. Which enum each belongs to is worth stating.
+    datatype:
+      datetime:
+        # DateTimeFeature, moved out of SerializationFeature. Left explicit even though false is now
+        # the Jackson default, because ISO-8601 strings rather than epoch numbers is a contract with
+        # the web and Android clients, not a preference.
+        write-dates-as-timestamps: false
+    mapper:
+      # MapperFeature, and on by default in Jackson 3, which would reorder the keys of every response.
+      # No client reads JSON positionally, so nothing should break — but it rewrites the bytes on the
+      # wire for the whole API in a release whose only purpose is a framework upgrade, and that is not
+      # a diff worth reasoning about when something else goes wrong.
+      sort-properties-alphabetically: false
     deserialization:
       fail-on-unknown-properties: false
+
+  # Moved here from server.error.* in the Boot 4 upgrade. The old keys bind to a different enum, so
+  # Boot could not carry them across and ignored them in silence — no warning, no failure, just the
+  # defaults. They happen to default to never as well, so nothing leaked, but "the safe thing was the
+  # default" is luck rather than configuration and only the properties migrator revealed it.
+  #
+  # never on both: an error response carries a status and a correlation id, and nothing else. An
+  # exception message names internal classes and often quotes the input that broke, and a stack trace
+  # maps the whole application for whoever is probing it.
+  web:
+    error:
+      include-message: never
+      include-stacktrace: never
 
   task:
     execution:
@@ -119,9 +156,6 @@ server:
   compression:
     enabled: true
     mime-types: application/json,text/html,text/css,application/javascript
-  error:
-    include-message: never
-    include-stacktrace: never
   tomcat:
     max-swallow-size: 30MB
 
@@ -135,6 +169,17 @@ management:
       probes:
         enabled: true
       show-details: never
+      group:
+        # readinessState alone is the default, which means the readiness probe passes while the
+        # cache is unreachable. deploy.sh gates the rollout on this endpoint, so that combination
+        # ships a backend whose rate limiter and token deny list both fail open — revoked tokens
+        # keep working and nothing says so. Cheaper to fail the deploy.
+        #
+        # The Dockerfile HEALTHCHECK reads this endpoint too, so an unreachable cache also marks
+        # the container unhealthy. That is signal rather than a restart loop: plain Docker does not
+        # restart unhealthy containers, and `restart: always` acts on process exit, not on health.
+        readiness:
+          include: readinessState,redis
   health:
     livenessstate:
       enabled: true
@@ -420,3 +465,41 @@ prabhix:
       bundle-id: ${APNS_BUNDLE_ID:}
       private-key: ${APNS_PRIVATE_KEY:}
       host: ${APNS_HOST:https://api.push.apple.com}
+
+  # Watches the Redis pub/sub path that carries every SSE stream. A cluster endpoint can retire the
+  # node a subscribe connection is pinned to without telling the client, which stops chat, mail and
+  # AI streams while every health check stays green. See RealtimePubSubMonitor.
+  realtime:
+    pubsub-monitor:
+      enabled: ${REALTIME_PUBSUB_MONITOR_ENABLED:true}
+      interval: ${REALTIME_PUBSUB_MONITOR_INTERVAL:PT20S}
+      # Three missed probes, so a single slow tick is not mistaken for a dead subscription.
+      tolerance: ${REALTIME_PUBSUB_MONITOR_TOLERANCE:PT90S}
+
+---
+# ElastiCache Serverless for Valkey is always cluster mode and always TLS, so it cannot be reached
+# with the host/port settings above. Kept as its own profile rather than folded into `prod` so that
+# running the prod profile against a plain Redis container still works: activate with
+# SPRING_PROFILES_ACTIVE=prod,valkey.
+spring:
+  config:
+    activate:
+      on-profile: valkey
+  data:
+    redis:
+      cluster:
+        # The one serverless endpoint. The driver discovers the topology behind it, so this is a
+        # single entry rather than a node list. No default: a blank endpoint should fail startup
+        # loudly, not fall back to localhost and look like a working cache with no data in it.
+        nodes: ${REDIS_CLUSTER_NODES}
+        max-redirects: 3
+      ssl:
+        enabled: true
+      lettuce:
+        cluster:
+          refresh:
+            # Directly relevant to the pub/sub problem the monitor exists for: without adaptive
+            # refresh the client keeps using a topology snapshot taken at startup, so it does not
+            # notice that the node holding a subscribe connection has been replaced.
+            adaptive: true
+            period: 60s

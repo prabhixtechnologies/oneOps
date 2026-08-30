@@ -1,6 +1,6 @@
 package com.prabhix.platform.ai.provider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.ai.config.AiProperties;
 import com.prabhix.platform.ai.provider.anthropic.AnthropicProvider;
 import com.prabhix.platform.ai.provider.gemini.GeminiProvider;

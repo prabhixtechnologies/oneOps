@@ -1,7 +1,6 @@
 package com.prabhix.platform.audit.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.files.service.FileStorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +45,7 @@ class AuditPartitionArchiverTest {
 
     @BeforeEach
     void setUp() {
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        ObjectMapper objectMapper = new ObjectMapper();
         store = new InMemoryObjectStore();
         archiver = new AuditPartitionArchiver(jdbc, objectMapper, Optional.of(store));
         ReflectionTestUtils.setField(archiver, "bucket", "test-bucket");

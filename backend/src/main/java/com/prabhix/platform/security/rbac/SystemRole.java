@@ -11,8 +11,8 @@ import static com.prabhix.platform.security.rbac.Permission.*;
  * <p>These are the defaults a customer starts with. They can add custom roles on top, but
  * cannot edit or delete these, so there is always a known-good ladder to fall back to.
  *
- * <p>The permission sets here are the source of truth. {@code V3__rbac_seed.sql} inserts the
- * same data for a fresh database, and {@code RolePermissionSynchronizer} reconciles existing
+ * <p>The permission sets here are the source of truth. {@code V1__baseline.sql} seeds the same
+ * data for a fresh database, and {@code RolePermissionSynchronizer} reconciles existing
  * organizations on startup, so adding a permission to a system role rolls out everywhere.
  */
 public enum SystemRole {

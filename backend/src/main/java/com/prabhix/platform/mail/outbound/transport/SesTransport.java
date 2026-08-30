@@ -5,6 +5,7 @@ import com.prabhix.platform.mail.outbound.OutboundMimeBuilder;
 import jakarta.annotation.PreDestroy;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -48,6 +49,13 @@ public class SesTransport implements MailTransport {
     private volatile SesV2Client client;
     private volatile Probe probe;
 
+    /**
+     * {@code @Autowired} because this class has two constructors, and with more than one Spring does
+     * not choose: it looks for a no-argument constructor, finds none, and fails to start the whole
+     * application with "No default constructor found" — which names this class but not the reason.
+     * One constructor needs to say it is the one to inject.
+     */
+    @Autowired
     public SesTransport(PrabhixProperties properties, OutboundMimeBuilder mimeBuilder) {
         this.properties = properties;
         this.mimeBuilder = mimeBuilder;

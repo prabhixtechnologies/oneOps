@@ -1,8 +1,8 @@
 package com.prabhix.platform.mail.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -21,7 +21,7 @@ public final class MailJson {
         }
         try {
             return MAPPER.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new IllegalArgumentException("Could not serialise value to JSON", ex);
         }
     }
@@ -33,7 +33,7 @@ public final class MailJson {
         try {
             return MAPPER.readValue(json, new TypeReference<>() {
             });
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new IllegalArgumentException("Invalid JSON map", ex);
         }
     }
@@ -45,7 +45,7 @@ public final class MailJson {
         try {
             return MAPPER.readValue(json, new TypeReference<>() {
             });
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new IllegalArgumentException("Invalid JSON array", ex);
         }
     }
@@ -57,7 +57,7 @@ public final class MailJson {
         try {
             return MAPPER.readValue(json, new TypeReference<>() {
             });
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new IllegalArgumentException("Invalid JSON array", ex);
         }
     }

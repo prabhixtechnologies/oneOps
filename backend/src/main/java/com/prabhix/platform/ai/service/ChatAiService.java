@@ -1,7 +1,7 @@
 package com.prabhix.platform.ai.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.ai.domain.AiOrgSettings;
 import com.prabhix.platform.ai.dto.AiDtos;
 import com.prabhix.platform.ai.repository.AiOrgSettingsRepository;

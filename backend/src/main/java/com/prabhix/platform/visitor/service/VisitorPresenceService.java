@@ -1,7 +1,7 @@
 package com.prabhix.platform.visitor.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.visitor.config.VisitorProperties;
 import com.prabhix.platform.visitor.dto.VisitorDtos;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class VisitorPresenceService {
             redis.opsForValue().set(key, json, ttl);
             redis.opsForSet().add(orgSetKey(organizationId), visitorId.toString());
             redis.expire(orgSetKey(organizationId), ttl.multipliedBy(2));
-        } catch (JsonProcessingException ignored) {
+        } catch (JacksonException ignored) {
             // Presence is best-effort; ingest must not fail if Redis serialization breaks.
         }
     }

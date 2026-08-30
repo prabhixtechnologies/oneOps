@@ -1,7 +1,6 @@
 package com.prabhix.platform.chat.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.chat.domain.ChatEnums;
 import com.prabhix.platform.chat.dto.ChatDtos;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +34,7 @@ class ChatMessageIdempotencyServiceTest {
 
     @BeforeEach
     void setUp() {
-        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        ObjectMapper mapper = new ObjectMapper();
         service = new ChatMessageIdempotencyService(redis, mapper);
         when(redis.opsForValue()).thenReturn(valueOps);
     }
@@ -43,7 +42,7 @@ class ChatMessageIdempotencyServiceTest {
     @Test
     void replayReturnsStoredResultWithoutSecondExecution() throws Exception {
         ChatDtos.MessageView result = sampleMessage();
-        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        ObjectMapper mapper = new ObjectMapper();
         AtomicInteger executions = new AtomicInteger();
 
         when(valueOps.setIfAbsent(anyString(), eq("__PROCESSING__"), any(java.time.Duration.class)))

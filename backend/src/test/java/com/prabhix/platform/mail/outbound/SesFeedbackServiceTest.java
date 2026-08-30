@@ -1,6 +1,6 @@
 package com.prabhix.platform.mail.outbound;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.mail.domain.MailOutbox;
 import com.prabhix.platform.mail.repository.MailOutboxRepository;
 import org.junit.jupiter.api.BeforeEach;

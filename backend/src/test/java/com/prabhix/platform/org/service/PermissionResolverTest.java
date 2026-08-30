@@ -1,6 +1,6 @@
 package com.prabhix.platform.org.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.org.domain.OrganizationMembership;
 import com.prabhix.platform.org.domain.OrganizationMembership.MembershipStatus;
 import com.prabhix.platform.org.domain.Role;

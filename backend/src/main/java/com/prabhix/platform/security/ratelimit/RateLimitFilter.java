@@ -1,6 +1,6 @@
 package com.prabhix.platform.security.ratelimit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.common.error.ApiError;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;

@@ -1,8 +1,8 @@
 package com.prabhix.platform.push.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
@@ -19,7 +19,7 @@ public final class PushJson {
         }
         try {
             return MAPPER.writeValueAsString(map);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new IllegalArgumentException("Could not serialize push payload", ex);
         }
     }
@@ -31,7 +31,7 @@ public final class PushJson {
         try {
             return MAPPER.readValue(json, new TypeReference<>() {
             });
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new IllegalArgumentException("Could not parse push payload", ex);
         }
     }

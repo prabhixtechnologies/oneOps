@@ -1,7 +1,7 @@
 package com.prabhix.platform.commerce.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.billing.razorpay.RazorpaySignature;
 import com.prabhix.platform.commerce.domain.CommerceOrder;
 import com.prabhix.platform.commerce.domain.CommerceWebhookEvent;

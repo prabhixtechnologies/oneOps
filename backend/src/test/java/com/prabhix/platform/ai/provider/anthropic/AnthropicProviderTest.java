@@ -1,6 +1,6 @@
 package com.prabhix.platform.ai.provider.anthropic;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.ai.config.AiProperties;
 import com.prabhix.platform.ai.provider.http.ProviderHttpRequest;
 import com.prabhix.platform.ai.provider.http.ProviderHttpResponse;

@@ -1,6 +1,6 @@
 package com.prabhix.platform.billing.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.billing.domain.BillingSubscription;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;
 import org.junit.jupiter.api.BeforeEach;

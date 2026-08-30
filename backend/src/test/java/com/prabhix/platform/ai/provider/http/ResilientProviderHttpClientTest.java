@@ -1,6 +1,6 @@
 package com.prabhix.platform.ai.provider.http;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.ai.provider.http.ResilientProviderHttpClient;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;

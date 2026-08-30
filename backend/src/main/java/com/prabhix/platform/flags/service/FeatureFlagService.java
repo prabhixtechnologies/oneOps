@@ -1,7 +1,7 @@
 package com.prabhix.platform.flags.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.common.event.AuditRequested;
 import com.prabhix.platform.flags.domain.FeatureFlag;
 import com.prabhix.platform.flags.domain.FeatureFlagOverride;

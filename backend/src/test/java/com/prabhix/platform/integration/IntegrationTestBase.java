@@ -5,7 +5,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -20,11 +20,13 @@ import org.testcontainers.utility.DockerImageName;
 @ActiveProfiles("integration")
 public abstract class IntegrationTestBase {
 
-    static final PostgreSQLContainer<?> POSTGRES_CONTAINER =
-            new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"))
-                    .withDatabaseName("prabhix")
-                    .withUsername("prabhix")
-                    .withPassword("prabhix");
+    // Not PostgreSQLContainer<?>: Testcontainers 2 moved this out of org.testcontainers.containers,
+    // where a deprecated generic copy still sits, and dropped the self-referential type parameter.
+    static final PostgreSQLContainer POSTGRES_CONTAINER =
+            new PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"))
+                    .withDatabaseName("oneops")
+                    .withUsername("oneops")
+                    .withPassword("oneops");
 
     static final GenericContainer<?> REDIS_CONTAINER =
             new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))

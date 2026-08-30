@@ -16,15 +16,280 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
           cache: maven
 
+      # -Pintegration, which clears the excludedGroups that otherwise skips the two @Tag("integration")
+      # tests. They were not running here, and they are the only tests that start the Spring context
+      # against a real Postgres — so nothing in CI had an opinion on whether the application could
+      # boot at all.
+      #
+      # That gap was not theoretical. A class with two constructors and no @Autowired on either had
+      # made the context unstartable: every unit test passed, the image built, and the failure would
+      # have surfaced on the box as "No default constructor found" during a deploy. These two tests
+      # catch that whole class of fault, and they need Docker, which this runner has.
+      #
+      # Logged to a file as well as the console so the next step can read it without running the suite
+      # a second time. pipefail matters: without it the exit code would be tee's.
       - name: Verify
-        run: mvn -B verify
+        run: |
+          set -euo pipefail
+          mvn -B verify -Pintegration 2>&1 | tee build.log
+
+      # Mockito's inline mock maker instruments classes with a Byte Buddy agent, and by default it
+      # attaches that agent to the JVM it is already running in. The JDK has warned about that since
+      # 21 and intends to refuse it, at which point 93 test files stop working at once.
+      #
+      # The pom loads the agent at startup instead. Checked here rather than assumed, because the
+      # failure mode is silent in the direction that matters: Mockito notices the agent is missing,
+      # prints, falls back to self-attaching and passes. A green suite says nothing about whether the
+      # configuration survived, so the log is the only signal until the JDK turns this into an error.
+      - name: Mockito is not self-attaching
+        run: |
+          set -euo pipefail
+          fail=0
+
+          if grep -q 'Mockito is currently self-attaching' build.log; then
+            echo "::error::Mockito is self-attaching. The -javaagent in the surefire argLine is not reaching the test JVM — check that maven-dependency-plugin's properties goal still runs."
+            fail=1
+          fi
+          if grep -q 'A Java agent has been loaded dynamically' build.log; then
+            echo "::error::An agent was loaded dynamically, which a future JDK disallows by default."
+            grep -m3 'loaded dynamically' build.log
+            fail=1
+          fi
+
+          # Guards against passing vacuously: a log with no tests in it has no warnings in it either.
+          if ! grep -qE 'Tests run: [0-9]+' build.log; then
+            echo "::error::No test results in the output, so the absence of warnings proves nothing."
+            fail=1
+          fi
+
+          [ "$fail" -eq 0 ] || exit 1
+          grep -hoE 'Tests run: [0-9]+, Failures: [0-9]+, Errors: [0-9]+, Skipped: [0-9]+' build.log | tail -1
+          echo "The agent is loaded up front."
+
+  # The schema is one generated baseline (deploy/squash-baseline.py), and nothing else in CI ever
+  # runs it, so without this job a broken baseline reaches a real database before anyone notices.
+  #
+  # This is not hypothetical. Before the squash, V64 recreated an index V6 had already created, so
+  # the migrations could not build an empty database at all. Every existing database was past V6 and
+  # unaffected, the build was green, and the fault would have surfaced as a failed first boot on the
+  # new RDS instance.
+  migrations:
+    name: Schema (empty database)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: schemacheck
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baseline applies to an empty database
+        run: |
+          set -euo pipefail
+          # --network host so the container can reach the service on localhost.
+          # -placeholderReplacement=false matches spring.flyway.placeholder-replacement: the seeded
+          # mail templates contain ${...} that Flyway would otherwise try to resolve.
+          docker run --rm --network host \
+            -v "$PWD/backend/src/main/resources/db/migration:/flyway/sql:ro" \
+            flyway/flyway:11-alpine \
+            -url=jdbc:postgresql://localhost:5432/schemacheck \
+            -user=postgres -password=ci \
+            -locations=filesystem:/flyway/sql \
+            -placeholderReplacement=false \
+            -connectRetries=10 \
+            migrate
+
+      - name: Schema and seed data arrived
+        env:
+          PGPASSWORD: ci
+        run: |
+          set -euo pipefail
+          # A baseline truncated to nothing still "applies" cleanly, so check it left something
+          # behind. These are floors, not equalities: adding a table or a permission should not
+          # fail the build, losing them should. Raise them when the schema grows.
+          check() {
+            actual=$(psql -h localhost -U postgres -d schemacheck -tAc "$2")
+            if [ "$actual" -lt "$3" ]; then
+              echo "FAIL: $1 is $actual, expected at least $3"
+              exit 1
+            fi
+            printf '%-18s %s\n' "$1" "$actual"
+          }
+          check tables \
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'" 100
+          # Without these two the schema loads and every user silently has no permissions at all.
+          check permissions "SELECT count(*) FROM permissions" 60
+          check role_permissions "SELECT count(*) FROM role_permissions" 130
+          check mail_templates "SELECT count(*) FROM mail_templates" 12
+          check billing_plans "SELECT count(*) FROM billing_plans" 6
+
+      # The baseline deliberately creates no user, so deploy/seed.sql is the whole difference between
+      # an empty database and one somebody can sign in to. Run twice, because it claims to be safe to
+      # run twice and the way that claim breaks here is invisible: most address columns are citext,
+      # citext only casts from text on assignment, so a guard comparing a citext column to a `||`
+      # expression resolves to the text operator and compares case-sensitively. First run inserts,
+      # second run inserts again, nothing errors.
+      - name: Seed applies twice without drift
+        env:
+          PGPASSWORD: ci
+        run: |
+          set -euo pipefail
+          psql() { command psql -h localhost -U postgres -d schemacheck "$@"; }
+
+          seed() {
+            psql -q -v ON_ERROR_STOP=1 \
+              -v owner_email=ci@prabhixtechnologies.com \
+              -v owner_password=ci-seed-password \
+              -v owner_name='CI Seed' \
+              -f deploy/seed.sql > /dev/null
+          }
+
+          counts() {
+            psql -tAc "SELECT concat_ws(' ',
+              (SELECT count(*) FROM users),
+              (SELECT count(*) FROM organization_memberships),
+              (SELECT count(*) FROM platform_staff_roles),
+              (SELECT count(*) FROM mail_domains),
+              (SELECT count(*) FROM mail_mailboxes),
+              (SELECT count(*) FROM mail_aliases),
+              (SELECT count(*) FROM mail_mailbox_members))"
+          }
+
+          seed; first=$(counts)
+          seed; second=$(counts)
+          echo "users memberships staff domains mailboxes aliases members"
+          echo "after one run:  $first"
+          echo "after two runs: $second"
+          if [ "$first" != "$second" ]; then
+            echo "FAIL: the seed is not idempotent"
+            exit 1
+          fi
+
+      # What the counts cannot see. A seeded owner who cannot sign in, or who signs in with no staff
+      # role, leaves an admin console that is reachable and empty.
+      - name: Seeded owner can sign in and is staff
+        env:
+          PGPASSWORD: ci
+        run: |
+          set -euo pipefail
+          psql() { command psql -h localhost -U postgres -d schemacheck "$@"; }
+
+          expect() {
+            actual=$(psql -tAc "$2")
+            if [ "$actual" != "$3" ]; then
+              echo "FAIL: $1 is '$actual', expected '$3'"
+              exit 1
+            fi
+            printf '%-34s %s\n' "$1" "$actual"
+          }
+
+          # pgcrypto's crypt() against its own stored hash is the same comparison BCryptPasswordEncoder
+          # makes, so this is the real credential check and not a proxy for it.
+          expect "password verifies" \
+            "SELECT crypt('ci-seed-password', password_hash) = password_hash FROM users WHERE email = 'ci@prabhixtechnologies.com'" t
+          expect "a wrong password does not" \
+            "SELECT crypt('wrong', password_hash) = password_hash FROM users WHERE email = 'ci@prabhixtechnologies.com'" f
+          # Strength matters: a hash written at a lower cost still verifies, so nothing else here
+          # would notice if the seed stopped matching the application's encoder.
+          expect "bcrypt cost is 12" \
+            "SELECT left(password_hash, 7) FROM users WHERE email = 'ci@prabhixtechnologies.com'" '$2a$12$'
+          expect "platform_admin is set" \
+            "SELECT platform_admin FROM users WHERE email = 'ci@prabhixtechnologies.com'" t
+          expect "holds the OWNER staff role" \
+            "SELECT role FROM platform_staff_roles s JOIN users u ON u.id = s.user_id WHERE u.email = 'ci@prabhixtechnologies.com' AND s.revoked_at IS NULL" OWNER
+          expect "is an OWNER of the organization" \
+            "SELECT r.role_key FROM organization_memberships m JOIN roles r ON r.id = m.role_id JOIN users u ON u.id = m.user_id WHERE u.email = 'ci@prabhixtechnologies.com'" OWNER
+
+          # The citext case above, stated as a test. A mixed-case address must resolve to the mailbox
+          # that already exists rather than looking absent and being created a second time.
+          expect "addresses are case-insensitive" \
+            "SELECT count(*) FROM mail_mailboxes WHERE address = 'SUPPORT@prabhixtechnologies.com'" 1
+          expect "every alias points at a real mailbox" \
+            "SELECT count(*) FROM mail_aliases a LEFT JOIN mail_mailboxes m ON m.id = a.mailbox_id WHERE m.id IS NULL" 0
+
+      # Identity signs the token and this database is looked up by the uuid in its `sub`, so the two
+      # seeds have to agree on the owner's id. They live in separate repositories and no foreign key
+      # spans the two databases, so nothing can enforce it — this pins the value on this side, and
+      # Identity's own CI pins the same literal on that side. Changing it needs both, deliberately.
+      - name: Owner id matches the value Identity seeds
+        env:
+          PGPASSWORD: ci
+        run: |
+          set -euo pipefail
+          expected=00000000-0000-4000-8000-000000000002
+          actual=$(psql -h localhost -U postgres -d schemacheck -tAc \
+            "SELECT id FROM users WHERE email = 'ci@prabhixtechnologies.com'")
+          if [ "$actual" != "$expected" ]; then
+            echo "FAIL: deploy/seed.sql produced owner id $actual, but Identity/deploy/seed.sql"
+            echo "      defaults to $expected. Change both or neither: a mismatch lets sign-in"
+            echo "      succeed and then fails every API call with 'not provisioned on the platform'."
+            exit 1
+          fi
+          echo "owner id $actual, matching Identity"
+
+      # The guard against seeding the pair inconsistently, which is the mistake with the worst
+      # symptom and no error. Reseeding this address under a different id has to be refused, because
+      # the alternative is that it looks like it worked: the insert is guarded on the address, so it
+      # skips, the script exits 0, and the id that was passed is silently not the id in the database.
+      #
+      # Tested by doing it, because a check written and never exercised is a check that might already
+      # be inverted.
+      - name: Seeding the same address under a different id is refused
+        env:
+          PGPASSWORD: ci
+        run: |
+          set -euo pipefail
+          before=$(psql -h localhost -U postgres -d schemacheck -tAc \
+            "SELECT id FROM users WHERE email = 'ci@prabhixtechnologies.com'")
+
+          if psql -h localhost -U postgres -d schemacheck -q \
+               -v ON_ERROR_STOP=1 \
+               -v owner_email=ci@prabhixtechnologies.com \
+               -v owner_password=ci-seed-password \
+               -v owner_name='CI Seed' \
+               -v owner_id=00000000-0000-4000-8000-0000000000ff \
+               -f deploy/seed.sql > /dev/null 2>&1; then
+            echo "FAIL: the seed accepted a different owner_id for an address it had already seeded."
+            echo "      It must refuse, or the two databases can disagree about who the owner is"
+            echo "      while both scripts report success."
+            exit 1
+          fi
+
+          after=$(psql -h localhost -U postgres -d schemacheck -tAc \
+            "SELECT id FROM users WHERE email = 'ci@prabhixtechnologies.com'")
+          if [ "$before" != "$after" ]; then
+            echo "FAIL: the refused run still changed the id, from $before to $after"
+            exit 1
+          fi
+          echo "refused, and left the existing id alone"
+
+  # The runbooks are the only instructions for the parts of the infrastructure no script creates —
+  # the IAM roles, the RDS instance, the caches, the instance resize. They are followed by hand,
+  # once, usually mid-migration, and nothing in the repository reads them, so a step that names a
+  # file renamed six commits ago fails at the worst possible moment and for a reason that has
+  # nothing to do with the migration.
+  runbooks:
+    name: Runbooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Referenced files exist and the identifiers agree
+        run: python deploy/check-runbooks.py
 
   web:
     name: Web (Vite)
@@ -210,15 +475,44 @@ jobs:
   images:
     name: Docker images
     runs-on: ubuntu-latest
-    needs: [backend, web, marketing]
+    needs: [backend, migrations, runbooks, web, marketing]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    permissions:
+      contents: read
+      # Lets the job mint a short-lived OIDC token for AWS to exchange for temporary credentials.
+      # Without it the role assumption below fails with a token error rather than an access error,
+      # which is a confusing way to find out.
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # ECR once a role ARN is configured, Docker Hub until then.
+      #
+      # Same shape as AUTH_UPSTREAM in deploy/Caddyfile, for the same reason: four repositories have
+      # to move registries, and they do not have to move together. Setting the AWS_CI_ROLE_ARN
+      # variable is the whole cutover for this one, and clearing it is the whole rollback — neither
+      # needs a commit, and a half-finished migration still builds.
+      - name: Configure AWS credentials
+        if: vars.AWS_CI_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_CI_ROLE_ARN }}
+          # ap-south-1 because the EC2 instance is there. Pulling across regions is charged as
+          # inter-region transfer on every deploy, for no benefit.
+          aws-region: ap-south-1
+
+      # No long-lived key anywhere: the role is assumed through GitHub's OIDC provider, and the
+      # docker credentials this produces expire in twelve hours.
+      - name: Log in to Amazon ECR
+        id: ecr
+        if: vars.AWS_CI_ROLE_ARN != ''
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Log in to Docker Hub
+        if: vars.AWS_CI_ROLE_ARN == ''
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -226,7 +520,16 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          # The ECR login action reports the registry host for the account the role belongs to, so
+          # the account ID is never written down here and cannot drift from the role.
+          registry='${{ steps.ecr.outputs.registry }}'
+          if [ -n "$registry" ]; then
+            echo "prefix=$registry/" >> "$GITHUB_OUTPUT"
+          else
+            echo "prefix=prabhixtechnologies/" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build and push backend
         uses: docker/build-push-action@v6
@@ -235,8 +538,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            prabhixtechnologies/prabhix-backend:latest
-            prabhixtechnologies/prabhix-backend:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.prefix }}prabhix-backend:latest
+            ${{ steps.meta.outputs.prefix }}prabhix-backend:${{ steps.meta.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -255,8 +558,8 @@ jobs:
             VITE_GOOGLE_SSO_ENABLED=false
             VITE_MAILROOM_URL=https://mail.prabhixtechnologies.com
           tags: |
-            prabhixtechnologies/prabhix-web:latest
-            prabhixtechnologies/prabhix-web:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.prefix }}prabhix-web:latest
+            ${{ steps.meta.outputs.prefix }}prabhix-web:${{ steps.meta.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -275,8 +578,8 @@ jobs:
             VITE_ONEOPS_URL=https://oneops.prabhixtechnologies.com
             VITE_MAILROOM_URL=https://mail.prabhixtechnologies.com
           tags: |
-            prabhixtechnologies/prabhix-admin:latest
-            prabhixtechnologies/prabhix-admin:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.prefix }}prabhix-admin:latest
+            ${{ steps.meta.outputs.prefix }}prabhix-admin:${{ steps.meta.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -297,7 +600,7 @@ jobs:
             NEXT_PUBLIC_ORG_SLUG=${{ vars.PRABHIX_ORG_SLUG }}
             NEXT_PUBLIC_ORG_ID=${{ vars.PRABHIX_ORG_ID }}
           tags: |
-            prabhixtechnologies/prabhix-marketing:latest
-            prabhixtechnologies/prabhix-marketing:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.prefix }}prabhix-marketing:latest
+            ${{ steps.meta.outputs.prefix }}prabhix-marketing:${{ steps.meta.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

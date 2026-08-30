@@ -1,7 +1,7 @@
 package com.prabhix.platform.push.provider.fcm;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.push.config.PushProperties;
 import com.prabhix.platform.push.domain.PushEnums;
 import com.prabhix.platform.push.provider.PushProvider;

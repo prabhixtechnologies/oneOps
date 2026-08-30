@@ -1,6 +1,6 @@
 package com.prabhix.platform.chat.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.chat.event.ChatStreamEvent;
 import com.prabhix.platform.chat.event.ChatVisitorStreamEvent;
 import com.prabhix.platform.common.realtime.RealtimeChannelRegistry;

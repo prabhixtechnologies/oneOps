@@ -1,6 +1,6 @@
 package com.prabhix.platform.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.common.error.ApiError;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
@@ -205,8 +205,10 @@ public class SecurityConfig {
     @Bean
     public DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
                                                            PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
+        // Spring Security 7 dropped the no-argument constructor and setUserDetailsService: a provider
+        // without a service was a half-built object that failed at authentication time rather than at
+        // construction, so it is now required up front.
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         provider.setHideUserNotFoundExceptions(true);
         return provider;

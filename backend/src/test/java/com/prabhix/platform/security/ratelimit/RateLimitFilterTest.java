@@ -1,7 +1,6 @@
 package com.prabhix.platform.security.ratelimit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.support.TestProperties;
 import jakarta.servlet.FilterChain;
@@ -48,7 +47,7 @@ class RateLimitFilterTest {
     // mapper has the JSR-310 module registered, so register it here rather than have the test fail
     // on something production does not do.
     private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule());
+            ;
 
     @BeforeEach
     void setUp() {

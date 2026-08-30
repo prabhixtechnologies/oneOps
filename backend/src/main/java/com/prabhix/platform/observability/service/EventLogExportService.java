@@ -1,6 +1,6 @@
 package com.prabhix.platform.observability.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.common.web.Cursor;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.observability.dto.EventLogDtos.EventLogView;
@@ -70,13 +70,10 @@ public class EventLogExportService {
                              OutputStream out) throws IOException {
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
         writeRows(organizationId, platformAdmin, requestedOrgId, allOrganizations, severity, category, eventCode,
-                from, to, writer, view -> {
-                    try {
-                        return objectMapper.writeValueAsString(view);
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                });
+                // Jackson 3's failures are unchecked and no longer extend IOException, so the wrapping
+                // this used to need is gone. A serialisation failure now propagates as itself rather
+                // than as a RuntimeException with the real cause one level down.
+                from, to, writer, objectMapper::writeValueAsString);
         writer.flush();
     }
 

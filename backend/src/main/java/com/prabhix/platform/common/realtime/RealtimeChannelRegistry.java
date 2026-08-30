@@ -100,6 +100,36 @@ public class RealtimeChannelRegistry {
         }
     }
 
+    /**
+     * Drops and re-establishes every Redis subscription.
+     *
+     * <p>Called by {@link RealtimePubSubMonitor} when the probe stops coming back. A cluster
+     * endpoint can retire the node a subscribe connection is pinned to, and the client is not
+     * always told: the listener still exists here, the connection looks alive, and no message
+     * ever arrives again. Re-adding the listener is what forces a fresh connection.
+     *
+     * <p>Channels with no emitters left are skipped rather than resurrected — {@link #release}
+     * removes those, and re-subscribing one would leak a listener nobody reads.
+     */
+    public int resubscribeAll() {
+        int resubscribed = 0;
+        for (ChannelState state : channels.values()) {
+            synchronized (state) {
+                if (state.emitters.isEmpty()) {
+                    continue;
+                }
+                if (state.subscribed) {
+                    listenerContainer.removeMessageListener(state.listener, state.topic);
+                    state.subscribed = false;
+                }
+                listenerContainer.addMessageListener(state.listener, state.topic);
+                state.subscribed = true;
+                resubscribed++;
+            }
+        }
+        return resubscribed;
+    }
+
     @PreDestroy
     void shutdown() {
         for (ChannelState state : channels.values()) {

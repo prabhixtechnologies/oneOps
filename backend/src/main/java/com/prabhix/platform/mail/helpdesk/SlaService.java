@@ -1,6 +1,6 @@
 package com.prabhix.platform.mail.helpdesk;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.prabhix.platform.mail.domain.MailThread;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.domain.Mailbox;
@@ -122,9 +122,9 @@ public class SlaService {
         if (holidays == null || !holidays.isArray()) {
             return false;
         }
-        Iterator<JsonNode> it = holidays.elements();
-        while (it.hasNext()) {
-            if (date.toString().equals(it.next().asText())) {
+        // values(), not elements(): renamed in Jackson 3, returning a Collection not an Iterator.
+        for (JsonNode holiday : holidays.values()) {
+            if (date.toString().equals(holiday.asText())) {
                 return true;
             }
         }

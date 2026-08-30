@@ -4,8 +4,8 @@ import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.mail.outbound.transport.MailTransport;
 import com.prabhix.platform.mail.outbound.transport.MailTransportRouter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 /**

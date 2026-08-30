@@ -1,6 +1,6 @@
 package com.prabhix.platform.commerce.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.prabhix.platform.billing.razorpay.RazorpayClient;
 import com.prabhix.platform.billing.service.BillingAmountCalculator;
 import com.prabhix.platform.commerce.config.CommerceProperties;

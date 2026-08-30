@@ -1,6 +1,6 @@
 package com.prabhix.platform.auth.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.prabhix.platform.auth.dto.AuthDtos.GoogleSsoRequest;
 import com.prabhix.platform.auth.dto.AuthDtos.TokenResponse;
 import com.prabhix.platform.common.error.ApiException;
@@ -96,7 +96,9 @@ public class GoogleSsoService {
 
     private Map<String, Object> toProfileMap(JsonNode node) {
         Map<String, Object> map = new HashMap<>();
-        node.fields().forEachRemaining(entry -> map.put(entry.getKey(), entry.getValue().asText()));
+        // properties(), not fields(): Jackson 3 renamed the object accessors and returns a Set rather
+        // than an Iterator, so this is a plain loop instead of forEachRemaining.
+        node.properties().forEach(entry -> map.put(entry.getKey(), entry.getValue().asText()));
         return map;
     }
 

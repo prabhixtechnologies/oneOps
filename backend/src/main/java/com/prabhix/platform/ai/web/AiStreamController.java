@@ -1,6 +1,6 @@
 package com.prabhix.platform.ai.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.ai.event.AiStreamEvent;
 import com.prabhix.platform.ai.service.AiOrchestrator;
 import com.prabhix.platform.ai.service.ChatAiService;

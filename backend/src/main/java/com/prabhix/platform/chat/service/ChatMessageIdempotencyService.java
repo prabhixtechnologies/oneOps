@@ -1,7 +1,7 @@
 package com.prabhix.platform.chat.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.chat.dto.ChatDtos;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
@@ -81,7 +81,7 @@ public class ChatMessageIdempotencyService {
     private void storeResult(String key, ChatDtos.MessageView result) {
         try {
             redis.opsForValue().set(key, objectMapper.writeValueAsString(result), RESULT_TTL);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             redis.delete(key);
             throw new IllegalStateException("Could not store idempotent result", ex);
         }
@@ -90,7 +90,7 @@ public class ChatMessageIdempotencyService {
     private ChatDtos.MessageView deserialize(String json) {
         try {
             return objectMapper.readValue(json, ChatDtos.MessageView.class);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw ApiException.of(ErrorCode.MALFORMED_REQUEST, "Stored idempotent result is corrupt");
         }
     }

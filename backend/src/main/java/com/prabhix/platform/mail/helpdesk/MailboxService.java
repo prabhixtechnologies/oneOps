@@ -1,6 +1,6 @@
 package com.prabhix.platform.mail.helpdesk;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.spi.EntitlementGate;
 import com.prabhix.platform.config.PrabhixProperties;
@@ -217,9 +217,9 @@ public class MailboxService {
         String endTime = "18:00";
         List<String> holidays = new ArrayList<>();
 
-        Iterator<String> fieldNames = hours.fieldNames();
-        while (fieldNames.hasNext()) {
-            String day = fieldNames.next();
+        // propertyNames(), not fieldNames(): renamed in Jackson 3, and it hands back a Collection
+        // rather than an Iterator.
+        for (String day : hours.propertyNames()) {
             if ("holidays".equals(day) && hours.get(day).isArray()) {
                 hours.get(day).forEach(n -> holidays.add(n.asText()));
                 continue;
