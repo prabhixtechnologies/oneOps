@@ -32,9 +32,6 @@ const ResetPasswordPage = lazy(() =>
 const AcceptInvitePage = lazy(() =>
   import("@/features/auth/AcceptInvitePage").then((m) => ({ default: m.AcceptInvitePage })),
 );
-const MagicLinkPage = lazy(() =>
-  import("@/features/auth/MagicLinkPage").then((m) => ({ default: m.MagicLinkPage })),
-);
 const VerifyEmailPage = lazy(() =>
   import("@/features/auth/VerifyEmailPage").then((m) => ({ default: m.VerifyEmailPage })),
 );
@@ -102,7 +99,9 @@ export const publicRoutes: RouteObject = {
         { path: "/signup", element: <SuspenseWrap><SignupPage /></SuspenseWrap> },
         { path: "/forgot-password", element: <SuspenseWrap><ForgotPasswordPage /></SuspenseWrap> },
         { path: "/reset-password", element: <SuspenseWrap><ResetPasswordPage /></SuspenseWrap> },
-        { path: "/magic-link", element: <SuspenseWrap><MagicLinkPage /></SuspenseWrap> },
+        // No /magic-link. Identity mails its sign-in links to its own /login/link, which is the only
+        // place that can both consume the token and set the session cookie that makes the second
+        // product skip the prompt. A copy here could do the first and never the second.
         { path: "/invite/:token", element: <SuspenseWrap><AcceptInvitePage /></SuspenseWrap> },
       ],
     },

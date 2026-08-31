@@ -45,6 +45,26 @@ export function redirectUri(): string {
  *     post-login redirect an attacker chooses is an open redirect wearing a different hat.
  */
 export async function beginLogin(returnTo?: string): Promise<void> {
+  await authorize(returnTo);
+}
+
+/**
+ * Sends the browser to the hosted signup page, the long way round.
+ *
+ * <p>Through `/authorize` with `prompt=create` rather than straight to the signup URL, because the
+ * redirect is what makes the provider save this authorization request. With one saved, a person who
+ * signs up from the admin console is returned to the admin console; without one, the provider has
+ * only a configured default to fall back on and everybody lands in the same product.
+ *
+ * <p>`prompt=create` is OpenID Connect's registration extension. A provider that does not implement
+ * it ignores the parameter and shows the login page, which has a link to signup on it — degraded, not
+ * broken.
+ */
+export async function beginSignup(returnTo?: string): Promise<void> {
+  await authorize(returnTo, "create");
+}
+
+async function authorize(returnTo?: string, prompt?: string): Promise<void> {
   const verifier = randomUrlSafe(64);
   const state = randomUrlSafe(32);
 
@@ -63,6 +83,7 @@ export async function beginLogin(returnTo?: string): Promise<void> {
     // the authorization request can also redeem the code, which is the attack PKCE exists to stop.
     code_challenge_method: "S256",
   });
+  if (prompt) params.set("prompt", prompt);
 
   window.location.assign(`${ISSUER}/oauth2/authorize?${params.toString()}`);
 }
