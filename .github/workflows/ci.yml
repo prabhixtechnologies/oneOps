@@ -14,10 +14,10 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "25"
@@ -96,7 +96,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Baseline applies to an empty database
         run: |
@@ -285,10 +285,10 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -362,18 +362,18 @@ jobs:
       run:
         working-directory: mobile/android
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # 17, not the 21 the backend uses: the Android Gradle Plugin pins its supported JDK range and
       # rejects newer ones outright.
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       # Both flavors, because they compile different source sets: the platform screens and the
       # cross-tenant API exist only under src/admin, so a break in them is invisible to the OneOps
@@ -436,7 +436,7 @@ jobs:
       # So a build can be installed on a phone without a local Android toolchain. Debug-signed, so
       # they install directly but cannot be uploaded to Play.
       - name: Upload APKs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android-debug-apks
           path: mobile/android/app/build/outputs/apk/*/debug/*.apk
@@ -455,10 +455,10 @@ jobs:
       # which is a confusing way to find out.
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Prints the claims AWS compares the trust policy against, and nothing else.
       #
@@ -475,7 +475,7 @@ jobs:
       # Only the decoded payload is echoed. The token itself is a bearer credential and is never
       # printed; the claims are identifiers, and the job is already restricted to pushes on main.
       - name: Show the OIDC claims AWS will see
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const token = await core.getIDToken('sts.amazonaws.com');
@@ -494,7 +494,7 @@ jobs:
       # The role ARN is written here rather than read from a variable for the same reason. The
       # account ID is already committed in deploy/aws/*.json and is not a secret.
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::029096972251:role/prabhix-github-ecr-push
           # ap-south-1 because the EC2 instance is there. Pulling across regions is charged as
@@ -521,7 +521,7 @@ jobs:
           echo "base=${{ steps.ecr.outputs.registry }}/prabhix" >> "$GITHUB_OUTPUT"
 
       - name: Build and push backend
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           file: ./backend/Dockerfile
@@ -533,7 +533,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push web
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./web
           file: ./web/Dockerfile
@@ -555,7 +555,7 @@ jobs:
       # Same context and Dockerfile as web; APP picks the entry point, so the two images differ in
       # which routes they contain. No Razorpay key — the admin app has no checkout.
       - name: Build and push admin
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./web
           file: ./web/Dockerfile
