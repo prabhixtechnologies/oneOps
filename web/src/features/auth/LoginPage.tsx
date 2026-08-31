@@ -22,26 +22,39 @@ const otpSchema = emailSchema.extend({
   code: z.string().min(4, "Enter the verification code"),
 });
 
+/**
+ * With identity configured, signing in is a redirect and nothing else.
+ *
+ * <p>Credentials belong on the hosted page, on identity's origin, because that is the origin whose
+ * session cookie makes signing in here carry over to the admin console and every future Prabhix
+ * site. It is also what keeps a password out of this app entirely: a cross-site scripting hole in a
+ * console that never sees one cannot steal one.
+ *
+ * <p>Two components rather than one with a conditional return, because the forms below own a dozen
+ * hooks and hooks cannot sit after a return. The condition is a build-time constant, so this reads
+ * as what it is — which app this build is — rather than a branch taken per render.
+ */
 export function LoginPage() {
-  const { login, loginWithTokens } = useAuth();
-  const navigate = useNavigate();
+  return isOidcEnabled() ? <HostedLoginRedirect /> : <LegacyLoginForms />;
+}
 
-  // With identity configured, this page is a redirect and nothing else: credentials belong on the
-  // hosted login page, on identity's origin, because that is the origin whose session cookie makes
-  // signing in here carry over to the admin console and every future Prabhix site. The forms below
-  // remain for deployments that have not cut over yet, and stop being reachable once one has.
+function HostedLoginRedirect() {
   useEffect(() => {
-    if (isOidcEnabled()) void beginLogin(window.location.pathname === "/login" ? "/" : undefined);
+    void beginLogin(window.location.pathname === "/login" ? "/" : undefined);
   }, []);
 
-  if (isOidcEnabled()) {
-    return (
-      <div className="space-y-4 text-center">
-        <Skeleton className="mx-auto h-8 w-48" />
-        <p className="text-sm text-text-muted">Taking you to sign in…</p>
-      </div>
-    );
-  }
+  return (
+    <div className="space-y-4 text-center">
+      <Skeleton className="mx-auto h-8 w-48" />
+      <p className="text-sm text-text-muted">Taking you to sign in…</p>
+    </div>
+  );
+}
+
+/** Kept for deployments that have not cut over to identity, and unreachable once one has. */
+function LegacyLoginForms() {
+  const { login, loginWithTokens } = useAuth();
+  const navigate = useNavigate();
 
   const passwordForm = useForm<z.infer<typeof passwordSchema>>({
     resolver: zodResolver(passwordSchema),
