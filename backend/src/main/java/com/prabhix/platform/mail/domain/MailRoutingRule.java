@@ -17,7 +17,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_routing_rules")
+@Table(schema = "mail", name = "mail_routing_rules")
 public class MailRoutingRule extends TenantScopedEntity {
 
     @Column(name = "mailbox_id")

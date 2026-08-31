@@ -26,7 +26,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_thread_flags")
+@Table(schema = "mail", name = "mail_thread_flags")
 public class MailThreadFlag {
 
     @EmbeddedId

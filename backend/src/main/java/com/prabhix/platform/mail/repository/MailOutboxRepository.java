@@ -23,7 +23,7 @@ public interface MailOutboxRepository extends JpaRepository<MailOutbox, UUID> {
     long countByStatusIn(Collection<MailEnums.OutboxStatus> statuses);
 
     @Query(value = """
-            SELECT * FROM mail_outbox
+            SELECT * FROM mail.mail_outbox
             WHERE status = 'PENDING' AND scheduled_at <= :now
             ORDER BY priority, scheduled_at, id
             FOR UPDATE SKIP LOCKED
@@ -32,7 +32,7 @@ public interface MailOutboxRepository extends JpaRepository<MailOutbox, UUID> {
     List<MailOutbox> claimPending(Instant now, int limit);
 
     @Query(value = """
-            SELECT * FROM mail_outbox
+            SELECT * FROM mail.mail_outbox
             WHERE status = 'FAILED' AND next_attempt_at <= :now
             ORDER BY priority, next_attempt_at, id
             FOR UPDATE SKIP LOCKED
@@ -42,14 +42,14 @@ public interface MailOutboxRepository extends JpaRepository<MailOutbox, UUID> {
 
     @Modifying
     @Query(value = """
-            UPDATE mail_outbox SET status = 'PENDING', claimed_at = NULL, claimed_by = NULL
+            UPDATE mail.mail_outbox SET status = 'PENDING', claimed_at = NULL, claimed_by = NULL
             WHERE status IN ('CLAIMED', 'SENDING')
               AND claimed_at < :staleBefore
             """, nativeQuery = true)
     int releaseStuck(Instant staleBefore);
 
     @Query(value = """
-            INSERT INTO mail_outbox (id, version, organization_id, template_key, locale,
+            INSERT INTO mail.mail_outbox (id, version, organization_id, template_key, locale,
                 template_variables, from_address, from_name, reply_to, to_addresses,
                 dedupe_key, priority, status, scheduled_at, max_attempts, created_at, updated_at)
             VALUES (gen_random_uuid(), 0, :orgId, :templateKey, :locale, CAST(:vars AS jsonb),
@@ -64,7 +64,7 @@ public interface MailOutboxRepository extends JpaRepository<MailOutbox, UUID> {
 
     @Modifying
     @Query(value = """
-            INSERT INTO mail_outbox (id, version, organization_id, mailbox_id, thread_id, message_id,
+            INSERT INTO mail.mail_outbox (id, version, organization_id, mailbox_id, thread_id, message_id,
                 from_address, from_name, reply_to, to_addresses, cc_addresses, bcc_addresses,
                 subject, body_html, body_text, headers, attachment_ids, dedupe_key, priority,
                 status, scheduled_at, max_attempts, created_at, updated_at)

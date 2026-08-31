@@ -17,7 +17,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_mailboxes")
+@Table(schema = "mail", name = "mail_mailboxes")
 public class Mailbox extends TenantScopedEntity {
 
     @Column(name = "mail_domain_id")

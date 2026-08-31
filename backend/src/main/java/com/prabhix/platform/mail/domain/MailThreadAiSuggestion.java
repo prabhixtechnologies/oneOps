@@ -15,7 +15,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_thread_ai_suggestions")
+@Table(schema = "mail", name = "mail_thread_ai_suggestions")
 public class MailThreadAiSuggestion extends TenantScopedEntity {
 
     @Column(name = "thread_id", nullable = false, unique = true)

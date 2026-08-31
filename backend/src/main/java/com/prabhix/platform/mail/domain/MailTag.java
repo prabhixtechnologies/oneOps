@@ -12,7 +12,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_tags")
+@Table(schema = "mail", name = "mail_tags")
 public class MailTag extends TenantScopedEntity {
 
     @Column(name = "slug", nullable = false, length = 60)

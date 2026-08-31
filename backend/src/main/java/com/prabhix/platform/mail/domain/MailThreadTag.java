@@ -18,7 +18,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_thread_tags")
+@Table(schema = "mail", name = "mail_thread_tags")
 public class MailThreadTag {
 
     @EmbeddedId

@@ -22,7 +22,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_folders")
+@Table(schema = "mail", name = "mail_folders")
 public class MailFolder extends TenantScopedEntity {
 
     @Column(name = "mailbox_id", nullable = false)

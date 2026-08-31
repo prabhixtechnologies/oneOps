@@ -16,7 +16,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_domains")
+@Table(schema = "mail", name = "mail_domains")
 public class MailDomain extends TenantScopedEntity {
 
     @Column(name = "domain", nullable = false, columnDefinition = "citext")

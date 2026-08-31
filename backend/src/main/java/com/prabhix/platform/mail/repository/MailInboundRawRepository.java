@@ -10,7 +10,7 @@ import java.util.UUID;
 public interface MailInboundRawRepository extends JpaRepository<MailInboundRaw, UUID> {
 
     @Query(value = """
-            SELECT * FROM mail_inbound_raw
+            SELECT * FROM mail.mail_inbound_raw
             WHERE status = 'PENDING'
             ORDER BY received_at
             FOR UPDATE SKIP LOCKED

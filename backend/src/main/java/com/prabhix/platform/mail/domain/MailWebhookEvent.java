@@ -18,7 +18,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_webhook_events")
+@Table(schema = "mail", name = "mail_webhook_events")
 public class MailWebhookEvent extends AuditableEntity {
 
     @Enumerated(EnumType.STRING)

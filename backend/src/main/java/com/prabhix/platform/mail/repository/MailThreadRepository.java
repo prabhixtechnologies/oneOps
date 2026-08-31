@@ -19,7 +19,7 @@ public interface MailThreadRepository extends JpaRepository<MailThread, UUID> {
     Optional<MailThread> findByIdAndOrganizationIdAndDeletedAtIsNull(UUID id, UUID organizationId);
 
     @Query(value = """
-            SELECT * FROM mail_threads t
+            SELECT * FROM mail.mail_threads t
             WHERE t.mailbox_id = :mailboxId
               AND t.normalized_subject = :normalizedSubject
               AND t.deleted_at IS NULL
@@ -31,7 +31,7 @@ public interface MailThreadRepository extends JpaRepository<MailThread, UUID> {
     List<MailThread> findSubjectFallbackCandidates(UUID mailboxId, String normalizedSubject, Instant since);
 
     @Query(value = """
-            SELECT t.* FROM mail_threads t
+            SELECT t.* FROM mail.mail_threads t
             WHERE t.organization_id = :orgId AND t.deleted_at IS NULL
               AND (:mailboxId IS NULL OR t.mailbox_id = :mailboxId)
               AND (:status IS NULL OR t.status = :status)
@@ -39,7 +39,7 @@ public interface MailThreadRepository extends JpaRepository<MailThread, UUID> {
               AND (:assigneeUserId IS NULL OR t.assignee_user_id = :assigneeUserId)
               AND (:assigneeTeamId IS NULL OR t.assignee_team_id = :assigneeTeamId)
               AND (:tagId IS NULL OR EXISTS (
-                  SELECT 1 FROM mail_thread_tags tt
+                  SELECT 1 FROM mail.mail_thread_tags tt
                   WHERE tt.thread_id = t.id AND tt.tag_id = :tagId))
               AND (:unreadOnly = false OR t.unread_count > 0)
               AND (:hasAttachment = false OR t.has_attachments = true)
@@ -55,11 +55,11 @@ public interface MailThreadRepository extends JpaRepository<MailThread, UUID> {
                                     UUID[] mailboxIds, Instant cursorAt, UUID cursorId, int limit);
 
     @Query(value = """
-            SELECT t.* FROM mail_threads t
+            SELECT t.* FROM mail.mail_threads t
             WHERE t.organization_id = :orgId AND t.deleted_at IS NULL
               AND (:readAll = true OR t.mailbox_id = ANY(:mailboxIds))
               AND (:tagId IS NULL OR EXISTS (
-                  SELECT 1 FROM mail_thread_tags tt
+                  SELECT 1 FROM mail.mail_thread_tags tt
                   WHERE tt.thread_id = t.id AND tt.tag_id = :tagId))
               AND to_tsvector('simple', coalesce(t.subject, '') || ' ' || coalesce(t.snippet, ''))
                   @@ plainto_tsquery('simple', :query)
@@ -79,8 +79,8 @@ public interface MailThreadRepository extends JpaRepository<MailThread, UUID> {
      * mailbox, so the offsets stay small enough that the difference does not matter.
      */
     @Query(value = """
-            SELECT t.* FROM mail_threads t
-                     JOIN mail_thread_folders tf ON tf.thread_id = t.id
+            SELECT t.* FROM mail.mail_threads t
+                     JOIN mail.mail_thread_folders tf ON tf.thread_id = t.id
             WHERE t.organization_id = :orgId AND t.deleted_at IS NULL
               AND tf.folder_id = :folderId
             ORDER BY t.last_message_at DESC, t.id DESC
@@ -143,7 +143,7 @@ public interface MailThreadRepository extends JpaRepository<MailThread, UUID> {
 
     @Query(value = """
             SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (t.first_response_at - t.created_at)) / 60.0), 0)
-            FROM mail_threads t
+            FROM mail.mail_threads t
             WHERE t.organization_id = :orgId AND t.deleted_at IS NULL
               AND t.first_response_at IS NOT NULL
               AND t.created_at >= :since
@@ -152,7 +152,7 @@ public interface MailThreadRepository extends JpaRepository<MailThread, UUID> {
 
     @Query(value = """
             SELECT CAST(t.created_at AS date) AS day, COUNT(*) AS cnt
-            FROM mail_threads t
+            FROM mail.mail_threads t
             WHERE t.organization_id = :orgId AND t.deleted_at IS NULL
               AND t.created_at >= :since
             GROUP BY CAST(t.created_at AS date)
@@ -163,7 +163,7 @@ public interface MailThreadRepository extends JpaRepository<MailThread, UUID> {
     @Query(value = """
             SELECT CAST(t.first_response_at AS date) AS day,
                    COALESCE(AVG(EXTRACT(EPOCH FROM (t.first_response_at - t.created_at)) / 60.0), 0) AS avg_mins
-            FROM mail_threads t
+            FROM mail.mail_threads t
             WHERE t.organization_id = :orgId AND t.deleted_at IS NULL
               AND t.first_response_at IS NOT NULL AND t.first_response_at >= :since
             GROUP BY CAST(t.first_response_at AS date)

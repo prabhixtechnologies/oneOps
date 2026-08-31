@@ -19,7 +19,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_thread_events")
+@Table(schema = "mail", name = "mail_thread_events")
 public class MailThreadEvent {
 
     @Id

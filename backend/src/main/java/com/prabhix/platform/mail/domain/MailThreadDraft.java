@@ -16,7 +16,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_thread_drafts")
+@Table(schema = "mail", name = "mail_thread_drafts")
 public class MailThreadDraft extends TenantScopedEntity {
 
     /**

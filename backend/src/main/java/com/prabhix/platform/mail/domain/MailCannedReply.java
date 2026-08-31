@@ -15,7 +15,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_canned_replies")
+@Table(schema = "mail", name = "mail_canned_replies")
 public class MailCannedReply extends TenantScopedEntity {
 
     @Column(name = "mailbox_id")

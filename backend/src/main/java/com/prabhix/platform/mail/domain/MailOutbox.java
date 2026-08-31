@@ -17,7 +17,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "mail_outbox")
+@Table(schema = "mail", name = "mail_outbox")
 public class MailOutbox extends AuditableEntity {
 
     @Column(name = "organization_id")

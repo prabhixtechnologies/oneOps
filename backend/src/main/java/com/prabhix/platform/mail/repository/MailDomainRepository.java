@@ -21,7 +21,7 @@ public interface MailDomainRepository extends JpaRepository<MailDomain, UUID> {
     boolean existsByDomainIgnoreCaseAndDeletedAtIsNull(String domain);
 
     @Query(value = """
-            SELECT * FROM mail_domains
+            SELECT * FROM mail.mail_domains
             WHERE status = 'VERIFIED' AND deleted_at IS NULL
               AND (last_checked_at IS NULL OR last_checked_at < :cutoff)
             ORDER BY last_checked_at ASC NULLS FIRST
