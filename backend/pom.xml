@@ -35,7 +35,7 @@
         -->
         <java.version>25</java.version>
         <build.dir>${project.basedir}/target</build.dir>
-        <jjwt.version>0.12.6</jjwt.version>
+        <jjwt.version>0.13.0</jjwt.version>
         <!--
           3.x is the line built against Boot 4; 2.8.x reads
           org.springframework.boot.autoconfigure.web.servlet.WebMvcProperties, which Boot 4 moved, so
@@ -48,10 +48,10 @@
           modules inherit it. Worth knowing that 2.x renamed every module to carry a testcontainers-
           prefix and dropped the self-referential generics.
         -->
-        <jsoup.version>1.18.3</jsoup.version>
-        <ognl.version>3.3.4</ognl.version>
+        <jsoup.version>1.23.2</jsoup.version>
+        <ognl.version>3.4.12</ognl.version>
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
-        <awssdk.version>2.29.52</awssdk.version>
+        <awssdk.version>2.54.6</awssdk.version>
         <logstash.encoder.version>8.0</logstash.encoder.version>
     </properties>
 
