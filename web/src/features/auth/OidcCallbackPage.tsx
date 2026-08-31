@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { completeLogin } from "@/lib/oidc";
+import { completeLogin, rememberIdToken } from "@/lib/oidc";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +29,8 @@ export function OidcCallbackPage() {
     void (async () => {
       try {
         const { tokens, returnTo } = await completeLogin(searchParams);
+        // Before the await, so a slow /auth/me cannot leave a signed-in tab with no way to sign out.
+        rememberIdToken(tokens.idToken);
         await loginWithTokens(tokens.accessToken);
         // replace, so Back does not return to a URL containing a spent authorization code.
         navigate(returnTo, { replace: true });

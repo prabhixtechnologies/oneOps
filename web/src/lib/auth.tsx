@@ -11,6 +11,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiClientError, apiRequest, configureApiClient } from "./api-client";
 import { setViewingOrg, viewingOrgId } from "./impersonation";
+import { beginLogout, isOidcEnabled } from "./oidc";
 import {
   arraySchema,
   authMeSchema,
@@ -141,6 +142,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     sessionGone.current = true;
     clearSession();
+
+    // The identity session cookie lives on identity's origin, so nothing above can reach it. Without
+    // this the person is signed out of this app and still signed in at the provider — so returning to
+    // the console redirects to /authorize, finds the session live, and signs them straight back in
+    // with no password. Sign-out has to end the session where single sign-on established it.
+    //
+    // Last, because it navigates away.
+    if (isOidcEnabled()) beginLogout();
   }, [clearSession]);
 
   // Collapses concurrent exchanges into one request. The cookie does not rotate, so several

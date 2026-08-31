@@ -22,6 +22,18 @@ vi.mock("@/lib/api-client", () => ({
   },
 }));
 
+/** Whether this build has an identity issuer, which is what decides where signing out has to reach. */
+let oidcEnabled = false;
+const beginLogout = vi.fn();
+
+vi.mock("@/lib/oidc", () => ({
+  isOidcEnabled: () => oidcEnabled,
+  beginLogout: () => beginLogout(),
+  rememberIdToken: vi.fn(),
+  beginLogin: vi.fn(),
+  completeLogin: vi.fn(),
+}));
+
 const SESSION_TOKEN_PATH = "/auth/session/token";
 
 /** Paths passed to apiRequest, in order. */
@@ -33,6 +45,9 @@ function countOf(path: string): number {
   return requestedPaths().filter((p) => p === path).length;
 }
 
+/** Set by the last render, so a test can sign out the way the sidebar button does. */
+let signOut: () => Promise<void> = async () => {};
+
 async function renderProvider() {
   const { AuthProvider, useAuth } = await import("@/lib/auth");
 
@@ -42,8 +57,9 @@ async function renderProvider() {
   };
 
   function Probe() {
-    const { isLoading, isAuthenticated } = useAuth();
+    const { isLoading, isAuthenticated, logout } = useAuth();
     snapshot = { isLoading, isAuthenticated };
+    signOut = logout;
     return null;
   }
 
@@ -71,7 +87,9 @@ const AUTH_ME = {
 
 beforeEach(() => {
   apiRequest.mockReset();
+  beginLogout.mockReset();
   clientConfig = null;
+  oidcEnabled = false;
   localStorage.clear();
   vi.resetModules();
 });
@@ -164,5 +182,36 @@ describe("AuthProvider when the session cookie is good", () => {
     ]);
 
     expect(countOf(SESSION_TOKEN_PATH)).toBe(before + 1);
+  });
+
+  /**
+   * Signing out has to end the session where single sign-on established it.
+   *
+   * <p>The identity session cookie is on identity's origin, so nothing this app does can clear it.
+   * When it survives, returning to the console redirects to /authorize, finds the session live, and
+   * signs the person back in without a password — so the sign-out button appears to do nothing, and
+   * on a shared machine it leaves somebody else's account open. The redirect existed and nothing
+   * called it, which is exactly the shape of bug a test asserting "we called it" prevents.
+   */
+  it("ends the session at the provider when identity is configured", async () => {
+    oidcEnabled = true;
+    await renderProvider();
+
+    await signOut();
+
+    expect(requestedPaths()).toContain("/auth/logout");
+    expect(beginLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not reach for a provider that this build has none of", async () => {
+    // Without an issuer there is no hosted page and no /connect/logout to call. Going there anyway
+    // would navigate to a URL built from an empty string.
+    oidcEnabled = false;
+    await renderProvider();
+
+    await signOut();
+
+    expect(requestedPaths()).toContain("/auth/logout");
+    expect(beginLogout).not.toHaveBeenCalled();
   });
 });

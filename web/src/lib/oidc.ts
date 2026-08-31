@@ -24,6 +24,10 @@ const CLIENT_ID = IS_ADMIN_APP ? "prabhix-admin" : "prabhix-console";
 const VERIFIER_KEY = "pbx_pkce_verifier";
 const STATE_KEY = "pbx_oauth_state";
 const RETURN_KEY = "pbx_oauth_return_to";
+// Kept because sign-out needs it: /connect/logout identifies the session to end from the id token,
+// and without one the provider has nothing to act on. It survives a reload, which matters — a person
+// who refreshes the page and then signs out is the ordinary case, not an edge one.
+const ID_TOKEN_KEY = "pbx_id_token";
 
 export function isOidcEnabled(): boolean {
   return ISSUER.length > 0;
@@ -141,19 +145,32 @@ export async function completeLogin(search: URLSearchParams): Promise<{
   };
 }
 
+/** Remembers the id token from a completed sign-in, so sign-out has something to present. */
+export function rememberIdToken(idToken?: string): void {
+  if (idToken) sessionStorage.setItem(ID_TOKEN_KEY, idToken);
+}
+
 /**
  * Ends the session at the provider, not only here.
  *
  * <p>Clearing local state alone would leave the identity session cookie in place, so the next
  * `/authorize` returns a code immediately and the person appears to be signed straight back in —
  * which reads as a broken sign-out button rather than the security hole it is on a shared machine.
+ * This function existed and nothing called it, so that is precisely what signing out did.
+ *
+ * <p>Navigates away, so it has to be the last thing a caller does.
  */
-export function beginLogout(idToken?: string): void {
-  const params = new URLSearchParams({
-    post_logout_redirect_uri: `${window.location.origin}/`,
-    client_id: CLIENT_ID,
-  });
-  if (idToken) params.set("id_token_hint", idToken);
+export function beginLogout(): void {
+  const idToken = sessionStorage.getItem(ID_TOKEN_KEY);
+  sessionStorage.removeItem(ID_TOKEN_KEY);
+
+  const params = new URLSearchParams({ client_id: CLIENT_ID });
+  if (idToken) {
+    params.set("id_token_hint", idToken);
+    // Only sent alongside a hint. The provider validates it against the hint's client, so on its own
+    // it is rejected — and being bounced back here would look like a sign-out that did nothing.
+    params.set("post_logout_redirect_uri", `${window.location.origin}/`);
+  }
   window.location.assign(`${ISSUER}/connect/logout?${params.toString()}`);
 }
 
