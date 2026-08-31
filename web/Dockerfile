@@ -4,7 +4,7 @@
 # nothing to do with the change being built.
 
 # Build stage
-FROM public.ecr.aws/docker/library/node:22-alpine AS build
+FROM public.ecr.aws/docker/library/node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci || npm install
