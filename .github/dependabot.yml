@@ -45,21 +45,6 @@ updates:
         patterns: ["*"]
     labels: [dependencies, web]
 
-  - package-ecosystem: npm
-    directory: /marketing
-    schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
-    groups:
-      marketing-minor-and-patch:
-        applies-to: version-updates
-        update-types: [minor, patch]
-      marketing-security:
-        applies-to: security-updates
-        patterns: ["*"]
-    labels: [dependencies, marketing]
-
   - package-ecosystem: gradle
     directory: /mobile/android
     schedule:
@@ -92,7 +77,6 @@ updates:
     directories:
       - /backend
       - /web
-      - /marketing
     schedule:
       interval: weekly
       day: monday

@@ -15,7 +15,7 @@
 # This file is included per-location as well as at server level: nginx's add_header inheritance is a
 # trap, where a location declaring even one add_header stops inheriting all the server-level ones.
 # Caddy defers to whatever arrives from here (`header ?Content-Security-Policy`), so this is the
-# policy the browser actually enforces — it is not duplicated in deploy/Caddyfile any more.
+# policy the browser actually enforces — it is not duplicated in Infra's Caddyfile any more.
 add_header X-Frame-Options "SAMEORIGIN" always;
 add_header X-Content-Type-Options "nosniff" always;
 add_header Referrer-Policy "strict-origin-when-cross-origin" always;

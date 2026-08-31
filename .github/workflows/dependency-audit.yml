@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [web, marketing]
+        app: [web]
     defaults:
       run:
         working-directory: ${{ matrix.app }}
@@ -54,6 +54,6 @@ jobs:
     steps:
       - name: Note what this job does and does not cover
         run: |
-          echo "npm: audited web and marketing (high+)."
+          echo "npm: audited web (high+)."
           echo "maven/gradle/docker: watched by Dependabot, which requires Dependabot alerts to be"
           echo "enabled under Settings > Code security. If that switch is off, nothing is watching them."
