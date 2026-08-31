@@ -6,6 +6,7 @@ import com.prabhix.platform.auth.dto.AuthDtos.OtpVerifyRequest;
 import com.prabhix.platform.auth.repository.AuthChallengeRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
+import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.user.domain.User;
 import com.prabhix.platform.user.service.UserService;
@@ -35,7 +36,7 @@ class OtpAttemptLimitTest {
     @Mock private AuthChallengeRepository challengeRepository;
     @Mock private UserService userService;
     @Mock private AuthService authService;
-    @Mock private ApplicationEventPublisher events;
+    @Mock private MailClient mail;
 
     private PasswordlessAuthService passwordlessAuthService;
 
@@ -46,7 +47,7 @@ class OtpAttemptLimitTest {
                 new PrabhixProperties.Otp(6, Duration.ofMinutes(10), 3),
                 null, null, null, null);
         passwordlessAuthService = new PasswordlessAuthService(
-                challengeRepository, userService, authService, events, properties);
+                challengeRepository, userService, authService, mail, properties);
     }
 
     @Test

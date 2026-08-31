@@ -13,7 +13,7 @@ import com.prabhix.platform.mail.provisioning.MailboxCredentialsCipher;
 import com.prabhix.platform.mail.repository.MailRoutingRuleRepository;
 import com.prabhix.platform.mail.repository.MailboxMemberRepository;
 import com.prabhix.platform.mail.repository.MailboxRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.org.domain.OrganizationMembership;
 import com.prabhix.platform.org.domain.Team;
 import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
@@ -92,7 +92,7 @@ public class MailboxService {
             mailbox.setSignatureHtml(request.signature().isBlank() ? null : request.signature());
         }
         if (request.businessHours() != null) {
-            mailbox.setBusinessHours(MailJson.toJson(toBusinessHoursMap(request.businessHours())));
+            mailbox.setBusinessHours(Json.toJson(toBusinessHoursMap(request.businessHours())));
             mailbox.setTimezone(request.businessHours().timezone());
         }
         // Zero clears the target rather than promising a reply in no time at all. Null still means
@@ -260,8 +260,8 @@ public class MailboxService {
         if (request.continueAfterMatch() != null) {
             rule.setContinueAfterMatch(request.continueAfterMatch());
         }
-        rule.setConditions(MailJson.toJson(request.conditions()));
-        rule.setActions(MailJson.toJson(request.actions()));
+        rule.setConditions(Json.toJson(request.conditions()));
+        rule.setActions(Json.toJson(request.actions()));
     }
 
     private void applyCredentialUpdates(Mailbox mailbox, String imapPassword, String smtpPassword) {
@@ -355,15 +355,15 @@ public class MailboxService {
                 rule.getName(),
                 rule.getDescription(),
                 rule.getPriority(),
-                MailJson.parseObjectList(rule.getConditions()),
+                Json.parseObjectList(rule.getConditions()),
                 rule.getMatchMode().name(),
-                MailJson.parseObjectList(rule.getActions()),
+                Json.parseObjectList(rule.getActions()),
                 rule.isContinueAfterMatch(),
                 rule.isEnabled());
     }
 
     private MailboxDtos.BusinessHoursResponse parseBusinessHours(Mailbox mailbox) {
-        JsonNode hours = MailJson.mapper().valueToTree(MailJson.parseMap(mailbox.getBusinessHours()));
+        JsonNode hours = Json.mapper().valueToTree(Json.parseMap(mailbox.getBusinessHours()));
         if (hours.isEmpty()) {
             return null;
         }

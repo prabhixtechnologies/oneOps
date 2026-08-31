@@ -1,15 +1,15 @@
 package com.prabhix.platform.mail.helpdesk;
 
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.mail.domain.MailThread;
 import com.prabhix.platform.mail.domain.MailThreadEvent;
 import com.prabhix.platform.mail.domain.MailEnums;
+import com.prabhix.platform.mail.outbound.MailDispatcher;
 import com.prabhix.platform.mail.repository.MailThreadEventRepository;
 import com.prabhix.platform.mail.repository.MailThreadRepository;
 import com.prabhix.platform.mail.repository.MailboxRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -29,7 +29,10 @@ public class SlaSweepScheduler {
     private final MailThreadRepository threadRepository;
     private final MailThreadEventRepository eventRepository;
     private final MailboxRepository mailboxRepository;
-    private final ApplicationEventPublisher events;
+    // Straight to the dispatcher, not through MailClient. That seam exists so modules outside mail
+    // can ask for mail without knowing about it; this is mail, and routing its own alert out to the
+    // platform's request table and back again would buy nothing but a second hop and a poll delay.
+    private final MailDispatcher dispatcher;
     private final PrabhixProperties properties;
 
     @Scheduled(fixedDelay = 60_000)
@@ -64,9 +67,10 @@ public class SlaSweepScheduler {
             vars.put("assigneeName", "Unassigned");
             vars.put("waitingFor", "overdue");
             vars.put("threadUrl", properties.urls().console() + "/inbox/threads/" + thread.getId());
-            events.publishEvent(new MailRequested(
+            dispatcher.enqueue(
                     thread.getOrganizationId(), "mail.sla-breach", "en",
-                    List.of(mb.getAddress()), vars, "sla-" + thread.getId(), 50));
+                    List.of(mb.getAddress()), vars, "sla-" + thread.getId(),
+                    MailRequest.PRIORITY_NORMAL);
         });
     }
 }

@@ -3,7 +3,8 @@ package com.prabhix.platform.chat.service;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.event.AuditRequested;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.common.spi.EntitlementGate;
 import com.prabhix.platform.common.web.Cursor;
 import com.prabhix.platform.common.web.CursorPage;
@@ -56,6 +57,7 @@ public class ChatConversationService {
     private final EntitlementGate entitlements;
     private final PrabhixProperties properties;
     private final ApplicationEventPublisher events;
+    private final MailClient mail;
 
     public Organization resolveOrg(String orgSlug) {
         return organizationRepository.findBySlug(orgSlug)
@@ -249,7 +251,7 @@ public class ChatConversationService {
                     .append(message.getBody())
                     .append("</p>");
         }
-        events.publishEvent(MailRequested.forOrganization(
+        mail.send(MailRequest.forOrganization(
                 conversation.getOrganizationId(),
                 conversation.getVisitorEmail(),
                 "chat.transcript",

@@ -8,7 +8,7 @@ import com.prabhix.platform.mail.event.MailStreamEvent;
 import com.prabhix.platform.mail.helpdesk.SlaService;
 import com.prabhix.platform.mail.outbound.SuppressionService;
 import com.prabhix.platform.mail.repository.*;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -166,13 +166,13 @@ public class MailIngestionService {
         message.setReferencesHeader(parsed.getReferencesHeader());
         message.setFromAddress(parsed.getFrom() != null ? parsed.getFrom() : "unknown@invalid");
         message.setFromName(parsed.getFromName());
-        message.setToAddresses(MailJson.toJson(parsed.getToAddresses()));
-        message.setCcAddresses(MailJson.toJson(parsed.getCcAddresses()));
+        message.setToAddresses(Json.toJson(parsed.getToAddresses()));
+        message.setCcAddresses(Json.toJson(parsed.getCcAddresses()));
         message.setSubject(parsed.getSubject());
         message.setBodyText(parsed.getBodyText());
         message.setBodyHtml(parsed.getBodyHtml());
         message.setSnippet(parsed.getSnippet());
-        message.setHeaders(MailJson.toJson(parsed.getHeaders()));
+        message.setHeaders(Json.toJson(parsed.getHeaders()));
         message.setSizeBytes(parsed.getSizeBytes());
         message.setAttachmentCount(parsed.getAttachmentCount());
         message.setDeliveryStatus(MailEnums.DeliveryStatus.RECEIVED);
@@ -210,13 +210,13 @@ public class MailIngestionService {
         thread.setLastMessageAt(message.getOccurredAt());
         thread.setLastMessageDirection(MailEnums.MessageDirection.INBOUND);
 
-        Set<String> participants = new HashSet<>(MailJson.parseStringList(thread.getParticipantEmails()));
+        Set<String> participants = new HashSet<>(Json.parseStringList(thread.getParticipantEmails()));
         if (parsed.getFrom() != null) {
             participants.add(parsed.getFrom().toLowerCase());
         }
         parsed.getToAddresses().forEach(a -> participants.add(a.toLowerCase()));
         parsed.getCcAddresses().forEach(a -> participants.add(a.toLowerCase()));
-        thread.setParticipantEmails(MailJson.toJson(participants));
+        thread.setParticipantEmails(Json.toJson(participants));
 
         if (ctx.getSlaPolicyMinutes() != null) {
             thread.setSlaPolicyFirstMins(ctx.getSlaPolicyMinutes());

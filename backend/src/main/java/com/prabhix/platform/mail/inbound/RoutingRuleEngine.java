@@ -5,7 +5,7 @@ import com.prabhix.platform.mail.domain.MailThread;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.repository.MailRoutingRuleRepository;
 import com.prabhix.platform.mail.repository.MailTagRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -49,7 +49,7 @@ public class RoutingRuleEngine {
     }
 
     boolean matches(MailRoutingRule rule, MimeParser.ParsedMime parsed, RoutingContext context) {
-        List<Map<String, Object>> conditions = MailJson.parseObjectList(rule.getConditions());
+        List<Map<String, Object>> conditions = Json.parseObjectList(rule.getConditions());
         if (conditions.isEmpty()) {
             return false;
         }
@@ -106,7 +106,7 @@ public class RoutingRuleEngine {
     }
 
     private void applyActions(MailRoutingRule rule, MailThread thread, RoutingContext context) {
-        List<Map<String, Object>> actions = MailJson.parseObjectList(rule.getActions());
+        List<Map<String, Object>> actions = Json.parseObjectList(rule.getActions());
         for (Map<String, Object> action : actions) {
             String type = String.valueOf(action.get("type"));
             Object value = action.get("value");

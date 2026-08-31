@@ -4,7 +4,7 @@ import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.domain.MailThreadDraft;
 import com.prabhix.platform.mail.repository.MailThreadDraftRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -82,12 +82,12 @@ public class MailDraftService {
 
         draft.setMailboxId(mailboxId);
         draft.setReplyMode(request.replyMode() != null ? request.replyMode() : MailEnums.ReplyMode.REPLY);
-        draft.setToAddresses(MailJson.toJson(clean(request.to())));
-        draft.setCcAddresses(MailJson.toJson(clean(request.cc())));
-        draft.setBccAddresses(MailJson.toJson(clean(request.bcc())));
+        draft.setToAddresses(Json.toJson(clean(request.to())));
+        draft.setCcAddresses(Json.toJson(clean(request.cc())));
+        draft.setBccAddresses(Json.toJson(clean(request.bcc())));
         draft.setSubject(request.subject());
         draft.setBodyHtml(request.bodyHtml());
-        draft.setAttachmentIds(MailJson.toJson(
+        draft.setAttachmentIds(Json.toJson(
                 request.attachmentIds() != null
                         ? request.attachmentIds().stream().map(UUID::toString).toList()
                         : List.of()));
@@ -130,11 +130,11 @@ public class MailDraftService {
     private MailboxDtos.DraftView toView(MailThreadDraft d) {
         return new MailboxDtos.DraftView(
                 d.getId(), d.getThreadId(), d.getMailboxId(), d.getReplyMode(),
-                MailJson.parseStringList(d.getToAddresses()),
-                MailJson.parseStringList(d.getCcAddresses()),
-                MailJson.parseStringList(d.getBccAddresses()),
+                Json.parseStringList(d.getToAddresses()),
+                Json.parseStringList(d.getCcAddresses()),
+                Json.parseStringList(d.getBccAddresses()),
                 d.getSubject(), d.getBodyHtml(),
-                MailJson.parseStringList(d.getAttachmentIds()).stream().map(UUID::fromString).toList(),
+                Json.parseStringList(d.getAttachmentIds()).stream().map(UUID::fromString).toList(),
                 d.getUpdatedAt());
     }
 }

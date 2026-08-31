@@ -2,7 +2,8 @@ package com.prabhix.platform.site.service;
 
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.common.util.Ids;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.files.domain.StoredFile;
@@ -56,6 +57,7 @@ public class SiteService {
     private final SiteJobApplicationRepository applicationRepository;
     private final FileStorageService fileStorageService;
     private final ApplicationEventPublisher events;
+    private final MailClient mail;
     private final PrabhixProperties properties;
 
     @Value("${prabhix.site.internal-organization-id:}")
@@ -93,7 +95,7 @@ public class SiteService {
         lead.setUserAgent(userAgent);
         lead = leadRepository.save(lead);
 
-        events.publishEvent(MailRequested.to(
+        mail.send(MailRequest.to(
                 lead.getEmail(),
                 "site.lead-acknowledgement",
                 Map.of("name", lead.getName(), "message", lead.getMessage())));
@@ -127,7 +129,7 @@ public class SiteService {
         // use the API base URL. Pointing it at the marketing host produces a dead link.
         String confirmUrl = properties.urls().api()
                 + "/api/v1/site/subscribers/confirm?token=" + confirmToken;
-        events.publishEvent(MailRequested.to(
+        mail.send(MailRequest.to(
                 email,
                 "site.newsletter-confirm",
                 Map.of("confirmUrl", confirmUrl)));

@@ -6,7 +6,8 @@ import com.prabhix.platform.auth.dto.AuthDtos.EmailVerifyConfirmRequest;
 import com.prabhix.platform.auth.repository.AuthChallengeRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.user.domain.User;
 import com.prabhix.platform.user.service.UserService;
@@ -16,7 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -35,7 +35,7 @@ class EmailVerificationServiceTest {
 
     @Mock private AuthChallengeRepository challengeRepository;
     @Mock private UserService userService;
-    @Mock private ApplicationEventPublisher events;
+    @Mock private MailClient mail;
 
     private EmailVerificationService service;
 
@@ -47,7 +47,7 @@ class EmailVerificationServiceTest {
                 null, null,
                 new PrabhixProperties.Otp(6, Duration.ofMinutes(10), 3),
                 null, null, null, null);
-        service = new EmailVerificationService(challengeRepository, userService, events, properties);
+        service = new EmailVerificationService(challengeRepository, userService, mail, properties);
     }
 
     @Test
@@ -58,7 +58,7 @@ class EmailVerificationServiceTest {
         service.requestVerification(user.getId(), "127.0.0.1");
 
         verify(challengeRepository).save(any(AuthChallenge.class));
-        verify(events).publishEvent(any(MailRequested.class));
+        verify(mail).send(any(MailRequest.class));
     }
 
     @Test

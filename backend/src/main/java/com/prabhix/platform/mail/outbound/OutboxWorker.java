@@ -8,7 +8,7 @@ import com.prabhix.platform.mail.repository.MailDeliveryEventRepository;
 import com.prabhix.platform.mail.repository.MailOutboxRepository;
 import com.prabhix.platform.mail.outbound.transport.MailTransport;
 import com.prabhix.platform.mail.outbound.transport.MailTransportRouter;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.common.util.OutboxBackoff;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +63,7 @@ public class OutboxWorker {
     }
 
     void processRow(MailOutbox row) {
-        List<String> recipients = MailJson.parseStringList(row.getToAddresses());
+        List<String> recipients = Json.parseStringList(row.getToAddresses());
         for (String address : recipients) {
             if (suppressionService.isSuppressed(address, row.getOrganizationId())) {
                 row.setStatus(MailEnums.OutboxStatus.SUPPRESSED);
@@ -80,7 +80,7 @@ public class OutboxWorker {
             if (row.getTemplateKey() != null) {
                 var rendered = templateRenderer.render(
                         row.getTemplateKey(), row.getLocale(), row.getOrganizationId(),
-                        MailJson.parseMap(row.getTemplateVariables()));
+                        Json.parseMap(row.getTemplateVariables()));
                 row.setSubject(rendered.subject());
                 row.setBodyHtml(trackingInjector.inject(
                         rendered.bodyHtml(), row.getId(), rendered.trackingEnabled()));
@@ -130,13 +130,13 @@ public class OutboxWorker {
         mail.setFromAddress(row.getFromAddress());
         mail.setFromName(row.getFromName());
         mail.setReplyTo(row.getReplyTo());
-        mail.setToAddresses(MailJson.parseStringList(row.getToAddresses()));
-        mail.setCcAddresses(MailJson.parseStringList(row.getCcAddresses()));
-        mail.setBccAddresses(MailJson.parseStringList(row.getBccAddresses()));
+        mail.setToAddresses(Json.parseStringList(row.getToAddresses()));
+        mail.setCcAddresses(Json.parseStringList(row.getCcAddresses()));
+        mail.setBccAddresses(Json.parseStringList(row.getBccAddresses()));
         mail.setSubject(row.getSubject());
         mail.setBodyHtml(row.getBodyHtml());
         mail.setBodyText(row.getBodyText());
-        mail.setHeaders(MailJson.parseMap(row.getHeaders()).entrySet().stream()
+        mail.setHeaders(Json.parseMap(row.getHeaders()).entrySet().stream()
                 .collect(java.util.stream.Collectors.toMap(
                         Map.Entry::getKey, e -> String.valueOf(e.getValue()))));
         if (row.getOrganizationId() != null) {
@@ -146,7 +146,7 @@ public class OutboxWorker {
     }
 
     private void recordDelivery(MailOutbox row, MailEnums.DeliveryEventType type, String detail) {
-        for (String address : MailJson.parseStringList(row.getToAddresses())) {
+        for (String address : Json.parseStringList(row.getToAddresses())) {
             MailDeliveryEvent event = new MailDeliveryEvent();
             event.setOrganizationId(row.getOrganizationId());
             event.setOutboxId(row.getId());

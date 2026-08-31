@@ -7,13 +7,13 @@ import com.prabhix.platform.auth.dto.AuthDtos.EmailVerifyConfirmRequest;
 import com.prabhix.platform.auth.repository.AuthChallengeRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.common.util.Ids;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.user.domain.User;
 import com.prabhix.platform.user.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +30,7 @@ public class EmailVerificationService {
 
     private final AuthChallengeRepository challengeRepository;
     private final UserService userService;
-    private final ApplicationEventPublisher events;
+    private final MailClient mail;
     private final PrabhixProperties properties;
 
     @Transactional
@@ -56,7 +56,7 @@ public class EmailVerificationService {
         // existed, so every verification email sent so far has 404'd. Same defect the magic-link and
         // password-reset links had. Spelled the way web/src/routes-shell.tsx spells it.
         String link = properties.urls().console() + "/verify-email?token=" + rawToken;
-        events.publishEvent(MailRequested.interactive(
+        mail.send(MailRequest.interactive(
                 user.getEmail(),
                 "auth.email-verify",
                 Map.of(

@@ -7,7 +7,7 @@ import com.prabhix.platform.mail.dto.ThreadDtos;
 import com.prabhix.platform.mail.inbound.MimeParser;
 import com.prabhix.platform.mail.repository.MailThreadEventRepository;
 import com.prabhix.platform.mail.repository.MailThreadNoteRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +36,7 @@ public class NoteService {
         note.setAuthorUserId(authorUserId);
         note.setBodyHtml(request.bodyHtml());
         note.setBodyText(MimeParser.htmlToText(request.bodyHtml()));
-        note.setMentionedUsers(MailJson.toJson(extractMentions(request.bodyHtml())));
+        note.setMentionedUsers(Json.toJson(extractMentions(request.bodyHtml())));
         note = noteRepository.save(note);
 
         // NOTE_ADDED existed in the event enum and was never emitted, so the activity timeline showed

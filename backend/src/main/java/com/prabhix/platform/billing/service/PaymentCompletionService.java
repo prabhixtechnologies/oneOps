@@ -14,10 +14,10 @@ import com.prabhix.platform.billing.repository.BillingPlanRepository;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.config.PrabhixProperties;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,7 +50,7 @@ public class PaymentCompletionService {
     private final InvoiceService invoiceService;
     private final EntitlementService entitlementService;
     private final BillingOrgReader orgReader;
-    private final ApplicationEventPublisher events;
+    private final MailClient mail;
     private final PrabhixProperties properties;
 
     public record PaymentCaptureDetails(
@@ -274,7 +274,7 @@ public class PaymentCompletionService {
             if (email == null || email.isBlank()) {
                 return;
             }
-            events.publishEvent(MailRequested.forOrganization(
+            mail.send(MailRequest.forOrganization(
                     order.getOrganizationId(),
                     email,
                     "billing.payment-succeeded",

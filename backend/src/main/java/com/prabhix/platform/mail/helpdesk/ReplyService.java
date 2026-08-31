@@ -14,7 +14,7 @@ import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.dto.ThreadDtos;
 import com.prabhix.platform.mail.outbound.MailDispatcher;
 import com.prabhix.platform.mail.repository.*;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.mail.util.MailSubjectUtil;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -92,8 +92,8 @@ public class ReplyService {
             outbound.setReferencesHeader(buildReferences(source));
         }
         outbound.setFromAddress(mailbox.getAddress());
-        outbound.setToAddresses(MailJson.toJson(recipients.to()));
-        outbound.setCcAddresses(MailJson.toJson(recipients.cc()));
+        outbound.setToAddresses(Json.toJson(recipients.to()));
+        outbound.setCcAddresses(Json.toJson(recipients.cc()));
         outbound.setSubject(subject);
         outbound.setBodyHtml(bodyHtml);
         outbound.setBodyText(com.prabhix.platform.mail.inbound.MimeParser.htmlToText(bodyHtml));
@@ -126,13 +126,13 @@ public class ReplyService {
         outbox.setFromAddress(mailbox.getAddress());
         outbox.setFromName(mailbox.getName());
         outbox.setReplyTo(mailbox.getReplyTo() != null ? mailbox.getReplyTo() : mailbox.getAddress());
-        outbox.setToAddresses(MailJson.toJson(recipients.to()));
-        outbox.setCcAddresses(MailJson.toJson(recipients.cc()));
+        outbox.setToAddresses(Json.toJson(recipients.to()));
+        outbox.setCcAddresses(Json.toJson(recipients.cc()));
         outbox.setSubject(subject);
         outbox.setBodyHtml(bodyHtml);
         outbox.setBodyText(outbound.getBodyText());
-        outbox.setHeaders(MailJson.toJson(buildHeaders(outbound, mode)));
-        outbox.setAttachmentIds(MailJson.toJson(attachmentIdStrings));
+        outbox.setHeaders(Json.toJson(buildHeaders(outbound, mode)));
+        outbox.setAttachmentIds(Json.toJson(attachmentIdStrings));
         outbox.setPriority(10);
         mailDispatcher.enqueueDirect(outbox);
 
@@ -168,12 +168,12 @@ public class ReplyService {
                         ? request.to() : List.of(to);
                 Set<String> ours = ourAddresses(mailbox, orgId);
                 LinkedHashSet<String> cc = new LinkedHashSet<>();
-                MailJson.parseStringList(source.getToAddresses()).stream()
+                Json.parseStringList(source.getToAddresses()).stream()
                         .map(a -> a.toLowerCase(Locale.ROOT))
                         .filter(a -> !ours.contains(a))
                         .filter(a -> !a.equalsIgnoreCase(to))
                         .forEach(cc::add);
-                MailJson.parseStringList(source.getCcAddresses()).stream()
+                Json.parseStringList(source.getCcAddresses()).stream()
                         .map(a -> a.toLowerCase(Locale.ROOT))
                         .filter(a -> !ours.contains(a))
                         .filter(a -> !a.equalsIgnoreCase(to))
@@ -253,7 +253,7 @@ public class ReplyService {
         String from = source.getFromName() != null && !source.getFromName().isBlank()
                 ? source.getFromName() + " &lt;" + source.getFromAddress() + "&gt;"
                 : source.getFromAddress();
-        String to = String.join(", ", MailJson.parseStringList(source.getToAddresses()));
+        String to = String.join(", ", Json.parseStringList(source.getToAddresses()));
         String date = FORWARD_DATE.format(source.getOccurredAt());
         String subject = source.getSubject() != null ? source.getSubject() : "";
         String original = source.getBodyHtml() != null && !source.getBodyHtml().isBlank()

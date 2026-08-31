@@ -3,7 +3,7 @@ package com.prabhix.platform.mail.outbound;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.mail.domain.MailOutbox;
 import com.prabhix.platform.mail.repository.MailOutboxRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.support.TestProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +58,7 @@ class MailDispatcherTest {
         row.setOrganizationId(UUID.randomUUID());
         row.setDedupeKey("reply-key");
         row.setFromAddress("from@example.com");
-        row.setToAddresses(MailJson.toJson(List.of("to@example.com")));
+        row.setToAddresses(Json.toJson(List.of("to@example.com")));
         row.setBodyHtml("<p>x</p>");
 
         UUID id = dispatcher.enqueueDirect(row);

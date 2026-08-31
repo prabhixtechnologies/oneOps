@@ -5,7 +5,8 @@ import com.prabhix.platform.billing.domain.BillingOrder;
 import com.prabhix.platform.billing.domain.BillingSubscription;
 import com.prabhix.platform.billing.repository.BillingPlanRepository;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.config.PrabhixProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
@@ -37,7 +37,7 @@ class DunningJobTest {
     @Mock private BillingPlanRepository planRepository;
     @Mock private BillingOrgReader orgReader;
     @Mock private BillingRenewalService renewalService;
-    @Mock private ApplicationEventPublisher events;
+    @Mock private MailClient mail;
     @Mock private PrabhixProperties properties;
     @Mock private StringRedisTemplate redis;
 
@@ -46,7 +46,7 @@ class DunningJobTest {
     @BeforeEach
     void setUp() {
         job = new DunningJob(
-                subscriptionRepository, planRepository, orgReader, renewalService, events, properties, redis);
+                subscriptionRepository, planRepository, orgReader, renewalService, mail, properties, redis);
     }
 
     @Test
@@ -67,7 +67,7 @@ class DunningJobTest {
 
         job.processDueRetries();
 
-        verify(events, never()).publishEvent(any(MailRequested.class));
+        verify(mail, never()).send(any(MailRequest.class));
         verify(subscriptionRepository, never()).save(any());
     }
 
@@ -97,7 +97,7 @@ class DunningJobTest {
         ArgumentCaptor<BillingSubscription> saved = ArgumentCaptor.forClass(BillingSubscription.class);
         verify(subscriptionRepository).save(saved.capture());
         assertEquals(1, saved.getValue().getFailedPaymentCount());
-        verify(events).publishEvent(any(MailRequested.class));
+        verify(mail).send(any(MailRequest.class));
     }
 
     private static BillingSubscription pastDueSubscription(UUID id) {

@@ -6,7 +6,7 @@ import com.prabhix.platform.mail.domain.MailTemplate;
 import com.prabhix.platform.mail.dto.TemplateDtos;
 import com.prabhix.platform.mail.outbound.TemplateRenderer;
 import com.prabhix.platform.mail.repository.MailTemplateRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,7 +56,7 @@ public class TemplateManagementService {
      */
     private void assertStillRenders(MailTemplate template) {
         Map<String, Object> sample = new LinkedHashMap<>();
-        for (Map<String, Object> declared : MailJson.parseObjectList(template.getVariables())) {
+        for (Map<String, Object> declared : Json.parseObjectList(template.getVariables())) {
             Object name = declared.get("name");
             if (name != null) {
                 Object example = declared.get("example");
@@ -113,7 +113,7 @@ public class TemplateManagementService {
     }
 
     private TemplateDtos.TemplateDetailResponse toDetail(MailTemplate t) {
-        List<TemplateDtos.TemplateVariable> variables = MailJson.parseObjectList(t.getVariables())
+        List<TemplateDtos.TemplateVariable> variables = Json.parseObjectList(t.getVariables())
                 .stream()
                 .map(v -> new TemplateDtos.TemplateVariable(
                         String.valueOf(v.get("name")),

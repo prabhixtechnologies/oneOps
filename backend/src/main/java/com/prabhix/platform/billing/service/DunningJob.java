@@ -5,11 +5,11 @@ import com.prabhix.platform.billing.domain.BillingPlan;
 import com.prabhix.platform.billing.domain.BillingSubscription;
 import com.prabhix.platform.billing.repository.BillingPlanRepository;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.config.PrabhixProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -34,7 +34,7 @@ public class DunningJob {
     private final BillingPlanRepository planRepository;
     private final BillingOrgReader orgReader;
     private final BillingRenewalService renewalService;
-    private final ApplicationEventPublisher events;
+    private final MailClient mail;
     private final PrabhixProperties properties;
     private final StringRedisTemplate redis;
 
@@ -109,7 +109,7 @@ public class DunningJob {
             if (org.billingEmail() == null) {
                 return;
             }
-            events.publishEvent(MailRequested.forOrganization(
+            mail.send(MailRequest.forOrganization(
                     subscription.getOrganizationId(),
                     org.billingEmail(),
                     "billing.payment-failed",

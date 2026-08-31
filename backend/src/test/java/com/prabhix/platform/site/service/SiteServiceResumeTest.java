@@ -1,5 +1,6 @@
 package com.prabhix.platform.site.service;
 
+import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.files.domain.StoredFile;
 import com.prabhix.platform.files.service.FileStorageService;
@@ -40,6 +41,7 @@ class SiteServiceResumeTest {
     @Mock private SiteJobApplicationRepository applicationRepository;
     @Mock private FileStorageService fileStorageService;
     @Mock private ApplicationEventPublisher events;
+    @Mock private MailClient mail;
 
     private SiteService siteService;
 
@@ -54,6 +56,7 @@ class SiteServiceResumeTest {
                 applicationRepository,
                 fileStorageService,
                 events,
+                mail,
                 new PrabhixProperties(
                         new PrabhixProperties.Urls("http://localhost:3000", "http://localhost:5173",
                                 "http://localhost:8080"),

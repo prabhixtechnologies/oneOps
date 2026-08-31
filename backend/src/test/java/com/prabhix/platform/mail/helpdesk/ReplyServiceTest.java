@@ -10,7 +10,7 @@ import com.prabhix.platform.mail.domain.*;
 import com.prabhix.platform.mail.dto.ThreadDtos;
 import com.prabhix.platform.mail.outbound.MailDispatcher;
 import com.prabhix.platform.mail.repository.*;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Permission;
 import com.prabhix.platform.support.TestProperties;
@@ -66,8 +66,8 @@ class ReplyServiceTest {
         stubThreadAndMailbox();
         MailMessage source = inboundMessage();
         source.setFromAddress("customer@example.com");
-        source.setToAddresses(MailJson.toJson(List.of("support@acme.com", "customer@example.com")));
-        source.setCcAddresses(MailJson.toJson(List.of("agent@acme.com", "other@example.com")));
+        source.setToAddresses(Json.toJson(List.of("support@acme.com", "customer@example.com")));
+        source.setCcAddresses(Json.toJson(List.of("agent@acme.com", "other@example.com")));
         when(messageRepository.findFirstByThreadIdAndDeletedAtIsNullOrderByOccurredAtDesc(threadId))
                 .thenReturn(Optional.of(source));
         when(aliasRepository.findByMailboxIdAndOrganizationId(mailboxId, orgId))
@@ -81,8 +81,8 @@ class ReplyServiceTest {
 
         ArgumentCaptor<MailOutbox> outboxCaptor = ArgumentCaptor.forClass(MailOutbox.class);
         verify(mailDispatcher).enqueueDirect(outboxCaptor.capture());
-        assertEquals(List.of("customer@example.com"), MailJson.parseStringList(outboxCaptor.getValue().getToAddresses()));
-        List<String> cc = MailJson.parseStringList(outboxCaptor.getValue().getCcAddresses());
+        assertEquals(List.of("customer@example.com"), Json.parseStringList(outboxCaptor.getValue().getToAddresses()));
+        List<String> cc = Json.parseStringList(outboxCaptor.getValue().getCcAddresses());
         assertTrue(cc.contains("other@example.com"));
         assertFalse(cc.stream().anyMatch(a -> a.equalsIgnoreCase("support@acme.com")));
         assertFalse(cc.stream().anyMatch(a -> a.equalsIgnoreCase("alias@acme.com")));
@@ -106,7 +106,7 @@ class ReplyServiceTest {
         ArgumentCaptor<MailOutbox> outboxCaptor = ArgumentCaptor.forClass(MailOutbox.class);
         verify(mailDispatcher).enqueueDirect(outboxCaptor.capture());
         assertEquals(List.of("support@example.com"),
-                MailJson.parseStringList(outboxCaptor.getValue().getToAddresses()));
+                Json.parseStringList(outboxCaptor.getValue().getToAddresses()));
     }
 
     @Test
@@ -131,7 +131,7 @@ class ReplyServiceTest {
         source.setFromName("Sender");
         source.setSubject("Original");
         source.setBodyHtml("<p>Original body</p>");
-        source.setToAddresses(MailJson.toJson(List.of("support@acme.com")));
+        source.setToAddresses(Json.toJson(List.of("support@acme.com")));
         when(messageRepository.findFirstByThreadIdAndDeletedAtIsNullOrderByOccurredAtDesc(threadId))
                 .thenReturn(Optional.of(source));
         UUID fileId = UUID.randomUUID();

@@ -19,7 +19,7 @@ import com.prabhix.platform.mail.repository.MailAttachmentRepository;
 import com.prabhix.platform.mail.repository.MailMessageRepository;
 import com.prabhix.platform.mail.repository.MailThreadFlagRepository;
 import com.prabhix.platform.mail.repository.MailThreadRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.mail.util.MailSubjectUtil;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -91,7 +91,7 @@ public class ComposeService {
         thread.setSubject(subject);
         thread.setNormalizedSubject(MailSubjectUtil.normalize(subject));
         thread.setCustomerEmail(to.get(0));
-        thread.setParticipantEmails(MailJson.toJson(participants(mailbox, to, cc, bcc)));
+        thread.setParticipantEmails(Json.toJson(participants(mailbox, to, cc, bcc)));
         thread.setLastMessageAt(Instant.now());
         thread.setLastMessageDirection(MailEnums.MessageDirection.OUTBOUND);
         thread.setMessageCount(1);
@@ -118,8 +118,8 @@ public class ComposeService {
         outbound.setMessageIdHeader("<" + UUID.randomUUID() + "@prabhix>");
         outbound.setFromAddress(mailbox.getAddress());
         outbound.setFromName(mailbox.getName());
-        outbound.setToAddresses(MailJson.toJson(to));
-        outbound.setCcAddresses(MailJson.toJson(cc));
+        outbound.setToAddresses(Json.toJson(to));
+        outbound.setCcAddresses(Json.toJson(cc));
         outbound.setSubject(taggedSubject);
         outbound.setBodyHtml(bodyHtml);
         outbound.setBodyText(MimeParser.htmlToText(bodyHtml));
@@ -151,13 +151,13 @@ public class ComposeService {
         outbox.setFromAddress(mailbox.getAddress());
         outbox.setFromName(mailbox.getName());
         outbox.setReplyTo(mailbox.getReplyTo() != null ? mailbox.getReplyTo() : mailbox.getAddress());
-        outbox.setToAddresses(MailJson.toJson(to));
-        outbox.setCcAddresses(MailJson.toJson(cc));
-        outbox.setBccAddresses(MailJson.toJson(bcc));
+        outbox.setToAddresses(Json.toJson(to));
+        outbox.setCcAddresses(Json.toJson(cc));
+        outbox.setBccAddresses(Json.toJson(bcc));
         outbox.setSubject(taggedSubject);
         outbox.setBodyHtml(bodyHtml);
         outbox.setBodyText(outbound.getBodyText());
-        outbox.setAttachmentIds(MailJson.toJson(
+        outbox.setAttachmentIds(Json.toJson(
                 attachments.stream().map(f -> f.getId().toString()).toList()));
         outbox.setPriority(10);
         mailDispatcher.enqueueDirect(outbox);

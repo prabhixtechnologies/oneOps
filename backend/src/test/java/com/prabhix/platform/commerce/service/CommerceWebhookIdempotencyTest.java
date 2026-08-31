@@ -7,6 +7,7 @@ import com.prabhix.platform.commerce.repository.CommerceOrderRepository;
 import com.prabhix.platform.commerce.repository.CommercePaymentRepository;
 import com.prabhix.platform.commerce.repository.CommerceSubscriptionRepository;
 import com.prabhix.platform.commerce.repository.OrderEventRepository;
+import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.org.repository.OrganizationRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +40,7 @@ class CommerceWebhookIdempotencyTest {
     @Mock private CommerceSubscriptionRenewalService subscriptionRenewalService;
     @Mock private OrganizationRepository organizationRepository;
     @Mock private ApplicationEventPublisher events;
+    @Mock private MailClient mail;
 
     private CommercePaymentCompletionService completionService;
 
@@ -61,6 +63,7 @@ class CommerceWebhookIdempotencyTest {
                 subscriptionRenewalService,
                 organizationRepository,
                 events,
+                mail,
                 properties);
     }
 

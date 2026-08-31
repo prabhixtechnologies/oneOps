@@ -8,6 +8,7 @@ import com.prabhix.platform.chat.repository.ChatMessageRepository;
 import com.prabhix.platform.chat.repository.ChatSettingsRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
+import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.common.spi.EntitlementGate;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.org.domain.Organization;
@@ -53,6 +54,7 @@ class ChatPreChatFormTest {
     @Mock private ChatTokenService tokenService;
     @Mock private EntitlementGate entitlements;
     @Mock private ApplicationEventPublisher events;
+    @Mock private MailClient mail;
 
     private ChatConversationService service;
 
@@ -66,7 +68,7 @@ class ChatPreChatFormTest {
         service = new ChatConversationService(
                 organizationRepository, conversationRepository, messageRepository,
                 settingsRepository, visitorStitchService, presenceService, visitorRepository,
-                messageService, tokenService, entitlements, properties, events);
+                messageService, tokenService, entitlements, properties, events, mail);
 
         Organization org = new Organization();
         org.setId(orgId);

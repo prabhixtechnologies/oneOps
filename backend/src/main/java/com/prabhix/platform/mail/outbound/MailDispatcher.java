@@ -1,27 +1,32 @@
 package com.prabhix.platform.mail.outbound;
 
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailRequest;
+import com.prabhix.platform.common.mail.MailRequestHandler;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.mail.domain.MailOutbox;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.repository.MailOutboxRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Public API for enqueueing outbound mail. */
+/**
+ * Enqueueing outbound mail, for the mail module's own use and for the relay.
+ *
+ * <p>{@code enqueue} and {@code enqueueDirect} are internal to mail — the helpdesk reply path and
+ * compose use them, and they take rendered messages. {@link #accept} is the seam, and takes an
+ * intent.
+ */
 @Service
 @RequiredArgsConstructor
-public class MailDispatcher {
+public class MailDispatcher implements MailRequestHandler {
 
     private final MailOutboxRepository outboxRepository;
     private final PrabhixProperties properties;
@@ -33,9 +38,9 @@ public class MailDispatcher {
         if (dedupeKey != null && !dedupeKey.isBlank()) {
             UUID inserted = outboxRepository.insertWithDedupe(
                     organizationId, templateKey, locale != null ? locale : "en",
-                    MailJson.toJson(variables), properties.mail().fromAddress(),
+                    Json.toJson(variables), properties.mail().fromAddress(),
                     properties.mail().fromName(), properties.mail().replyTo(),
-                    MailJson.toJson(to), dedupeKey, priority,
+                    Json.toJson(to), dedupeKey, priority,
                     properties.mail().outbox().maxAttempts());
             if (inserted != null) {
                 return inserted;
@@ -49,11 +54,11 @@ public class MailDispatcher {
         row.setOrganizationId(organizationId);
         row.setTemplateKey(templateKey);
         row.setLocale(locale != null ? locale : "en");
-        row.setTemplateVariables(MailJson.toJson(variables));
+        row.setTemplateVariables(Json.toJson(variables));
         row.setFromAddress(properties.mail().fromAddress());
         row.setFromName(properties.mail().fromName());
         row.setReplyTo(properties.mail().replyTo());
-        row.setToAddresses(MailJson.toJson(to));
+        row.setToAddresses(Json.toJson(to));
         row.setPriority(priority);
         row.setStatus(MailEnums.OutboxStatus.PENDING);
         row.setScheduledAt(Instant.now());
@@ -87,13 +92,21 @@ public class MailDispatcher {
         return outboxRepository.save(row).getId();
     }
 
-    // The publisher's transaction has already committed, so this needs a transaction of its
-    // own. It also cannot rely on enqueue()'s @Transactional: that is a self-invocation and
-    // would bypass the proxy.
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void onMailRequested(MailRequested event) {
-        enqueue(event.organizationId(), event.templateKey(), event.locale(),
-                event.to(), event.variables(), event.dedupeKey(), event.priority());
+    /**
+     * The far side of the seam. Called by the relay, never by a module wanting mail.
+     *
+     * <p>Replaces an {@code @TransactionalEventListener(AFTER_COMMIT)} on the same class. That ran
+     * after the requesting transaction had committed and outside any transaction of its own, so a
+     * process that died in between lost the request with no record it had been made. The relay's row
+     * is committed before this is reached, so a failure here is a retry rather than a loss.
+     *
+     * <p>Idempotent through {@code dedupeKey}, which the relay depends on: a delivery whose
+     * acknowledgement was lost is retried, and must not become a second email.
+     */
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public UUID accept(MailRequest request) {
+        return enqueue(request.organizationId(), request.templateKey(), request.locale(),
+                request.to(), request.variables(), request.dedupeKey(), request.priority());
     }
 }

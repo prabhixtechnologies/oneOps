@@ -4,7 +4,7 @@ import com.prabhix.platform.files.domain.StoredFile;
 import com.prabhix.platform.files.repository.StoredFileRepository;
 import com.prabhix.platform.files.service.FileStorageService;
 import com.prabhix.platform.mail.outbound.transport.MailTransport;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +20,7 @@ public class OutboundAttachmentResolver {
     private final FileStorageService fileStorageService;
 
     public List<MailTransport.AttachmentPart> resolve(UUID organizationId, String attachmentIdsJson) {
-        List<String> ids = MailJson.parseStringList(attachmentIdsJson);
+        List<String> ids = Json.parseStringList(attachmentIdsJson);
         if (ids.isEmpty()) {
             return List.of();
         }

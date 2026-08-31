@@ -1,4 +1,4 @@
-package com.prabhix.platform.mail.util;
+package com.prabhix.platform.common.util;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -7,12 +7,18 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 
-/** Shared JSON helpers for jsonb columns stored as String. */
-public final class MailJson {
+/**
+ * Shared JSON helpers for jsonb columns stored as String.
+ *
+ * <p>Was {@code mail.util.MailJson}, and moved here because nothing about it is mail's: it is how
+ * every jsonb column in the schema is read and written. Leaving it where it was would have had mail
+ * take it along when mail becomes its own service, and the platform side of the seam needs it too.
+ */
+public final class Json {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private MailJson() {
+    private Json() {
     }
 
     public static String toJson(Object value) {

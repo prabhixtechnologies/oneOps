@@ -5,7 +5,7 @@ import com.prabhix.platform.mail.domain.MailThread;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.repository.MailRoutingRuleRepository;
 import com.prabhix.platform.mail.repository.MailTagRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,7 +39,7 @@ class RoutingRuleEngineTest {
     void allConditionsMustMatch() {
         MailRoutingRule rule = rule();
         rule.setMatchMode(MailEnums.MatchMode.ALL);
-        rule.setConditions(MailJson.toJson(List.of(
+        rule.setConditions(Json.toJson(List.of(
                 Map.of("field", "FROM_DOMAIN", "op", "EQUALS", "value", "acme.com"),
                 Map.of("field", "SUBJECT", "op", "CONTAINS", "value", "urgent"))));
 
@@ -54,7 +54,7 @@ class RoutingRuleEngineTest {
     void anyConditionMatches() {
         MailRoutingRule rule = rule();
         rule.setMatchMode(MailEnums.MatchMode.ANY);
-        rule.setConditions(MailJson.toJson(List.of(
+        rule.setConditions(Json.toJson(List.of(
                 Map.of("field", "SUBJECT", "op", "CONTAINS", "value", "billing"),
                 Map.of("field", "HAS_ATTACHMENT", "op", "EQUALS", "value", "true"))));
 
@@ -67,15 +67,15 @@ class RoutingRuleEngineTest {
         MailRoutingRule rule = rule();
         rule.setMatchMode(MailEnums.MatchMode.ALL);
 
-        rule.setConditions(MailJson.toJson(List.of(
+        rule.setConditions(Json.toJson(List.of(
                 Map.of("field", "FROM", "op", "IN", "value", List.of("a@x.com", "b@x.com")))));
         assertTrue(engine.matches(rule, parsed("a@x.com", "s", null), ctx()));
 
-        rule.setConditions(MailJson.toJson(List.of(
+        rule.setConditions(Json.toJson(List.of(
                 Map.of("field", "SUBJECT", "op", "MATCHES", "value", "outage.*"))));
         assertTrue(engine.matches(rule, parsed("a@b.com", "outage now", null), ctx()));
 
-        rule.setConditions(MailJson.toJson(List.of(
+        rule.setConditions(Json.toJson(List.of(
                 Map.of("field", "SPAM_SCORE", "op", "GT", "value", "5"))));
         RoutingRuleEngine.RoutingContext ctx = ctx();
         ctx.setSpamScore(new java.math.BigDecimal("7"));

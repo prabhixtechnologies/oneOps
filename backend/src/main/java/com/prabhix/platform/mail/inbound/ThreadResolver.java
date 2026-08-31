@@ -7,7 +7,7 @@ import com.prabhix.platform.mail.domain.MailThread;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.repository.MailMessageRepository;
 import com.prabhix.platform.mail.repository.MailThreadRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.mail.util.MailSubjectUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -56,7 +56,7 @@ public class ThreadResolver {
         Set<String> participants = buildParticipantSet(parsed);
         List<MailThread> candidates = threadRepository.findSubjectFallbackCandidates(mailboxId, normalized, since);
         for (MailThread candidate : candidates) {
-            Set<String> threadParticipants = new HashSet<>(MailJson.parseStringList(candidate.getParticipantEmails()));
+            Set<String> threadParticipants = new HashSet<>(Json.parseStringList(candidate.getParticipantEmails()));
             if (!threadParticipants.isEmpty() && !intersect(participants, threadParticipants).isEmpty()) {
                 return candidate;
             }
@@ -76,7 +76,7 @@ public class ThreadResolver {
         thread.setNormalizedSubject(normalized);
         thread.setCustomerEmail(parsed.getFrom());
         thread.setCustomerName(parsed.getFromName());
-        thread.setParticipantEmails(MailJson.toJson(buildParticipantSet(parsed)));
+        thread.setParticipantEmails(Json.toJson(buildParticipantSet(parsed)));
         thread.setLastMessageAt(Instant.now());
         thread.setLastMessageDirection(MailEnums.MessageDirection.INBOUND);
         return threadRepository.save(thread);

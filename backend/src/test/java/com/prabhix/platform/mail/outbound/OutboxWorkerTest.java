@@ -8,7 +8,7 @@ import com.prabhix.platform.mail.repository.MailDeliveryEventRepository;
 import com.prabhix.platform.mail.repository.MailOutboxRepository;
 import com.prabhix.platform.mail.outbound.transport.LoggingTransport;
 import com.prabhix.platform.mail.outbound.transport.MailTransportRouter;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.common.util.OutboxBackoff;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -123,7 +123,7 @@ class OutboxWorkerTest {
         row.setId(UUID.randomUUID());
         row.setOrganizationId(UUID.randomUUID());
         row.setFromAddress("noreply@example.com");
-        row.setToAddresses(MailJson.toJson(List.of("blocked@example.com")));
+        row.setToAddresses(Json.toJson(List.of("blocked@example.com")));
         row.setSubject("Test");
         row.setBodyHtml("<p>Hi</p>");
         row.setBodyText("Hi");

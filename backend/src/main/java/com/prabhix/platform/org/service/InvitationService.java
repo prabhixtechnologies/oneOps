@@ -3,7 +3,8 @@ package com.prabhix.platform.org.service;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.event.AuditRequested;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.common.spi.EntitlementGate;
 import com.prabhix.platform.common.util.Ids;
 import com.prabhix.platform.common.web.PageResponse;
@@ -53,6 +54,7 @@ public class InvitationService {
     private final OrganizationDomainService domainService;
     private final UserService userService;
     private final ApplicationEventPublisher events;
+    private final MailClient mail;
     private final PrabhixProperties properties;
     private final EntitlementGate entitlements;
 
@@ -237,7 +239,7 @@ public class InvitationService {
         // through to the catch-all, got redirected to a protected page and landed on the sign-in
         // form with no account to sign in to. The token is URL-safe base64, so it needs no encoding.
         String link = properties.urls().console() + "/invite/" + rawToken;
-        events.publishEvent(MailRequested.forOrganization(
+        mail.send(MailRequest.forOrganization(
                 org.getId(),
                 email,
                 "org.invite",

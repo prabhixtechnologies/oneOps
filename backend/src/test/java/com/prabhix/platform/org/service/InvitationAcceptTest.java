@@ -2,6 +2,7 @@ package com.prabhix.platform.org.service;
 
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
+import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.common.spi.EntitlementGate;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.org.domain.Invitation;
@@ -48,6 +49,7 @@ class InvitationAcceptTest {
     @Mock private OrganizationDomainService domainService;
     @Mock private UserService userService;
     @Mock private ApplicationEventPublisher events;
+    @Mock private MailClient mail;
     @Mock private EntitlementGate entitlements;
 
     private InvitationService invitationService;
@@ -57,7 +59,7 @@ class InvitationAcceptTest {
         PrabhixProperties properties = new PrabhixProperties(null, null, null, null, null, null, null, null);
         invitationService = new InvitationService(
                 invitationRepository, membershipRepository, roleRepository, organizationService,
-                memberService, roleService, domainService, userService, events, properties,
+                memberService, roleService, domainService, userService, events, mail, properties,
                 entitlements);
     }
 

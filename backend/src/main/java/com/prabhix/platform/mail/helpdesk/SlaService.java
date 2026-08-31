@@ -7,7 +7,7 @@ import com.prabhix.platform.mail.domain.Mailbox;
 import com.prabhix.platform.mail.inbound.MimeParser;
 import com.prabhix.platform.mail.repository.MailThreadRepository;
 import com.prabhix.platform.mail.repository.MailboxRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -82,7 +82,7 @@ public class SlaService {
         ZoneId zone = ZoneId.of(mailbox.getTimezone());
         ZonedDateTime cursor = start.atZone(zone);
         int remaining = businessMinutes;
-        JsonNode hours = MailJson.mapper().valueToTree(MailJson.parseMap(mailbox.getBusinessHours()));
+        JsonNode hours = Json.mapper().valueToTree(Json.parseMap(mailbox.getBusinessHours()));
 
         while (remaining > 0) {
             if (isHoliday(cursor.toLocalDate(), hours)) {

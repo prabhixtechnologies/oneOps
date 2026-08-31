@@ -5,7 +5,7 @@ import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.mail.domain.MailTemplate;
 import com.prabhix.platform.mail.inbound.MimeParser;
 import com.prabhix.platform.mail.repository.MailTemplateRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -59,7 +59,7 @@ public class TemplateRenderer {
     }
 
     void validateVariables(MailTemplate template, Map<String, Object> variables) {
-        List<Map<String, Object>> declared = MailJson.parseObjectList(template.getVariables());
+        List<Map<String, Object>> declared = Json.parseObjectList(template.getVariables());
         for (Map<String, Object> var : declared) {
             boolean required = Boolean.TRUE.equals(var.get("required"));
             String name = String.valueOf(var.get("name"));

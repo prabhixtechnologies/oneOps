@@ -11,13 +11,13 @@ import com.prabhix.platform.auth.dto.AuthDtos.TokenResponse;
 import com.prabhix.platform.auth.repository.AuthChallengeRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.common.util.Ids;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.user.domain.User;
 import com.prabhix.platform.user.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +35,7 @@ public class PasswordlessAuthService {
     private final AuthChallengeRepository challengeRepository;
     private final UserService userService;
     private final AuthService authService;
-    private final ApplicationEventPublisher events;
+    private final MailClient mail;
     private final PrabhixProperties properties;
 
     @Transactional
@@ -53,7 +53,7 @@ public class PasswordlessAuthService {
             // Must match the console's router path (web/src/routes.tsx), not the API path. These
             // drifted apart and every emailed magic link 404'd.
             String link = properties.urls().console() + "/magic-link?token=" + rawToken;
-            events.publishEvent(MailRequested.interactive(
+            mail.send(MailRequest.interactive(
                     email,
                     "auth.magic-link",
                     Map.of(
@@ -85,7 +85,7 @@ public class PasswordlessAuthService {
             challengeRepository.save(challenge);
 
             int expiryMinutes = (int) properties.otp().ttl().toMinutes();
-            events.publishEvent(MailRequested.interactive(
+            mail.send(MailRequest.interactive(
                     email,
                     "auth.otp",
                     Map.of("code", code, "expiryMinutes", expiryMinutes),
@@ -136,7 +136,7 @@ public class PasswordlessAuthService {
 
             int expiryMinutes = (int) properties.otp().ttl().toMinutes();
             String link = properties.urls().console() + "/reset-password?token=" + rawToken;
-            events.publishEvent(MailRequested.interactive(
+            mail.send(MailRequest.interactive(
                     email,
                     "auth.magic-link",
                     Map.of(

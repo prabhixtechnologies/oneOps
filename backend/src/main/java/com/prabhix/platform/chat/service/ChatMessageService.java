@@ -2,7 +2,8 @@ package com.prabhix.platform.chat.service;
 
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.event.AuditRequested;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.common.spi.EntitlementGate;
 import com.prabhix.platform.common.web.Cursor;
 import com.prabhix.platform.common.web.CursorPage;
@@ -29,7 +30,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,6 +48,7 @@ public class ChatMessageService {
     private final EntitlementGate entitlements;
     private final PrabhixProperties properties;
     private final ApplicationEventPublisher events;
+    private final MailClient mail;
     private final ChatMessageIdempotencyService idempotencyService;
 
     @Transactional
@@ -125,11 +126,6 @@ public class ChatMessageService {
                                                 boolean fromVisitor) {
         ChatSettings settings = settingsRepository.findByOrganizationId(conversation.getOrganizationId())
                 .orElse(null);
-        if (fromVisitor && settings != null
-                && settings.getAvailability() == ChatEnums.Availability.OFFLINE) {
-            routeOffline(conversation, request.body());
-        }
-
         if (request.fileId() != null) {
             attachmentValidationService.requireCleanAttachments(
                     conversation.getOrganizationId(), List.of(request.fileId()));
@@ -166,9 +162,13 @@ public class ChatMessageService {
             conversation = conversationRepository.findById(conversation.getId()).orElse(conversation);
         }
 
-        if (fromVisitor && conversation.getAssignedAgentId() == null
-                && settings != null && settings.getAvailability() != ChatEnums.Availability.ONLINE) {
-            routeOffline(conversation, request.body());
+        // Once, and after the assignment attempt above, because whether anyone will see this message
+        // is not known until then. There were two of these: one before the save for OFFLINE, one here
+        // for "unassigned and not ONLINE". An offline organization is also an unassigned one, so the
+        // common case ran both and mailed support twice. The old test asked only whether some mail
+        // event had gone past, so it never saw the second.
+        if (fromVisitor && settings != null && isUnattended(settings, conversation)) {
+            routeOffline(conversation, message);
         }
 
         return toView(message);
@@ -206,7 +206,16 @@ public class ChatMessageService {
         return toView(message);
     }
 
-    private void routeOffline(ChatConversation conversation, String body) {
+    /** Nobody is going to read this in the product: the organization is away, or no agent has it. */
+    private boolean isUnattended(ChatSettings settings, ChatConversation conversation) {
+        return switch (settings.getAvailability()) {
+            case OFFLINE -> true;
+            case AWAY -> conversation.getAssignedAgentId() == null;
+            case ONLINE -> false;
+        };
+    }
+
+    private void routeOffline(ChatConversation conversation, ChatMessage message) {
         ChatSettings settings = settingsRepository.findByOrganizationId(conversation.getOrganizationId())
                 .orElse(null);
         if (settings == null || settings.getOfflineMailboxId() == null) {
@@ -214,7 +223,7 @@ public class ChatMessageService {
         }
         mailboxes.addressOf(conversation.getOrganizationId(), settings.getOfflineMailboxId())
                 .ifPresent(address ->
-                events.publishEvent(MailRequested.forOrganization(
+                mail.send(MailRequest.forOrganization(
                         conversation.getOrganizationId(),
                         address,
                         "chat.offline-message",
@@ -222,8 +231,11 @@ public class ChatMessageService {
                                 "visitorName", conversation.getVisitorName() == null ? "Visitor" : conversation.getVisitorName(),
                                 "visitorEmail", conversation.getVisitorEmail() == null ? "" : conversation.getVisitorEmail(),
                                 "subject", conversation.getSubject() == null ? "Offline chat" : conversation.getSubject(),
-                                "messageBody", body),
-                        "chat-offline-" + conversation.getId() + "-" + Instant.now().toEpochMilli())));
+                                "messageBody", message.getBody()),
+                        // The message id. Was the conversation id and the current millisecond, which
+                        // made every call a distinct key and so deduplicated nothing — the property
+                        // worth having is one notification per message, whatever retries it through.
+                        "chat-offline-" + message.getId())));
     }
 
     private String truncate(String body) {

@@ -6,7 +6,7 @@ import com.prabhix.platform.mail.domain.MailDomain;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.dto.DomainDtos;
 import com.prabhix.platform.mail.repository.MailDomainRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -74,7 +74,7 @@ public class DomainVerificationService {
         }
 
         applyDomainStatus(domain, previousStatus);
-        domain.setDnsReport(MailJson.toJson(verified));
+        domain.setDnsReport(Json.toJson(verified));
         domain.setLastCheckedAt(Instant.now());
         domainRepository.save(domain);
 
@@ -85,7 +85,7 @@ public class DomainVerificationService {
     public DomainDtos.DnsReport getDnsReport(UUID domainId, UUID organizationId) {
         MailDomain domain = domainRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(domainId, organizationId)
                 .orElseThrow();
-        List<DomainDtos.DnsRecord> records = MailJson.parseObjectList(domain.getDnsReport()).stream()
+        List<DomainDtos.DnsRecord> records = Json.parseObjectList(domain.getDnsReport()).stream()
                 .map(m -> new DomainDtos.DnsRecord(
                         String.valueOf(m.get("name")),
                         String.valueOf(m.get("type")),

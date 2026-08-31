@@ -2,7 +2,7 @@ package com.prabhix.platform.mail.web;
 
 import com.prabhix.platform.common.realtime.RealtimeChannelRegistry;
 import com.prabhix.platform.mail.event.MailStreamEvent;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.security.CurrentUser;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Authorize;
@@ -54,7 +54,7 @@ public class MailStreamController {
                 return;
             }
             String channel = CHANNEL_PREFIX + event.organizationId();
-            String json = MailJson.toJson(Map.of("type", event.type(), "payload", event.payload()));
+            String json = Json.toJson(Map.of("type", event.type(), "payload", event.payload()));
             redis.convertAndSend(channel, json);
             registry.fanOutLocal(channel, json);
         }

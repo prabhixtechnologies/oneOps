@@ -15,7 +15,8 @@ import com.prabhix.platform.commerce.repository.OrderEventRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.event.AuditRequested;
-import com.prabhix.platform.common.event.MailRequested;
+import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.org.domain.Organization;
 import com.prabhix.platform.org.repository.OrganizationRepository;
@@ -46,6 +47,7 @@ public class CommercePaymentCompletionService {
     private final CommerceSubscriptionRenewalService subscriptionRenewalService;
     private final OrganizationRepository organizationRepository;
     private final ApplicationEventPublisher events;
+    private final MailClient mail;
     private final PrabhixProperties properties;
 
     public record CaptureDetails(
@@ -145,7 +147,7 @@ public class CommercePaymentCompletionService {
         customerRepository.findById(order.getCustomerId()).ifPresent(customer -> {
             Organization org = organizationRepository.findById(order.getOrganizationId()).orElse(null);
             String orgName = org == null ? "Store" : org.getName();
-            events.publishEvent(MailRequested.forOrganization(
+            mail.send(MailRequest.forOrganization(
                     order.getOrganizationId(),
                     customer.getEmail(),
                     "commerce.order-confirmation",

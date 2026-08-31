@@ -10,6 +10,7 @@ import com.prabhix.platform.billing.repository.BillingOrderRepository;
 import com.prabhix.platform.billing.repository.BillingPaymentRepository;
 import com.prabhix.platform.billing.repository.BillingPlanRepository;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;
+import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.config.PrabhixProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,7 @@ class PaymentCompletionServiceTest {
     @Mock
     private BillingOrgReader orgReader;
     @Mock
-    private ApplicationEventPublisher events;
+    private MailClient mail;
     @Mock
     private PrabhixProperties properties;
 
@@ -66,7 +67,7 @@ class PaymentCompletionServiceTest {
                 invoiceService,
                 entitlementService,
                 orgReader,
-                events,
+                mail,
                 properties);
     }
 

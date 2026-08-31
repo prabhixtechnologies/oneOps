@@ -6,6 +6,7 @@ import com.prabhix.platform.chat.repository.ChatConversationRepository;
 import com.prabhix.platform.chat.repository.ChatMessageRepository;
 import com.prabhix.platform.chat.repository.ChatSettingsRepository;
 import com.prabhix.platform.common.error.ApiException;
+import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.common.spi.EntitlementGate;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.org.repository.OrganizationRepository;
@@ -44,6 +45,7 @@ class ChatConversationIsolationTest {
     @Mock private ChatTokenService tokenService;
     @Mock private EntitlementGate entitlements;
     @Mock private ApplicationEventPublisher events;
+    @Mock private MailClient mail;
 
     private ChatConversationService conversationService;
 
@@ -57,7 +59,7 @@ class ChatConversationIsolationTest {
         conversationService = new ChatConversationService(
                 organizationRepository, conversationRepository, messageRepository,
                 settingsRepository, visitorStitchService, presenceService, visitorRepository,
-                messageServiceProvider, tokenService, entitlements, properties, events);
+                messageServiceProvider, tokenService, entitlements, properties, events, mail);
     }
 
     @Test

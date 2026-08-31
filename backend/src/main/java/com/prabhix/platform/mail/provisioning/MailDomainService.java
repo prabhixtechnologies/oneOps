@@ -7,7 +7,7 @@ import com.prabhix.platform.mail.domain.MailDomain;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.dto.DomainDtos;
 import com.prabhix.platform.mail.repository.MailDomainRepository;
-import com.prabhix.platform.mail.util.MailJson;
+import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +43,7 @@ public class MailDomainService {
         domain.setVerificationToken(Ids.token(24));
         domain.setDkimSelector("pbx1");
         generateDkimKeys(domain);
-        domain.setDnsReport(MailJson.toJson(DnsRecordBuilder.build(
+        domain.setDnsReport(Json.toJson(DnsRecordBuilder.build(
                 domain.getDomain(), domain.getDkimSelector(),
                 domain.getDkimPublicKey(), domain.getVerificationToken())));
         return toDto(domainRepository.save(domain));
