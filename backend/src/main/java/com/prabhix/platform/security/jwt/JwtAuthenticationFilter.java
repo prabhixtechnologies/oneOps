@@ -7,6 +7,7 @@ import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
+import com.prabhix.platform.org.service.ActiveOrganizationResolver;
 import com.prabhix.platform.org.service.PermissionResolver;
 import com.prabhix.platform.ops.domain.StaffRole;
 import com.prabhix.platform.ops.service.PlatformStaffService;
@@ -56,6 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final StructuredEventLogger eventLogger;
     private final ImpersonationAuditor impersonationAuditor;
     private final PermissionResolver permissionResolver;
+    private final ActiveOrganizationResolver activeOrganizations;
     private final OrganizationMembershipRepository membershipRepository;
     private final UserRepository userRepository;
     private final IdentityUserMirror identityUserMirror;
@@ -123,10 +125,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * beyond the subject, so a token cannot assert access it was not granted — and a role revoked a
      * second ago is gone on the next request rather than when the token happens to expire.
      *
-     * <p>A request with no organization header is allowed through unscoped. That is what
-     * {@code /users/me}, the organization list and the sign-in follow-ups need before anyone has
-     * chosen a tenant, and the authorization rules refuse everything tenant-scoped anyway because the
-     * permission set for a null organization holds only platform-level grants.
+     * <p>A request with no organization header falls back to the organization sign-in would have
+     * picked: the remembered default if it is still an active membership, otherwise the only active
+     * one. Somebody with several and no default resolves to none and is asked, which is the honest
+     * answer — and an unscoped request is still allowed through, because {@code /users/me} and the
+     * organization list have to work before anyone has chosen. Tenant-scoped rules refuse it anyway,
+     * since the permission set for a null organization holds only platform-level grants.
      */
     private PrabhixPrincipal authorizeIdentityToken(PrabhixPrincipal principal,
                                                     HttpServletRequest request) {
@@ -146,6 +150,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         UUID requestedOrg = requestedOrganization(request);
         boolean platformAdmin = user.isPlatformAdmin();
+
+        // Nothing named a tenant, so fall back to the one sign-in would have chosen. Without this the
+        // first call a console makes after an identity sign-in — /auth/me, before it can possibly know
+        // an organization to ask for — comes back with none, and the console has nothing to put in the
+        // header on any later request. The header still wins whenever it is sent, so switching
+        // organizations and staff impersonation are unaffected; this only answers the first question.
+        if (requestedOrg == null) {
+            requestedOrg = activeOrganizations.resolve(principal.userId(), user.getDefaultOrganizationId());
+        }
 
         if (requestedOrg != null
                 && !membershipRepository.existsActiveMembership(requestedOrg, principal.userId())) {

@@ -10,7 +10,7 @@ import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.support.TestProperties;
 import com.prabhix.platform.observability.service.StructuredEventLogger;
-import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
+import com.prabhix.platform.org.service.ActiveOrganizationResolver;
 import com.prabhix.platform.org.service.OrganizationService;
 import com.prabhix.platform.org.service.PermissionResolver;
 import com.prabhix.platform.security.jwt.JwtService;
@@ -31,7 +31,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -49,8 +48,8 @@ class RefreshTokenRotationTest {
 
     @Mock private UserService userService;
     @Mock private OrganizationService organizationService;
-    @Mock private OrganizationMembershipRepository membershipRepository;
     @Mock private PermissionResolver permissionResolver;
+    @Mock private ActiveOrganizationResolver activeOrganizations;
     @Mock private DeviceSessionRepository deviceSessionRepository;
     @Mock private RefreshTokenRepository refreshTokenRepository;
     @Mock private PasswordEncoder passwordEncoder;
@@ -70,7 +69,7 @@ class RefreshTokenRotationTest {
         PrabhixProperties properties =
                 TestProperties.withSecurity(TestProperties.security(Duration.ofMinutes(15)));
         authService = new AuthService(
-                userService, organizationService, membershipRepository, permissionResolver,
+                userService, organizationService, permissionResolver, activeOrganizations,
                 deviceSessionRepository, refreshTokenRepository, passwordEncoder,
                 jwtService, tokenDenyList, properties, events, eventLogger);
     }
@@ -101,7 +100,6 @@ class RefreshTokenRotationTest {
         when(refreshTokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(existing));
         when(userService.requireActive(userId)).thenReturn(user);
         when(deviceSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(membershipRepository.findByUserIdAndStatus(any(), any())).thenReturn(List.of());
         when(permissionResolver.resolve(userId, null)).thenReturn(Set.of(Permission.ORG_READ));
         when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtService.issue(any())).thenReturn(new IssuedToken("access", Instant.now().plusSeconds(900), 900));

@@ -15,10 +15,8 @@ import com.prabhix.platform.common.event.AuditRequested;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.observability.taxonomy.LogEventCode;
-import com.prabhix.platform.org.domain.OrganizationMembership;
-import com.prabhix.platform.org.domain.OrganizationMembership.MembershipStatus;
 import com.prabhix.platform.org.dto.OrgDtos.CreateOrganizationRequest;
-import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
+import com.prabhix.platform.org.service.ActiveOrganizationResolver;
 import com.prabhix.platform.org.service.OrganizationService;
 import com.prabhix.platform.org.service.PermissionResolver;
 import com.prabhix.platform.security.PrabhixPrincipal;
@@ -40,7 +38,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -53,8 +50,8 @@ public class AuthService {
 
     private final UserService userService;
     private final OrganizationService organizationService;
-    private final OrganizationMembershipRepository membershipRepository;
     private final PermissionResolver permissionResolver;
+    private final ActiveOrganizationResolver activeOrganizations;
     private final DeviceSessionRepository deviceSessionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
@@ -384,19 +381,7 @@ public class AuthService {
     }
 
     private UUID resolveActiveOrganization(UUID userId, UUID defaultOrgId) {
-        if (defaultOrgId != null) {
-            Optional<OrganizationMembership> membership = membershipRepository
-                    .findByOrganizationIdAndUserId(defaultOrgId, userId);
-            if (membership.isPresent() && membership.get().getStatus() == MembershipStatus.ACTIVE) {
-                return defaultOrgId;
-            }
-        }
-        List<OrganizationMembership> active =
-                membershipRepository.findByUserIdAndStatus(userId, MembershipStatus.ACTIVE);
-        if (active.size() == 1) {
-            return active.get(0).getOrganizationId();
-        }
-        return null;
+        return activeOrganizations.resolve(userId, defaultOrgId);
     }
 
     /**

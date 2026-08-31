@@ -8,7 +8,7 @@ import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.observability.service.StructuredEventLogger;
-import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
+import com.prabhix.platform.org.service.ActiveOrganizationResolver;
 import com.prabhix.platform.org.service.OrganizationService;
 import com.prabhix.platform.org.service.PermissionResolver;
 import com.prabhix.platform.security.jwt.JwtService;
@@ -53,7 +53,7 @@ class SessionCookieExchangeTest {
 
     @Mock private UserService userService;
     @Mock private OrganizationService organizationService;
-    @Mock private OrganizationMembershipRepository membershipRepository;
+    @Mock private ActiveOrganizationResolver activeOrganizations;
     @Mock private PermissionResolver permissionResolver;
     @Mock private DeviceSessionRepository deviceSessionRepository;
     @Mock private RefreshTokenRepository refreshTokenRepository;
@@ -72,7 +72,7 @@ class SessionCookieExchangeTest {
         PrabhixProperties properties =
                 TestProperties.withSecurity(TestProperties.security(Duration.ofMinutes(15)));
         authService = new AuthService(
-                userService, organizationService, membershipRepository, permissionResolver,
+                userService, organizationService, permissionResolver, activeOrganizations,
                 deviceSessionRepository, refreshTokenRepository, passwordEncoder,
                 jwtService, tokenDenyList, properties, events, eventLogger);
     }
