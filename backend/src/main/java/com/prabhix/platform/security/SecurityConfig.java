@@ -82,6 +82,14 @@ public class SecurityConfig {
             "/api/v1/commerce/webhooks/**",
             "/api/v1/mail/webhooks/**",
             "/api/v1/mail/inbound/**",
+            // Service-to-service, and guarded by a shared token checked inside the controller rather
+            // than by a bearer token, because the caller is identity rather than a person and holds no
+            // account to authenticate as. Listed here so the filter does not demand one.
+            //
+            // Public only in the sense of "not behind the JWT filter": Caddy answers /internal with a
+            // 404 at the edge, so nothing off this network can reach it at all. Two locks, because this
+            // one creates organizations and grants their ownership.
+            "/internal/**",
             "/actuator/health/**",
             "/actuator/info",
             "/v3/api-docs/**",

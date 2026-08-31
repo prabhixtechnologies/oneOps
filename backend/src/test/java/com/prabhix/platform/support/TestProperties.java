@@ -71,6 +71,16 @@ public final class TestProperties {
                 "http://identity:8081", "test-service-token");
     }
 
+    /**
+     * A named service token, for the tests that exercise the gate on {@code /internal} rather than
+     * token verification. Takes the value so a test can pass a wrong one and a blank one.
+     */
+    public static PrabhixProperties.Security.Identity identityWithServiceToken(String token) {
+        return new PrabhixProperties.Security.Identity(
+                "", "", Duration.ofMinutes(10), Duration.ofSeconds(30),
+                "http://identity:8081", token);
+    }
+
     /** Host-only and insecure, matching how a browser accepts cookies on localhost. */
     public static PrabhixProperties.Security.SessionCookie sessionCookie() {
         return new PrabhixProperties.Security.SessionCookie("pbx_session", "", false, "Lax");

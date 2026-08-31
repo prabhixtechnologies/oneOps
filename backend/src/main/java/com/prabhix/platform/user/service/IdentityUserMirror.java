@@ -79,6 +79,25 @@ public class IdentityUserMirror {
         log.info("Mirrored identity user {} into the platform", subject);
     }
 
+    /**
+     * Writes the mirror row from details the caller already holds, without asking identity for them.
+     *
+     * <p>For provisioning at signup, where identity is the caller and is waiting on the reply. Going
+     * through {@link #pull} there would have this service call back into identity while identity holds
+     * a thread waiting on this one — which works until enough signups arrive at once for both thread
+     * pools to be full of requests waiting on each other, and then stops working all at once.
+     *
+     * <p>Only the four fields a new account has. The rest — display name, avatar, job title, timezone —
+     * are things somebody fills in later, and they arrive through {@link #pull} for accounts this
+     * database has never seen. Passing nulls for them is not losing anything: at the moment of signup
+     * identity does not have them either.
+     */
+    public void mirrorFromSignup(UUID subject, String email, boolean emailVerified, String fullName) {
+        upsert(new MirroredUser(subject, email, emailVerified, fullName,
+                null, null, null, null, null, "ACTIVE", false, Instant.now()));
+        log.info("Mirrored identity user {} into the platform at signup", subject);
+    }
+
     private void upsert(MirroredUser user) {
         Instant now = Instant.now();
         // platform_admin is deliberately absent from both the insert and the update. Platform staff
