@@ -25,6 +25,8 @@ public enum ErrorCode {
     OTP_EXPIRED(HttpStatus.BAD_REQUEST),
     OTP_ATTEMPTS_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS),
     EMAIL_ALREADY_VERIFIED(HttpStatus.CONFLICT),
+    /** Browser password/magic-link/OTP/SSO login on this API; use Identity hosted login instead. */
+    AUTH_MOVED_TO_IDENTITY(HttpStatus.GONE),
     API_KEY_INVALID(HttpStatus.UNAUTHORIZED),
     API_KEY_EXPIRED(HttpStatus.UNAUTHORIZED),
 

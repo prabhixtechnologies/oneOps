@@ -220,6 +220,14 @@ prabhix:
     console: ${CONSOLE_URL:http://localhost:5173}
     api: ${API_URL:http://localhost:8080}
 
+  # When Identity is the auth source of truth, keep this false so products cannot keep a second
+  # browser login path on this API. Password/register/magic-link/OTP/Google SSO and anonymous
+  # password-reset then return 410 (AUTH_MOVED_TO_IDENTITY) pointing at Identity hosted login.
+  # Session refresh, cookie exchange, logout, /me, and authenticated change-password stay on.
+  # Set true only for emergency rollback while Identity is unavailable.
+  auth:
+    legacy-credential-login: ${LEGACY_CREDENTIAL_LOGIN:false}
+
   cors:
     # 3000 marketing, 5173 OneOps console, 5174 admin console. All three send credentials, so this
     # can never become "*" — a wildcard origin is rejected by browsers for credentialed requests.

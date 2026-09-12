@@ -43,6 +43,7 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
+  /** @deprecated Credentials belong on Identity; always use OIDC beginLogin. */
   login: (email: string, password: string) => Promise<void>;
   loginWithTokens: (accessToken: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -202,22 +203,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applyTokens],
   );
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const tokens = await apiRequest(
-        "/auth/login",
-        authTokensSchema,
-        {
-          method: "POST",
-          body: { email, password },
-          skipAuth: true,
-          skipOrg: true,
-        },
-      );
-      await applyTokens(tokens.accessToken);
-    },
-    [applyTokens],
-  );
+  const login = useCallback(async (_email: string, _password: string) => {
+    throw new Error(
+      "Password login was removed from this console. Sign in through Prabhix Identity (OIDC).",
+    );
+  }, []);
 
   const switchOrg = useCallback(
     async (orgId: string) => {

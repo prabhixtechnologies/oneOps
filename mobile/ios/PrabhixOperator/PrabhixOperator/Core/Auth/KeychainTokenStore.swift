@@ -26,6 +26,8 @@ final class KeychainTokenStore {
         var userId: String?
         var email: String?
         var displayName: String?
+        /// Handed back as `id_token_hint` on logout so Identity ends the browser session.
+        var idToken: String?
     }
 
     var session: Session? {
@@ -42,13 +44,39 @@ final class KeychainTokenStore {
             permissions: tokens.permissions,
             userId: nil,
             email: nil,
-            displayName: nil
+            displayName: nil,
+            idToken: nil
         )
         current.accessToken = tokens.accessToken
         current.refreshToken = tokens.refreshToken
         current.expiresAt = Date().addingTimeInterval(TimeInterval(tokens.expiresInSeconds))
         current.organizationId = tokens.organizationId
         current.permissions = tokens.permissions
+        persist(session: current)
+    }
+
+    /// Tokens from Identity's token endpoint (no org / permissions — those come from `/auth/me`).
+    func saveOidcTokens(
+        accessToken: String,
+        refreshToken: String?,
+        idToken: String?,
+        expiresAt: Date
+    ) {
+        var current = session ?? Session(
+            accessToken: accessToken,
+            refreshToken: refreshToken ?? "",
+            expiresAt: expiresAt,
+            organizationId: nil,
+            permissions: [],
+            userId: nil,
+            email: nil,
+            displayName: nil,
+            idToken: idToken
+        )
+        current.accessToken = accessToken
+        if let refreshToken { current.refreshToken = refreshToken }
+        current.expiresAt = expiresAt
+        current.idToken = idToken ?? current.idToken
         persist(session: current)
     }
 

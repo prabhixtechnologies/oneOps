@@ -24,7 +24,8 @@ ARG VITE_ONEOPS_URL=
 # Blank until identity is the auth upstream. Set, this app stops rendering a password form at all and
 # redirects to the hosted login page instead — so setting it before identity is actually serving
 # /oauth2/authorize makes signing in impossible rather than merely different.
-ARG VITE_IDENTITY_ISSUER=
+# Local laptop default: Identity on :8081. Production compose overrides to https://api.…
+ARG VITE_IDENTITY_ISSUER=http://localhost:8081
 # Prabhix Mailroom. Unset hides the "My mail" link, which is the right default for a build that has
 # no idea whether a Mailroom is running.
 ARG VITE_MAILROOM_URL=

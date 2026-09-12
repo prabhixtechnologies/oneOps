@@ -1,29 +1,25 @@
 import Foundation
 
 actor TokenRefresher {
-    private let client: APIClient
     private let store = KeychainTokenStore.shared
     private var inFlight: Task<String?, Never>?
-
-    init(client: APIClient) {
-        self.client = client
-    }
 
     func accessToken(force: Bool = false) async -> String? {
         if let task = inFlight { return await task.value }
         let task = Task<String?, Never> {
-            guard var session = store.session else { return nil }
+            guard let session = store.session else { return nil }
             if !force, session.expiresAt.timeIntervalSinceNow > 60 {
                 return session.accessToken
             }
             do {
-                let refreshed: TokenResponse = try await client.request(
-                    path: "auth/refresh",
-                    method: "POST",
-                    body: RefreshRequest(refreshToken: session.refreshToken),
-                    authenticated: false
+                // Refresh against Identity — the platform no longer mints refresh tokens.
+                let refreshed = try await IdentityAuthenticator.refresh(session.refreshToken)
+                store.saveOidcTokens(
+                    accessToken: refreshed.accessToken,
+                    refreshToken: refreshed.refreshToken,
+                    idToken: refreshed.idToken,
+                    expiresAt: refreshed.expiresAt
                 )
-                store.save(tokens: refreshed)
                 return refreshed.accessToken
             } catch {
                 return nil
@@ -42,7 +38,7 @@ final class APIClient {
     private let jsonEncoder = JSONEncoder()
     private let jsonDecoder = JSONDecoder()
     private let store = KeychainTokenStore.shared
-    private lazy var refresher = TokenRefresher(client: self)
+    private let refresher = TokenRefresher()
 
     func request<T: Decodable, B: Encodable>(
         path: String,
@@ -124,19 +120,14 @@ final class APIClient {
 }
 
 enum AuthService {
-    static func login(email: String, password: String) async throws {
-        let tokens: TokenResponse = try await APIClient.shared.request(
-            path: "auth/login",
-            method: "POST",
-            body: LoginRequest(
-                email: email,
-                password: password,
-                deviceId: KeychainTokenStore.shared.deviceId,
-                deviceName: UIDeviceName.current
-            ),
-            authenticated: false
+    static func loginWithIdentity() async throws {
+        let tokens = try await IdentityAuthenticator.signIn()
+        KeychainTokenStore.shared.saveOidcTokens(
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            idToken: tokens.idToken,
+            expiresAt: tokens.expiresAt
         )
-        KeychainTokenStore.shared.save(tokens: tokens)
         let me: AuthMeResponse = try await APIClient.shared.request(path: "auth/me")
         KeychainTokenStore.shared.saveProfile(me)
         await RealtimeService.shared.start()
@@ -144,25 +135,20 @@ enum AuthService {
     }
 
     static func logout() async {
-        if let refresh = KeychainTokenStore.shared.session?.refreshToken {
-            _ = try? await APIClient.shared.request(
-                path: "auth/logout",
-                method: "POST",
-                body: LogoutRequest(refreshToken: refresh)
-            ) as EmptyResponse?
-        }
+        let idHint = KeychainTokenStore.shared.session?.idToken
         await PushService.shared.unregisterIfNeeded()
         await RealtimeService.shared.stop()
         KeychainTokenStore.shared.clear()
+        if let idHint {
+            // Best-effort: end the shared browser session. Failure must not block local sign-out.
+            _ = try? await URLSession.shared.data(from: IdentityAuthenticator.endSessionURL(idTokenHint: idHint))
+        }
     }
 
     static func selectOrganization(_ id: String) async throws {
-        let tokens: TokenResponse = try await APIClient.shared.request(
-            path: "organizations/\(id)/select",
-            method: "POST"
-        )
-        KeychainTokenStore.shared.save(tokens: tokens)
         KeychainTokenStore.shared.setOrganizationId(id)
+        let me: AuthMeResponse = try await APIClient.shared.request(path: "auth/me")
+        KeychainTokenStore.shared.saveProfile(me)
         await RealtimeService.shared.restart()
     }
 }

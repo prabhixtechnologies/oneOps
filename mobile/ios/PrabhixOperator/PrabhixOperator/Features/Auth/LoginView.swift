@@ -6,66 +6,33 @@ struct LoginView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Picker("Sign in method", selection: $viewModel.authMode) {
-                    ForEach(AuthViewModel.AuthMode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue.capitalized).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-
-                TextField("Email", text: $viewModel.email)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .autocapitalization(.none)
-
-                switch viewModel.authMode {
-                case .password:
-                    SecureField("Password", text: $viewModel.password)
-                    Button("Sign in") {
-                        Task {
-                            await viewModel.login()
-                            if viewModel.isLoggedIn { onSuccess() }
-                        }
-                    }
-                case .otp:
-                    if viewModel.otpSent {
-                        TextField("OTP code", text: $viewModel.otpCode)
-                        Button("Verify") {
-                            Task {
-                                await viewModel.verifyOtp()
-                                if viewModel.isLoggedIn { onSuccess() }
-                            }
-                        }
-                    } else {
-                        Button("Send OTP") { Task { await viewModel.requestOtp() } }
-                    }
-                case .magicLink:
-                    if viewModel.magicLinkSent {
-                        Text("Check your email for the sign-in link.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Button("Send magic link") {
-                            Task { await viewModel.requestMagicLink() }
-                        }
-                    }
-                    TextField("Paste magic link token", text: $viewModel.magicToken)
-                        .autocapitalization(.none)
-                    Button("Verify link") {
-                        Task {
-                            await viewModel.verifyMagicLink()
-                            if viewModel.isLoggedIn { onSuccess() }
-                        }
-                    }
-                    .disabled(viewModel.magicToken.isEmpty || viewModel.loading)
-                }
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Sign in")
+                    .font(.largeTitle.bold())
+                Text("One Prabhix account for every product. Credentials are entered only on Identity.")
+                    .foregroundStyle(.secondary)
 
                 if let error = viewModel.error {
                     Text(error).foregroundStyle(.red)
                 }
+
+                Button {
+                    Task {
+                        await viewModel.loginWithIdentity()
+                        if viewModel.isLoggedIn { onSuccess() }
+                    }
+                } label: {
+                    Text(viewModel.loading ? "Opening…" : "Continue to sign in")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.loading)
+
+                Spacer()
             }
+            .padding()
             .navigationTitle(AppConfig.appLabel)
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

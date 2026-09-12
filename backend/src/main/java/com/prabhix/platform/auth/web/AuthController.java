@@ -1,5 +1,6 @@
 package com.prabhix.platform.auth.web;
 
+import com.prabhix.platform.auth.LegacyCredentialLoginGuard;
 import com.prabhix.platform.auth.dto.AuthDtos.AckResponse;
 import com.prabhix.platform.auth.dto.AuthDtos.AuthMeResponse;
 import com.prabhix.platform.auth.dto.AuthDtos.EmailVerifyConfirmRequest;
@@ -42,10 +43,12 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
     private final GoogleSsoService googleSsoService;
     private final SessionCookieService sessionCookieService;
+    private final LegacyCredentialLoginGuard legacyCredentialLoginGuard;
 
     @PostMapping("/register")
     public TokenResponse register(@Valid @RequestBody RegisterRequest request,
                                   HttpServletResponse response) {
+        legacyCredentialLoginGuard.requireLegacyEnabled();
         return withSessionCookie(authService.register(request), response);
     }
 
@@ -53,6 +56,7 @@ public class AuthController {
     public TokenResponse login(@Valid @RequestBody LoginRequest request,
                                HttpServletRequest http,
                                HttpServletResponse response) {
+        legacyCredentialLoginGuard.requireLegacyEnabled();
         return withSessionCookie(
                 authService.login(request, http.getRemoteAddr(), http.getHeader("User-Agent")),
                 response);
@@ -102,34 +106,40 @@ public class AuthController {
     @PostMapping("/magic-link/request")
     public AckResponse requestMagicLink(@Valid @RequestBody EmailRequest request,
                                         HttpServletRequest http) {
+        legacyCredentialLoginGuard.requireLegacyEnabled();
         return passwordlessAuthService.requestMagicLink(request, http.getRemoteAddr());
     }
 
     @PostMapping("/magic-link/verify")
     public TokenResponse verifyMagicLink(@Valid @RequestBody MagicLinkVerifyRequest request,
                                          HttpServletResponse response) {
+        legacyCredentialLoginGuard.requireLegacyEnabled();
         return withSessionCookie(passwordlessAuthService.verifyMagicLink(request), response);
     }
 
     @PostMapping("/otp/request")
     public AckResponse requestOtp(@Valid @RequestBody EmailRequest request, HttpServletRequest http) {
+        legacyCredentialLoginGuard.requireLegacyEnabled();
         return passwordlessAuthService.requestOtp(request, http.getRemoteAddr());
     }
 
     @PostMapping("/otp/verify")
     public TokenResponse verifyOtp(@Valid @RequestBody OtpVerifyRequest request,
                                    HttpServletResponse response) {
+        legacyCredentialLoginGuard.requireLegacyEnabled();
         return withSessionCookie(passwordlessAuthService.verifyOtp(request), response);
     }
 
     @PostMapping("/password/forgot")
     public AckResponse forgotPassword(@Valid @RequestBody EmailRequest request,
                                       HttpServletRequest http) {
+        legacyCredentialLoginGuard.requireLegacyEnabled();
         return passwordlessAuthService.requestPasswordReset(request, http.getRemoteAddr());
     }
 
     @PostMapping("/password/reset")
     public AckResponse resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        legacyCredentialLoginGuard.requireLegacyEnabled();
         return passwordlessAuthService.resetPassword(request);
     }
 
@@ -149,6 +159,7 @@ public class AuthController {
     public TokenResponse googleSso(@Valid @RequestBody GoogleSsoRequest request,
                                    HttpServletRequest http,
                                    HttpServletResponse response) {
+        legacyCredentialLoginGuard.requireLegacyEnabled();
         return withSessionCookie(
                 googleSsoService.authenticate(request, http.getRemoteAddr(), http.getHeader("User-Agent")),
                 response);

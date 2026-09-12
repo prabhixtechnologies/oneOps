@@ -16,3 +16,5 @@ createRoot(document.getElementById("root")!).render(
     <App router={router} />
   </StrictMode>,
 );
+
+document.documentElement.dataset.app = "admin";

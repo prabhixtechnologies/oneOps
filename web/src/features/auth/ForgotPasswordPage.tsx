@@ -1,46 +1,39 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Link, useSearchParams } from "react-router";
-import { toast } from "sonner";
+import { useEffect } from "react";
+import { Link } from "react-router";
+import { beginLogin, identityIssuer, isOidcEnabled } from "@/lib/oidc";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
-import { ackResponseSchema } from "@/lib/schemas/common";
-import { passwordSchema } from "@/lib/password";
 
-const schema = z.object({ email: z.string().email() });
-
+/**
+ * Password reset lives on Identity now. This route only forwards people there so old bookmarks
+ * and emails do not resurrect the platform's credential API.
+ */
 export function ForgotPasswordPage() {
-  const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
+  useEffect(() => {
+    if (!isOidcEnabled()) return;
+    // Hosted login is where "forgotten password" is offered next to email/password proof.
+    void beginLogin("/");
+  }, []);
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    try {
-      await apiRequest("/auth/password/forgot", ackResponseSchema, {
-        method: "POST",
-        body: data,
-        skipAuth: true,
-      });
-      toast.success("Reset link sent to your email.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err));
-    }
-  });
+  if (!isOidcEnabled()) {
+    return (
+      <div className="space-y-4 text-center">
+        <h2 className="font-display text-lg font-semibold">Password reset moved</h2>
+        <p className="text-sm text-text-muted">
+          Reset passwords through Prabhix Identity. This console no longer issues reset mail.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Reset password</h2>
-        <p className="text-sm text-text-muted">We&apos;ll send a reset link to your email</p>
-      </div>
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Work email</Label>
-          <Input id="email" type="email" {...form.register("email")} />
-        </div>
-        <Button type="submit" className="w-full">Send reset link</Button>
-      </form>
+    <div className="space-y-4 text-center">
+      <h2 className="font-display text-lg font-semibold">Opening Identity…</h2>
+      <p className="text-sm text-text-muted">
+        Password reset is handled at {identityIssuer()}.
+      </p>
+      <Button className="w-full" onClick={() => void beginLogin("/")}>
+        Continue to Identity
+      </Button>
       <p className="text-center text-sm">
         <Link to="/login" className="text-primary hover:underline">Back to sign in</Link>
       </p>
@@ -48,57 +41,23 @@ export function ForgotPasswordPage() {
   );
 }
 
-const resetSchema = z
-  .object({
-    password: passwordSchema,
-    confirm: z.string(),
-  })
-  .refine((d) => d.password === d.confirm, {
-    message: "Passwords must match",
-    path: ["confirm"],
-  });
-
+/** Legacy email links pointed here; send people to Identity to sign in with a new password. */
 export function ResetPasswordPage() {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get("token") ?? "";
-  const form = useForm<z.infer<typeof resetSchema>>({ resolver: zodResolver(resetSchema) });
-
-  const onSubmit = form.handleSubmit(async (data) => {
-    if (!token) {
-      toast.error("Missing reset token.");
-      return;
-    }
-    try {
-      await apiRequest("/auth/password/reset", ackResponseSchema, {
-        method: "POST",
-        body: { newPassword: data.password, token },
-        skipAuth: true,
-      });
-      toast.success("Password updated. You can sign in now.");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err));
-    }
-  });
+  useEffect(() => {
+    if (isOidcEnabled()) void beginLogin("/");
+  }, []);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Set new password</h2>
-      </div>
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="password">New password</Label>
-          <Input id="password" type="password" {...form.register("password")} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirm">Confirm password</Label>
-          <Input id="confirm" type="password" {...form.register("confirm")} />
-          {form.formState.errors.confirm && (
-            <p className="text-xs text-destructive">{form.formState.errors.confirm.message}</p>
-          )}
-        </div>
-        <Button type="submit" className="w-full">Update password</Button>
-      </form>
+    <div className="space-y-4 text-center">
+      <h2 className="font-display text-lg font-semibold">Reset link expired for this app</h2>
+      <p className="text-sm text-text-muted">
+        Use Prabhix Identity to set a new password, then sign in again.
+      </p>
+      {isOidcEnabled() ? (
+        <Button className="w-full" onClick={() => void beginLogin("/")}>
+          Sign in with Identity
+        </Button>
+      ) : null}
     </div>
   );
 }

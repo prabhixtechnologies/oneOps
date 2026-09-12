@@ -18,6 +18,14 @@ const ISSUER: string = import.meta.env.VITE_IDENTITY_ISSUER ?? "";
 /** Matches the client ids seeded by identity's RegisteredClientSeeder. */
 const CLIENT_ID = IS_ADMIN_APP ? "prabhix-admin" : "prabhix-console";
 
+export function identityIssuer(): string {
+  return ISSUER.replace(/\/+$/, "");
+}
+
+export function isOidcEnabled(): boolean {
+  return identityIssuer().length > 0;
+}
+
 // sessionStorage, not localStorage. The verifier is single-use and worthless after the exchange, and a
 // per-tab scope means two sign-in attempts in two tabs cannot overwrite each other's — which
 // localStorage would do, breaking whichever tab finished second.
@@ -28,10 +36,6 @@ const RETURN_KEY = "pbx_oauth_return_to";
 // and without one the provider has nothing to act on. It survives a reload, which matters — a person
 // who refreshes the page and then signs out is the ordinary case, not an edge one.
 const ID_TOKEN_KEY = "pbx_id_token";
-
-export function isOidcEnabled(): boolean {
-  return ISSUER.length > 0;
-}
 
 export function redirectUri(): string {
   return `${window.location.origin}/auth/callback`;
@@ -85,7 +89,7 @@ async function authorize(returnTo?: string, prompt?: string): Promise<void> {
   });
   if (prompt) params.set("prompt", prompt);
 
-  window.location.assign(`${ISSUER}/oauth2/authorize?${params.toString()}`);
+  window.location.assign(`${identityIssuer()}/oauth2/authorize?${params.toString()}`);
 }
 
 export interface OidcTokens {
@@ -136,7 +140,7 @@ export async function completeLogin(search: URLSearchParams): Promise<{
     code_verifier: verifier,
   });
 
-  const response = await fetch(`${ISSUER}/oauth2/token`, {
+  const response = await fetch(`${identityIssuer()}/oauth2/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     // The refresh token comes back in a cookie set by the identity origin, so this request has to
@@ -192,7 +196,7 @@ export function beginLogout(): void {
     // it is rejected — and being bounced back here would look like a sign-out that did nothing.
     params.set("post_logout_redirect_uri", `${window.location.origin}/`);
   }
-  window.location.assign(`${ISSUER}/connect/logout?${params.toString()}`);
+  window.location.assign(`${identityIssuer()}/connect/logout?${params.toString()}`);
 }
 
 function describeOauthError(code: string): string {

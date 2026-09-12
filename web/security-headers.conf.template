@@ -24,4 +24,7 @@ add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 # on elements they position at runtime, and a style attribute cannot be covered by a hash without
 # 'unsafe-hashes'. The exposure is restyling, not code execution, which is a different order of
 # problem from an inline <script>.
-add_header Content-Security-Policy "default-src 'self'; script-src 'self' __INLINE_SCRIPT_HASHES__ https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.razorpay.com http://localhost:8080 https://*.prabhixtechnologies.com; frame-src https://checkout.razorpay.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self';" always;
+# connect-src includes local Identity (:8081): the browser redeems the OIDC code there. Without it,
+# Chrome reports "Failed to fetch" on /auth/callback even though Identity is healthy. Production
+# Identity on api.prabhixtechnologies.com is already covered by the wildcard below.
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' __INLINE_SCRIPT_HASHES__ https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.razorpay.com http://localhost:8080 http://localhost:8081 https://*.prabhixtechnologies.com; frame-src https://checkout.razorpay.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self';" always;

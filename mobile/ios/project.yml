@@ -77,6 +77,7 @@ targetTemplates:
       base:
         INFOPLIST_FILE: PrabhixOperator/PrabhixOperator/Info.plist
         PRABHIX_API_BASE: $(API_BASE_URL)
+        PRABHIX_IDENTITY_ISSUER: $(IDENTITY_ISSUER)
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_STYLE: Automatic
         CURRENT_PROJECT_VERSION: "1"

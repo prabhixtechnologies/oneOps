@@ -20,6 +20,8 @@
     <string>1</string>
     <key>PrabhixAPIBase</key>
     <string>$(PRABHIX_API_BASE)</string>
+    <key>PrabhixIdentityIssuer</key>
+    <string>$(PRABHIX_IDENTITY_ISSUER)</string>
     <key>PrabhixDeviceHeader</key>
     <string>$(PRABHIX_DEVICE_HEADER)</string>
     <key>PrabhixDeepLinkScheme</key>
@@ -45,6 +47,14 @@
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>$(PRABHIX_DEEP_LINK_SCHEME)</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>oauth</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
             </array>
         </dict>
     </array>

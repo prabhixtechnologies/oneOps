@@ -45,6 +45,37 @@ enum AppConfig {
         info("PrabhixDeviceHeader") ?? "mobile-ios"
     }
 
+    /// Hosted Identity issuer (OIDC). Simulator default is local Identity; device builds set via xcconfig.
+    static var identityIssuer: String {
+        if let override = ProcessInfo.processInfo.environment["PRABHIX_IDENTITY_ISSUER"],
+           !override.isEmpty {
+            return override.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        }
+        #if targetEnvironment(simulator)
+        return "http://localhost:8081"
+        #else
+        if let configured = info("PrabhixIdentityIssuer") {
+            return configured.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        }
+        return "https://api.prabhixtechnologies.com"
+        #endif
+    }
+
+    /// Matches Identity's seeded Android/iOS public clients (`prabhix-oneops-android` / admin).
+    static var oauthClientId: String {
+        isAdminApp ? "prabhix-admin-android" : "prabhix-oneops-android"
+    }
+
+    /// Exact redirect registered on Identity (`applicationId:/oauth2redirect`).
+    static var oauthRedirectURI: String {
+        "\(oauthCallbackScheme):/oauth2redirect"
+    }
+
+    /// Bundle id is the custom scheme AppAuth / ASWebAuthenticationSession register.
+    static var oauthCallbackScheme: String {
+        Bundle.main.bundleIdentifier ?? "com.prabhix.operator"
+    }
+
     /// Each app registers its own URL scheme. A shared one would let a link open a customer's
     /// conversation in whichever of the two apps iOS happened to pick.
     static var deepLinkScheme: String {

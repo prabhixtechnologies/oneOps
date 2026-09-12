@@ -30,6 +30,7 @@ function getStoredTheme(): Theme {
 
 function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle("dark", theme === "dark");
+  document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
 }
 
