@@ -7,11 +7,15 @@ import com.prabhix.platform.commerce.domain.OrderEvent;
 import com.prabhix.platform.commerce.domain.CommerceEnums.OrderStatus;
 import com.prabhix.platform.commerce.domain.CommerceEnums.PaymentStatus;
 import com.prabhix.platform.commerce.dto.CommerceDtos;
+import com.prabhix.platform.commerce.domain.OrderDownload;
+import com.prabhix.platform.commerce.domain.OrderItem;
 import com.prabhix.platform.commerce.repository.CommerceCustomerRepository;
 import com.prabhix.platform.commerce.repository.CommerceOrderRepository;
 import com.prabhix.platform.commerce.repository.CommercePaymentRepository;
 import com.prabhix.platform.commerce.repository.CommerceSubscriptionRepository;
+import com.prabhix.platform.commerce.repository.OrderDownloadRepository;
 import com.prabhix.platform.commerce.repository.OrderEventRepository;
+import com.prabhix.platform.commerce.repository.OrderItemRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.event.AuditRequested;
@@ -49,6 +53,8 @@ public class CommercePaymentCompletionService {
     private final ApplicationEventPublisher events;
     private final MailClient mail;
     private final PrabhixProperties properties;
+    private final OrderDownloadRepository downloadRepository;
+    private final OrderItemRepository orderItemRepository;
 
     public record CaptureDetails(
             String razorpayPaymentId,
@@ -155,9 +161,56 @@ public class CommercePaymentCompletionService {
                             "organizationName", orgName,
                             "orderNumber", order.getOrderNumber(),
                             "orderTotal", CommerceAmountCalculator.formatMoneyInr(order.getTotalMinor()),
-                            "orderUrl", "/orders/" + order.getAccessToken()),
+                            "orderUrl", orderClaimUrl(order),
+                            "downloadSection", downloadSectionHtml(order)),
                     "commerce-order-" + order.getId()));
         });
+    }
+
+    private String marketingBase() {
+        PrabhixProperties.Urls urls = properties.urls();
+        String base = urls == null || urls.marketing() == null || urls.marketing().isBlank()
+                ? "http://localhost:3000"
+                : urls.marketing();
+        return base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+    }
+
+    private String orderClaimUrl(CommerceOrder order) {
+        return marketingBase() + "/shop/order/claim/" + order.getAccessToken();
+    }
+
+    private String downloadSectionHtml(CommerceOrder order) {
+        var downloads = downloadRepository.findByOrderIdAndOrganizationId(
+                order.getId(), order.getOrganizationId());
+        if (downloads.isEmpty()) {
+            return "";
+        }
+        StringBuilder html = new StringBuilder();
+        html.append("<p style=\"font-size:15px;line-height:1.6;margin:0 0 8px\">Your downloads</p><ul>");
+        for (OrderDownload download : downloads) {
+            String name = orderItemRepository.findById(download.getOrderItemId())
+                    .map(OrderItem::getProductName)
+                    .orElse("File");
+            html.append("<li style=\"margin:0 0 8px\"><a href=\"")
+                    .append(marketingBase())
+                    .append("/download/")
+                    .append(download.getDownloadToken())
+                    .append("\" style=\"color:#0e7490\">")
+                    .append(escapeHtml(name))
+                    .append("</a></li>");
+        }
+        html.append("</ul>");
+        return html.toString();
+    }
+
+    private static String escapeHtml(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
     }
 
     private void appendEvent(CommerceOrder order, String type, String message) {

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router";
-import { beginLogin, identityIssuer, isOidcEnabled } from "@/lib/oidc";
+import { beginLogin, isOidcEnabled } from "@/lib/oidc";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -29,7 +29,7 @@ export function ForgotPasswordPage() {
     <div className="space-y-4 text-center">
       <h2 className="font-display text-lg font-semibold">Opening Identity…</h2>
       <p className="text-sm text-text-muted">
-        Password reset is handled at {identityIssuer()}.
+        Password reset is handled by Prabhix Identity.
       </p>
       <Button className="w-full" onClick={() => void beginLogin("/")}>
         Continue to Identity

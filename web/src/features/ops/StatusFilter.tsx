@@ -30,7 +30,7 @@ export function StatusFilter({
       value={value ?? ALL}
       onValueChange={(next) => onChange(next === ALL ? undefined : next)}
     >
-      <SelectTrigger className="w-full sm:w-48">
+      <SelectTrigger className="w-full sm:w-48" aria-label={label}>
         <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent>

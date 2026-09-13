@@ -73,13 +73,13 @@ export default function CommerceDiscountsPage() {
         <section className="grid gap-4 rounded-lg border border-border p-4 md:grid-cols-2">
           <h2 className="font-medium md:col-span-2">New discount</h2>
           <div className="space-y-2">
-            <Label>Code</Label>
-            <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
+            <Label htmlFor="discount-code">Code</Label>
+            <Input id="discount-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
           </div>
           <div className="space-y-2">
-            <Label>Type</Label>
+            <Label htmlFor="discount-type">Type</Label>
             <Select value={discountType} onValueChange={setDiscountType}>
-              <SelectTrigger>
+              <SelectTrigger id="discount-type" aria-label="Discount type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -90,30 +90,30 @@ export default function CommerceDiscountsPage() {
           </div>
           {discountType === "PERCENTAGE" ? (
             <div className="space-y-2">
-              <Label>Percentage</Label>
-              <Input type="number" min={1} max={100} value={percentage} onChange={(e) => setPercentage(e.target.value)} />
+              <Label htmlFor="discount-percentage">Percentage</Label>
+              <Input id="discount-percentage" type="number" min={1} max={100} value={percentage} onChange={(e) => setPercentage(e.target.value)} />
             </div>
           ) : (
             <div className="space-y-2">
-              <Label>Amount (₹)</Label>
-              <Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <Label htmlFor="discount-amount">Amount (₹)</Label>
+              <Input id="discount-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
           )}
           <div className="space-y-2">
-            <Label>Min order (₹)</Label>
-            <Input inputMode="decimal" value={minOrder} onChange={(e) => setMinOrder(e.target.value)} />
+            <Label htmlFor="discount-min-order">Min order (₹)</Label>
+            <Input id="discount-min-order" inputMode="decimal" value={minOrder} onChange={(e) => setMinOrder(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Max uses (total)</Label>
-            <Input type="number" value={maxUsesTotal} onChange={(e) => setMaxUsesTotal(e.target.value)} />
+            <Label htmlFor="discount-max-uses">Max uses (total)</Label>
+            <Input id="discount-max-uses" type="number" value={maxUsesTotal} onChange={(e) => setMaxUsesTotal(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Max uses per customer</Label>
-            <Input type="number" value={maxUsesPerCustomer} onChange={(e) => setMaxUsesPerCustomer(e.target.value)} />
+            <Label htmlFor="discount-max-per-customer">Max uses per customer</Label>
+            <Input id="discount-max-per-customer" type="number" value={maxUsesPerCustomer} onChange={(e) => setMaxUsesPerCustomer(e.target.value)} />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label>Description</Label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Label htmlFor="discount-description">Description</Label>
+            <Input id="discount-description" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <Button onClick={() => void createDiscount()} disabled={create.isPending}>
             Create discount

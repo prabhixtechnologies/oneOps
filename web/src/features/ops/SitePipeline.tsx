@@ -404,7 +404,7 @@ function StatusEditor({
   return (
     <div className="space-y-3 border-t border-border pt-4">
       <Select value={status} onValueChange={onStatusChange}>
-        <SelectTrigger>
+        <SelectTrigger aria-label="Pipeline status">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
@@ -420,6 +420,7 @@ function StatusEditor({
         value={notes}
         onChange={(event) => onNotesChange(event.target.value)}
         rows={3}
+        aria-label="Internal notes"
       />
       <Button size="sm" onClick={onSave} disabled={isSaving || !status}>
         {isSaving ? "Saving…" : "Save"}

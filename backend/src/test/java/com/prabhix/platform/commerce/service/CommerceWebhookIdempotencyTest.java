@@ -6,7 +6,9 @@ import com.prabhix.platform.commerce.repository.CommerceCustomerRepository;
 import com.prabhix.platform.commerce.repository.CommerceOrderRepository;
 import com.prabhix.platform.commerce.repository.CommercePaymentRepository;
 import com.prabhix.platform.commerce.repository.CommerceSubscriptionRepository;
+import com.prabhix.platform.commerce.repository.OrderDownloadRepository;
 import com.prabhix.platform.commerce.repository.OrderEventRepository;
+import com.prabhix.platform.commerce.repository.OrderItemRepository;
 import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.org.repository.OrganizationRepository;
@@ -41,6 +43,8 @@ class CommerceWebhookIdempotencyTest {
     @Mock private OrganizationRepository organizationRepository;
     @Mock private ApplicationEventPublisher events;
     @Mock private MailClient mail;
+    @Mock private OrderDownloadRepository downloadRepository;
+    @Mock private OrderItemRepository orderItemRepository;
 
     private CommercePaymentCompletionService completionService;
 
@@ -64,7 +68,9 @@ class CommerceWebhookIdempotencyTest {
                 organizationRepository,
                 events,
                 mail,
-                properties);
+                properties,
+                downloadRepository,
+                orderItemRepository);
     }
 
     @Test

@@ -226,7 +226,6 @@ public class ChatConversationService {
                 orgId, visitorId, "proactive_chat",
                 Map.of(
                         "conversationId", conversation.getId(),
-                        "conversationToken", token,
                         "message", opening)));
         events.publishEvent(AuditRequested.of(orgId, principal.userId(),
                 "chat.conversation.started.proactive", "chat_conversation", conversation.getId()));

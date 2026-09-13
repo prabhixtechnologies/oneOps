@@ -95,9 +95,10 @@ export default function CommerceProductsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="min-w-0 flex-1 sm:max-w-xs"
+          aria-label="Search products"
         />
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-full sm:w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]" aria-label="Product status">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -108,7 +109,7 @@ export default function CommerceProductsPage() {
           </SelectContent>
         </Select>
         <Select value={type || "all"} onValueChange={(v) => setType(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-full sm:w-[160px]">
+          <SelectTrigger className="w-full sm:w-[160px]" aria-label="Product type">
             <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
@@ -126,7 +127,7 @@ export default function CommerceProductsPage() {
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3">
             <span className="text-sm">{selected.size} selected</span>
             <Select value={bulkStatus} onValueChange={setBulkStatus}>
-              <SelectTrigger className="w-full sm:w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]" aria-label="Bulk product status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

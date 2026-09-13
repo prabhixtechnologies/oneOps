@@ -21,12 +21,12 @@ function KpiCard({
   alert?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
+    <div className="rounded-xl border border-border bg-surface p-5 shadow-px">
       <div className="flex items-center justify-between">
         <span className="text-sm text-text-muted">{label}</span>
         <Icon className={`h-4 w-4 ${alert ? "text-destructive" : "text-text-muted"}`} aria-hidden="true" />
       </div>
-      <div className="mt-2 text-2xl font-semibold">{value}</div>
+      <div className="mt-2 font-display text-2xl font-semibold">{value}</div>
       {sub && <p className="mt-1 text-xs text-text-muted">{sub}</p>}
     </div>
   );
@@ -89,7 +89,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-lg border border-border bg-surface p-4">
-          <h3 className="text-sm font-medium">Paid orders (14 days)</h3>
+          <h2 className="text-sm font-medium">Paid orders (14 days)</h2>
           <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <Sparkline
               data={ordersTrend.map((p) => p.value)}
@@ -104,7 +104,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="rounded-lg border border-border bg-surface p-4">
-          <h3 className="text-sm font-medium">Visitor sessions (14 days)</h3>
+          <h2 className="text-sm font-medium">Visitor sessions (14 days)</h2>
           <div className="mt-4">
             <Sparkline
               data={visitorsTrend.map((p) => p.value)}
@@ -119,7 +119,7 @@ export default function DashboardPage() {
 
       <div className="rounded-lg border border-border bg-surface">
         <div className="border-b border-border px-4 py-3">
-          <h3 className="text-sm font-medium">Recent activity</h3>
+          <h2 className="text-sm font-medium">Recent activity</h2>
         </div>
         <ul className="divide-y divide-border">
           {recentActivity.map((item) => (

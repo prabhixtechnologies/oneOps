@@ -4,6 +4,7 @@ import { RelativeTime } from "@/components/shared/RelativeTime";
 import { ErrorState } from "@/components/shared/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MobileCard, MobileCardRow, ResponsiveTable } from "@/components/shared/ResponsiveTable";
 import { Money } from "@/components/shared/Money";
 import {
@@ -31,7 +32,12 @@ export default function CommerceCustomerDetailPage() {
   }
 
   if (!customer) {
-    return <p className="p-6 text-sm text-text-muted">Loading…</p>;
+    return (
+      <div className="space-y-3 p-6">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
   }
 
   return (

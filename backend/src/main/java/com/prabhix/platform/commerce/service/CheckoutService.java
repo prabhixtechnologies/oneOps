@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -203,10 +204,22 @@ public class CheckoutService {
     }
 
     private List<OrderItem> buildOrderItems(UUID organizationId, UUID orderId, List<CartItem> cartItems) {
+        List<UUID> variantIds = cartItems.stream().map(CartItem::getVariantId).distinct().toList();
+        Map<UUID, ProductVariant> variants = variantRepository.findAllById(variantIds).stream()
+                .collect(Collectors.toMap(ProductVariant::getId, variant -> variant));
+        List<UUID> productIds = variants.values().stream().map(ProductVariant::getProductId).distinct().toList();
+        Map<UUID, Product> products = productRepository.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, product -> product));
         List<OrderItem> items = new ArrayList<>();
         for (CartItem cartItem : cartItems) {
-            ProductVariant variant = variantRepository.findById(cartItem.getVariantId()).orElseThrow();
-            Product product = productRepository.findById(variant.getProductId()).orElseThrow();
+            ProductVariant variant = variants.get(cartItem.getVariantId());
+            if (variant == null) {
+                throw ApiException.of(ErrorCode.VARIANT_NOT_FOUND, "That product variant was not found");
+            }
+            Product product = products.get(variant.getProductId());
+            if (product == null) {
+                throw ApiException.of(ErrorCode.PRODUCT_UNAVAILABLE, "That product is not available");
+            }
             OrderItem item = new OrderItem();
             item.setOrganizationId(organizationId);
             item.setOrderId(orderId);

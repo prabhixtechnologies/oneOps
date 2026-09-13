@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { ErrorState } from "@/components/shared/states";
+import { EmptyState, ErrorState } from "@/components/shared/states";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -54,7 +54,7 @@ export default function FlagsPage() {
       />
       <div className="divide-y divide-border rounded-lg border border-border">
         {flags.length === 0 ? (
-          <p className="p-6 text-sm text-text-muted">No feature flags configured.</p>
+          <EmptyState title="No feature flags configured" description="Flags appear here when the platform defines them." />
         ) : (
           flags.map((flag) => (
             <div key={flag.key} className="flex items-center justify-between gap-4 px-4 py-3">

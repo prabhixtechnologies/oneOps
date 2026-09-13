@@ -329,7 +329,7 @@ public class MailboxService {
     }
 
     private MailboxDtos.MailboxMemberResponse toMemberView(MailboxMember member, UUID organizationId) {
-        return toMemberViews(List.of(member), organizationId).getFirst();
+        return toMemberViews(List.of(member), organizationId).get(0);
     }
 
     private MailboxDtos.MailboxMemberResponse toMemberView(MailboxMember member,

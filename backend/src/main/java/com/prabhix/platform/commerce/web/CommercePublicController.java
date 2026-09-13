@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -203,11 +205,23 @@ public class CommercePublicController {
     }
 
     @GetMapping("/downloads/{downloadToken}")
-    public CommerceDtos.DownloadLinkResponse download(@PathVariable String orgSlug,
-                                                      @PathVariable String downloadToken,
-                                                      HttpServletRequest http) {
+    public Object download(@PathVariable String orgSlug,
+                           @PathVariable String downloadToken,
+                           HttpServletRequest http) {
         rateLimiter.checkIp(clientIp(http));
-        return downloadService.issueDownload(downloadToken);
+        CommerceDtos.DownloadLinkResponse link = orgResolver.runAs(orgSlug, () ->
+                downloadService.issueDownload(downloadToken));
+        String accept = http.getHeader("Accept");
+        boolean wantsJson = accept != null
+                && accept.contains("application/json")
+                && !accept.contains("text/html");
+        if (wantsJson) {
+            return link;
+        }
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header("Location", link.downloadUrl())
+                .header("Referrer-Policy", "no-referrer")
+                .build();
     }
 
     private static String clientIp(HttpServletRequest request) {

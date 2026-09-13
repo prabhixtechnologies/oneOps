@@ -4,6 +4,7 @@ import { PermissionGate } from "@/components/shared/PermissionGate";
 import { Money } from "@/components/shared/Money";
 import { ErrorState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCommerceDashboard } from "@/features/commerce/api";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -31,7 +32,13 @@ export default function CommerceDashboardPage() {
         permission={PERMISSIONS.COMMERCE_ORDER_READ}
         fallback={<p className="text-sm text-text-muted">You do not have permission to view commerce analytics.</p>}
       >
-        {isLoading && <p className="text-sm text-text-muted">Loading…</p>}
+        {isLoading && (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </div>
+        )}
         {isError && (
           <ErrorState message="Failed to load dashboard" onRetry={() => void refetch()} />
         )}

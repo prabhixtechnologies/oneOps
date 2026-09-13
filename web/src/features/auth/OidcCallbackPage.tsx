@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { completeLogin, rememberIdToken } from "@/lib/oidc";
+import { safeAppPath } from "@/lib/safePath";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,7 +34,7 @@ export function OidcCallbackPage() {
         rememberIdToken(tokens.idToken);
         await loginWithTokens(tokens.accessToken);
         // replace, so Back does not return to a URL containing a spent authorization code.
-        navigate(returnTo, { replace: true });
+        navigate(safeAppPath(returnTo), { replace: true });
       } catch (err) {
         setMessage(err instanceof Error ? err.message : "Sign-in did not complete.");
       }

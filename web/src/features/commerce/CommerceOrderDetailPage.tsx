@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAnnotateOrder,
   useCancelOrder,
@@ -51,7 +52,13 @@ export default function CommerceOrderDetailPage() {
   }
 
   if (!order) {
-    return <p className="p-6 text-sm text-text-muted">Loading order…</p>;
+    return (
+      <div className="space-y-3 p-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
   }
 
   return (
@@ -170,7 +177,14 @@ export default function CommerceOrderDetailPage() {
                     variant="outline"
                     disabled={reissue.isPending}
                     onClick={() => {
-                      void reissue.mutateAsync(d.orderItemId).then(() => toast.success("Download reissued"));
+                      void reissue.mutateAsync(d.orderItemId).then(async (link) => {
+                        try {
+                          await navigator.clipboard.writeText(link.downloadUrl);
+                          toast.success("Landing page copied. Share this link with the buyer.");
+                        } catch {
+                          toast.success(`Share this landing page: ${link.downloadUrl}`);
+                        }
+                      });
                     }}
                   >
                     Re-issue link
@@ -242,6 +256,7 @@ export default function CommerceOrderDetailPage() {
                 value={refundAmount}
                 onChange={(e) => setRefundAmount(e.target.value)}
                 className="max-w-[160px]"
+                aria-label="Refund amount in rupees"
               />
               <Button
                 variant="destructive"

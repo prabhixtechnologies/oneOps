@@ -12,10 +12,13 @@ import com.prabhix.platform.user.repository.AuthIdentityRepository;
 import com.prabhix.platform.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,8 +42,10 @@ public class GoogleSsoService {
             throw ApiException.of(ErrorCode.FEATURE_DISABLED, "Google sign-in is not enabled");
         }
 
-        JsonNode tokenInfo = restClient.get()
-                .uri("https://oauth2.googleapis.com/tokeninfo?id_token={token}", request.idToken())
+        JsonNode tokenInfo = restClient.post()
+                .uri("https://oauth2.googleapis.com/tokeninfo")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body("id_token=" + URLEncoder.encode(request.idToken(), StandardCharsets.UTF_8))
                 .retrieve()
                 .body(JsonNode.class);
 

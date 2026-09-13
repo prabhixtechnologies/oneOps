@@ -22,8 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -146,17 +149,22 @@ public class CartService {
     void recalculate(Cart cart) {
         List<CartItem> items = cartItemRepository.findByCartIdAndOrganizationId(
                 cart.getId(), cart.getOrganizationId());
+        Map<UUID, ProductVariant> variants = variantsById(items);
         long subtotal = 0;
         List<UUID> productIds = new ArrayList<>();
+        List<CartItem> priced = new ArrayList<>();
         for (CartItem item : items) {
-            ProductVariant variant = variantRepository.findById(item.getVariantId()).orElse(null);
+            ProductVariant variant = variants.get(item.getVariantId());
             if (variant != null) {
                 item.setUnitPriceMinor(variant.getPriceMinor());
                 item.setLineTotalMinor(CommerceAmountCalculator.lineTotal(variant.getPriceMinor(), item.getQuantity()));
-                cartItemRepository.save(item);
+                priced.add(item);
                 productIds.add(variant.getProductId());
             }
             subtotal += item.getLineTotalMinor();
+        }
+        if (!priced.isEmpty()) {
+            cartItemRepository.saveAll(priced);
         }
         long discount = 0;
         if (cart.getDiscountCodeId() != null) {
@@ -193,10 +201,14 @@ public class CartService {
             discountCode = discountCodeRepository.findById(cart.getDiscountCodeId())
                     .map(DiscountCode::getCode).orElse(null);
         }
+        Map<UUID, ProductVariant> variants = variantsById(items);
+        Map<UUID, Product> products = productsById(variants.values().stream()
+                .map(ProductVariant::getProductId)
+                .distinct()
+                .toList());
         List<CommerceDtos.CartItemView> itemViews = items.stream().map(item -> {
-            ProductVariant variant = variantRepository.findById(item.getVariantId()).orElse(null);
-            Product product = variant == null ? null
-                    : productRepository.findById(variant.getProductId()).orElse(null);
+            ProductVariant variant = variants.get(item.getVariantId());
+            Product product = variant == null ? null : products.get(variant.getProductId());
             return new CommerceDtos.CartItemView(
                     item.getId(),
                     item.getVariantId(),
@@ -218,5 +230,22 @@ public class CartService {
                 cart.getTotalMinor(),
                 discountCode,
                 cart.getExpiresAt());
+    }
+
+    private Map<UUID, ProductVariant> variantsById(List<CartItem> items) {
+        List<UUID> ids = items.stream().map(CartItem::getVariantId).distinct().toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return variantRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(ProductVariant::getId, variant -> variant));
+    }
+
+    private Map<UUID, Product> productsById(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return productRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Product::getId, product -> product));
     }
 }

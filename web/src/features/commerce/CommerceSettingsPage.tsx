@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useCommerceSettings,
   useUpdateCommerceSettings,
@@ -75,7 +76,14 @@ export default function CommerceSettingsPage() {
         permission={PERMISSIONS.COMMERCE_SETTINGS_MANAGE}
         fallback={<p className="text-sm text-text-muted">You cannot edit shop settings.</p>}
       >
-        {settingsQuery.isLoading && <p className="text-sm text-text-muted">Loading…</p>}
+        {settingsQuery.isLoading && (
+          <div className="mx-auto max-w-xl space-y-3">
+            <Skeleton className="h-11 w-full" />
+            <Skeleton className="h-11 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-11 w-40" />
+          </div>
+        )}
         <form
           className="mx-auto max-w-xl space-y-4"
           onSubmit={(e) => {
@@ -84,36 +92,36 @@ export default function CommerceSettingsPage() {
           }}
         >
           <div className="space-y-2">
-            <Label>Seller name</Label>
-            <Input value={sellerName} onChange={(e) => setSellerName(e.target.value)} />
+            <Label htmlFor="seller-name">Seller name</Label>
+            <Input id="seller-name" value={sellerName} onChange={(e) => setSellerName(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>GSTIN</Label>
-            <Input value={sellerGstin} onChange={(e) => setSellerGstin(e.target.value)} />
+            <Label htmlFor="seller-gstin">GSTIN</Label>
+            <Input id="seller-gstin" value={sellerGstin} onChange={(e) => setSellerGstin(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Seller state</Label>
-            <Input value={sellerState} onChange={(e) => setSellerState(e.target.value)} />
+            <Label htmlFor="seller-state">Seller state</Label>
+            <Input id="seller-state" value={sellerState} onChange={(e) => setSellerState(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Seller address</Label>
-            <Textarea rows={3} value={sellerAddress} onChange={(e) => setSellerAddress(e.target.value)} />
+            <Label htmlFor="seller-address">Seller address</Label>
+            <Textarea id="seller-address" rows={3} value={sellerAddress} onChange={(e) => setSellerAddress(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Order number prefix</Label>
-            <Input value={orderPrefix} onChange={(e) => setOrderPrefix(e.target.value)} />
+            <Label htmlFor="order-prefix">Order number prefix</Label>
+            <Input id="order-prefix" value={orderPrefix} onChange={(e) => setOrderPrefix(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>GST %</Label>
-            <Input type="number" min={0} max={100} value={gstPercent} onChange={(e) => setGstPercent(e.target.value)} />
+            <Label htmlFor="gst-percent">GST %</Label>
+            <Input id="gst-percent" type="number" min={0} max={100} value={gstPercent} onChange={(e) => setGstPercent(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Flat shipping (₹)</Label>
-            <Input inputMode="decimal" value={flatShipping} onChange={(e) => setFlatShipping(e.target.value)} />
+            <Label htmlFor="flat-shipping">Flat shipping (₹)</Label>
+            <Input id="flat-shipping" inputMode="decimal" value={flatShipping} onChange={(e) => setFlatShipping(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Free shipping above (₹)</Label>
-            <Input inputMode="decimal" value={freeShippingAbove} onChange={(e) => setFreeShippingAbove(e.target.value)} />
+            <Label htmlFor="free-shipping-above">Free shipping above (₹)</Label>
+            <Input id="free-shipping-above" inputMode="decimal" value={freeShippingAbove} onChange={(e) => setFreeShippingAbove(e.target.value)} />
           </div>
           <Button type="submit" disabled={update.isPending}>
             Save settings

@@ -492,13 +492,13 @@ export default function MembersPage() {
           <DialogHeader><DialogTitle>Invite team member</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Email</Label>
-              <Input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+              <Label htmlFor="invite-email">Email</Label>
+              <Input id="invite-email" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label htmlFor="invite-role">Role</Label>
               <Select value={inviteRoleId} onValueChange={setInviteRoleId}>
-                <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+                <SelectTrigger id="invite-role" aria-label="Invitee role"><SelectValue placeholder="Select role" /></SelectTrigger>
                 <SelectContent>
                   {rolesQuery.data?.items.map((r) => (
                     <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
@@ -566,12 +566,12 @@ export default function MembersPage() {
           <DialogHeader><DialogTitle>{editingTeam ? "Rename team" : "Create team"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Name</Label>
-              <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} />
+              <Label htmlFor="team-name">Name</Label>
+              <Input id="team-name" value={teamName} onChange={(e) => setTeamName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
-              <Input value={teamDescription} onChange={(e) => setTeamDescription(e.target.value)} />
+              <Label htmlFor="team-description">Description</Label>
+              <Input id="team-description" value={teamDescription} onChange={(e) => setTeamDescription(e.target.value)} />
             </div>
           </div>
           <DialogFooter>

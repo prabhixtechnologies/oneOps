@@ -3,10 +3,14 @@ package com.prabhix.platform.chat.web;
 import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.chat.event.ChatStreamEvent;
 import com.prabhix.platform.chat.event.ChatVisitorStreamEvent;
+import com.prabhix.platform.chat.service.ChatTokenService;
+import com.prabhix.platform.common.error.ApiException;
+import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.realtime.RealtimeChannelRegistry;
 import com.prabhix.platform.security.CurrentUser;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Authorize;
+import com.prabhix.platform.visitor.repository.VisitorRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -20,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Map;
 import java.util.UUID;
 
@@ -39,8 +45,9 @@ public class ChatStreamController {
 
     @GetMapping(value = "/public/visitor-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamVisitorPresence(@RequestParam UUID organizationId,
-                                            @RequestParam UUID visitorId) {
-        return hub.subscribeVisitor(organizationId, visitorId);
+                                            @RequestParam UUID visitorId,
+                                            @RequestParam(required = false) String visitorKey) {
+        return hub.subscribeVisitorPresence(organizationId, visitorId, visitorKey);
     }
 
     @GetMapping(value = "/public/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -60,25 +67,35 @@ public class ChatStreamController {
 
         private final StringRedisTemplate redis;
         private final ObjectMapper objectMapper;
-        private final com.prabhix.platform.chat.service.ChatTokenService tokenService;
+        private final ChatTokenService tokenService;
         private final RealtimeChannelRegistry registry;
+        private final VisitorRepository visitorRepository;
 
         SseEmitter subscribeOrg(UUID organizationId) {
             return registry.subscribe(CHANNEL_ORG_PREFIX + organizationId);
         }
 
         SseEmitter subscribeVisitor(UUID organizationId, UUID conversationId, String token) {
-            com.prabhix.platform.chat.service.ChatTokenService.ConversationToken parsed = tokenService.parse(token);
+            ChatTokenService.ConversationToken parsed = tokenService.parse(token);
             if (!parsed.organizationId().equals(organizationId)
                     || !parsed.conversationId().equals(conversationId)) {
-                throw com.prabhix.platform.common.error.ApiException.of(
-                        com.prabhix.platform.common.error.ErrorCode.FORBIDDEN,
-                        "Conversation token does not match");
+                throw ApiException.of(ErrorCode.FORBIDDEN, "Conversation token does not match");
             }
             return registry.subscribe(CHANNEL_CONV_PREFIX + organizationId + ":" + conversationId);
         }
 
-        SseEmitter subscribeVisitor(UUID organizationId, UUID visitorId) {
+        SseEmitter subscribeVisitorPresence(UUID organizationId, UUID visitorId, String visitorKey) {
+            var visitor = visitorRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(visitorId, organizationId)
+                    .orElseThrow(() -> ApiException.of(ErrorCode.FORBIDDEN, "Visitor stream is not available"));
+            String storedKey = visitor.getExternalKey();
+            if (storedKey == null || storedKey.isBlank()) {
+                throw ApiException.of(ErrorCode.FORBIDDEN, "Visitor stream is not available");
+            }
+            byte[] expected = storedKey.getBytes(StandardCharsets.UTF_8);
+            byte[] presented = visitorKey == null ? new byte[0] : visitorKey.getBytes(StandardCharsets.UTF_8);
+            if (!MessageDigest.isEqual(expected, presented)) {
+                throw ApiException.of(ErrorCode.FORBIDDEN, "Visitor stream is not available");
+            }
             return registry.subscribe(CHANNEL_VISITOR_PREFIX + organizationId + ":" + visitorId);
         }
 

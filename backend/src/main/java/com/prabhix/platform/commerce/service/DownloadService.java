@@ -1,6 +1,7 @@
 package com.prabhix.platform.commerce.service;
 
 import com.prabhix.platform.commerce.config.CommerceProperties;
+import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.commerce.domain.CommerceOrder;
 import com.prabhix.platform.commerce.domain.OrderDownload;
 import com.prabhix.platform.commerce.domain.OrderItem;
@@ -30,6 +31,7 @@ public class DownloadService {
     private final CommerceOrderRepository orderRepository;
     private final FileStorageService fileStorageService;
     private final CommerceProperties properties;
+    private final PrabhixProperties prabhixProperties;
 
     @Transactional(readOnly = true)
     public List<CommerceDtos.DownloadView> listForAccessToken(String accessToken) {
@@ -78,7 +80,17 @@ public class DownloadService {
         download.setLinkExpiresAt(Instant.now().plus(properties.downloadLinkTtl()));
         download.setDownloadToken(CommerceTokens.opaqueToken());
         downloadRepository.save(download);
-        return issueDownload(download.getDownloadToken());
+        return new CommerceDtos.DownloadLinkResponse(
+                marketingBase() + "/download/" + download.getDownloadToken(),
+                download.getLinkExpiresAt());
+    }
+
+    private String marketingBase() {
+        PrabhixProperties.Urls urls = prabhixProperties.urls();
+        String base = urls == null || urls.marketing() == null || urls.marketing().isBlank()
+                ? "http://localhost:3000"
+                : urls.marketing();
+        return base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
     }
 
     void validateDownload(OrderDownload download) {
@@ -92,18 +104,12 @@ public class DownloadService {
 
     private CommerceDtos.DownloadView toView(OrderDownload download) {
         OrderItem item = orderItemRepository.findById(download.getOrderItemId()).orElse(null);
-        String url = null;
-        if (download.getLinkExpiresAt().isAfter(Instant.now())
-                && download.getDownloadCount() < download.getMaxDownloadCount()) {
-            url = TenantContext.callAs(download.getOrganizationId(), () ->
-                    fileStorageService.signedUrl(download.getOrganizationId(), download.getFileId()).orElse(null));
-        }
         return new CommerceDtos.DownloadView(
                 download.getOrderItemId(),
                 item == null ? "" : item.getProductName(),
                 download.getDownloadCount(),
                 download.getMaxDownloadCount(),
                 download.getLinkExpiresAt(),
-                url);
+                null);
     }
 }

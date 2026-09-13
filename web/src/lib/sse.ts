@@ -32,10 +32,30 @@ function connectEventStream<T>({
   const controller = new AbortController();
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
+  let visibilityWait: (() => void) | undefined;
 
   const setState = (state: StreamConnectionState) => onStateChange?.(state);
 
+  const waitUntilVisible = (): Promise<void> => {
+    if (typeof document === "undefined" || !document.hidden) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      const onVisible = () => {
+        if (!document.hidden) {
+          document.removeEventListener("visibilitychange", onVisible);
+          if (visibilityWait === onVisible) visibilityWait = undefined;
+          resolve();
+        }
+      };
+      visibilityWait = onVisible;
+      document.addEventListener("visibilitychange", onVisible);
+    });
+  };
+
   const run = async () => {
+    if (stopped) return;
+    await waitUntilVisible();
     if (stopped) return;
     setState("connecting");
 
@@ -102,6 +122,10 @@ function connectEventStream<T>({
     stopped = true;
     controller.abort();
     if (reconnectTimer) clearTimeout(reconnectTimer);
+    if (visibilityWait && typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", visibilityWait);
+      visibilityWait = undefined;
+    }
     setState("disconnected");
   };
 }

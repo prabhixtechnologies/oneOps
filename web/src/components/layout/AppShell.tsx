@@ -4,11 +4,11 @@ import { CommandPalette, useCommandPalette } from "@/components/layout/CommandPa
 import { Sidebar, useCloseNavOnRouteChange } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { ViewingOrgBanner } from "@/components/layout/ViewingOrgBanner";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { IS_ADMIN_APP } from "@/lib/app-mode";
 import { useAuth } from "@/lib/auth";
 import { setAuthTokenBridge } from "@/lib/auth-token-bridge";
-import { useStaffHandoff } from "@/lib/use-viewing-org";
+import { useViewingOrg, useStaffHandoff } from "@/lib/use-viewing-org";
 import { useEffect } from "react";
 
 /**
@@ -22,6 +22,7 @@ const useHandoff: typeof useStaffHandoff = IS_ADMIN_APP ? () => {} : useStaffHan
 
 export function AppShell() {
   const { logout, accessToken, me } = useAuth();
+  const { viewing } = useViewingOrg();
   const { open, setOpen } = useCommandPalette();
   const [navOpen, setNavOpen] = useState(false);
 
@@ -33,12 +34,18 @@ export function AppShell() {
   useEffect(() => {
     setAuthTokenBridge(
       () => accessToken,
-      () => me?.organizationId ?? null,
+      () => viewing?.id ?? me?.organizationId ?? null,
     );
-  }, [accessToken, me?.organizationId]);
+  }, [accessToken, me?.organizationId, viewing?.id]);
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-surface">
+    <div className="flex h-[100dvh] overflow-hidden bg-surface-muted">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:shadow-lg"
+      >
+        Skip to content
+      </a>
       <div className="hidden lg:flex">
         <Sidebar onOpenCommand={() => setOpen(true)} onLogout={() => void logout()} />
       </div>
@@ -48,6 +55,7 @@ export function AppShell() {
           className="fixed inset-y-0 left-0 z-50 h-full w-[min(100%,280px)] max-w-none translate-x-0 translate-y-0 rounded-none border-r p-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left motion-reduce:transition-none sm:max-w-none"
           aria-describedby={undefined}
         >
+          <DialogTitle className="sr-only">Navigation</DialogTitle>
           <Sidebar
             onOpenCommand={() => {
               setNavOpen(false);
@@ -65,7 +73,7 @@ export function AppShell() {
             staff are inside a customer's organization, which is the only case there is: the admin
             console has no tenant pages to put a banner above. */}
         <ViewingOrgBanner />
-        <main className="flex-1 overflow-auto pb-[env(safe-area-inset-bottom)]" id="main-content">
+        <main className="flex-1 overflow-auto bg-surface-muted pb-[env(safe-area-inset-bottom)]" id="main-content">
           <Outlet />
         </main>
       </div>

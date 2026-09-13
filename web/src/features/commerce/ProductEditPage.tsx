@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { EmptyState } from "@/components/shared/states";
 import { Money } from "@/components/shared/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -270,44 +271,44 @@ export default function ProductEditPage() {
             <VariantsList product={productQuery.data} />
             <div className="grid gap-4 border-t border-border pt-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Variant name</Label>
-                <Input value={variantName} onChange={(e) => setVariantName(e.target.value)} />
+                <Label htmlFor="variant-name">Variant name</Label>
+                <Input id="variant-name" value={variantName} onChange={(e) => setVariantName(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>SKU</Label>
-                <Input value={variantSku} onChange={(e) => setVariantSku(e.target.value)} />
+                <Label htmlFor="variant-sku">SKU</Label>
+                <Input id="variant-sku" value={variantSku} onChange={(e) => setVariantSku(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Price (₹)</Label>
-                <Input inputMode="decimal" value={variantPrice} onChange={(e) => setVariantPrice(e.target.value)} placeholder="99.00" />
+                <Label htmlFor="variant-price">Price (₹)</Label>
+                <Input id="variant-price" inputMode="decimal" value={variantPrice} onChange={(e) => setVariantPrice(e.target.value)} placeholder="99.00" />
               </div>
               <div className="space-y-2">
-                <Label>Compare at (₹)</Label>
-                <Input inputMode="decimal" value={variantCompare} onChange={(e) => setVariantCompare(e.target.value)} />
+                <Label htmlFor="variant-compare">Compare at (₹)</Label>
+                <Input id="variant-compare" inputMode="decimal" value={variantCompare} onChange={(e) => setVariantCompare(e.target.value)} />
               </div>
               {productType === "PHYSICAL" && (
                 <>
                   <div className="flex items-center gap-2">
-                    <Switch checked={trackInventory} onCheckedChange={setTrackInventory} />
-                    <Label>Track inventory</Label>
+                    <Switch id="track-inventory" checked={trackInventory} onCheckedChange={setTrackInventory} />
+                    <Label htmlFor="track-inventory">Track inventory</Label>
                   </div>
                   {trackInventory && (
                     <div className="space-y-2">
-                      <Label>Stock on hand</Label>
-                      <Input type="number" value={stockOnHand} onChange={(e) => setStockOnHand(e.target.value)} />
+                      <Label htmlFor="stock-on-hand">Stock on hand</Label>
+                      <Input id="stock-on-hand" type="number" value={stockOnHand} onChange={(e) => setStockOnHand(e.target.value)} />
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label>Delivery SLA (days)</Label>
-                    <Input type="number" value={deliverySlaDays} onChange={(e) => setDeliverySlaDays(e.target.value)} />
+                    <Label htmlFor="delivery-sla">Delivery SLA (days)</Label>
+                    <Input id="delivery-sla" type="number" value={deliverySlaDays} onChange={(e) => setDeliverySlaDays(e.target.value)} />
                   </div>
                 </>
               )}
               {productType === "SUBSCRIPTION" && (
                 <div className="space-y-2">
-                  <Label>Billing interval</Label>
+                  <Label htmlFor="billing-interval">Billing interval</Label>
                   <Select value={billingInterval} onValueChange={setBillingInterval}>
-                    <SelectTrigger>
+                    <SelectTrigger id="billing-interval" aria-label="Billing interval">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -319,16 +320,17 @@ export default function ProductEditPage() {
               )}
               {productType === "SERVICE" && (
                 <div className="space-y-2">
-                  <Label>Service duration (days)</Label>
-                  <Input type="number" value={serviceDurationDays} onChange={(e) => setServiceDurationDays(e.target.value)} />
+                  <Label htmlFor="service-duration">Service duration (days)</Label>
+                  <Input id="service-duration" type="number" value={serviceDurationDays} onChange={(e) => setServiceDurationDays(e.target.value)} />
                 </div>
               )}
               {productType === "DIGITAL" && (
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Download file ID</Label>
-                  <Input value={downloadFileId} onChange={(e) => setDownloadFileId(e.target.value)} />
+                  <Label htmlFor="download-file-id">Download file ID</Label>
+                  <Input id="download-file-id" value={downloadFileId} onChange={(e) => setDownloadFileId(e.target.value)} />
                   <Input
                     type="file"
+                    aria-label="Upload download file"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f) {
@@ -356,7 +358,7 @@ export default function ProductEditPage() {
 
 function VariantsList({ product }: { product: ProductDetail }) {
   if (product.variants.length === 0) {
-    return <p className="text-sm text-text-muted">No variants yet.</p>;
+    return <EmptyState title="No variants yet" description="Add a variant with a price to sell this product." />;
   }
   return (
     <ul className="divide-y divide-border rounded-lg border border-border text-sm">

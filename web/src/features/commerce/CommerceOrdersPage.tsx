@@ -49,9 +49,10 @@ export default function CommerceOrdersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="min-w-0 flex-1 sm:max-w-xs"
+          aria-label="Search orders"
         />
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]" aria-label="Order status">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>

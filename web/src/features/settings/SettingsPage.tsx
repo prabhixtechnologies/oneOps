@@ -185,8 +185,8 @@ export default function SettingsPage() {
             <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Email</Label>
-            <Input value={me.email} disabled />
+            <Label htmlFor="profile-email">Email</Label>
+            <Input id="profile-email" value={me.email} disabled />
           </div>
           <Button onClick={() => void saveProfile()} disabled={updateProfile.isPending}>
             Save profile
@@ -197,8 +197,8 @@ export default function SettingsPage() {
           <div className="max-w-md space-y-4">
             <h3 className="font-medium">Change password</h3>
             <div className="space-y-2">
-              <Label>Current password</Label>
-              <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+              <Label htmlFor="current-password">Current password</Label>
+              <Input id="current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-password">New password</Label>
@@ -216,8 +216,8 @@ export default function SettingsPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label>Confirm new password</Label>
-              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              <Label htmlFor="confirm-password">Confirm new password</Label>
+              <Input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
             </div>
             <Button variant="secondary" disabled={changePassword.isPending} onClick={() => void onChangePassword()}>
               Update password
@@ -286,12 +286,12 @@ export default function SettingsPage() {
 
         <TabsContent value="organization" className="mt-4 max-w-md space-y-4">
           <div className="space-y-2">
-            <Label>Organization name</Label>
-            <Input value={orgName} onChange={(e) => setOrgName(e.target.value)} />
+            <Label htmlFor="org-name">Organization name</Label>
+            <Input id="org-name" value={orgName} onChange={(e) => setOrgName(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Slug</Label>
-            <Input value={orgQuery.data?.slug ?? organization?.slug ?? ""} disabled />
+            <Label htmlFor="org-slug">Slug</Label>
+            <Input id="org-slug" value={orgQuery.data?.slug ?? organization?.slug ?? ""} disabled />
           </div>
           <PermissionGate permission={PERMISSIONS.ORG_UPDATE}>
             <Button disabled={updateOrg.isPending} onClick={() => void saveOrg()}>

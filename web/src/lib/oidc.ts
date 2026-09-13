@@ -1,4 +1,5 @@
 import { IS_ADMIN_APP } from "./app-mode";
+import { safeAppPath } from "./safePath";
 
 /**
  * The authorization code flow with PKCE, against Prabhix Identity.
@@ -74,7 +75,7 @@ async function authorize(returnTo?: string, prompt?: string): Promise<void> {
 
   sessionStorage.setItem(VERIFIER_KEY, verifier);
   sessionStorage.setItem(STATE_KEY, state);
-  if (returnTo) sessionStorage.setItem(RETURN_KEY, returnTo);
+  sessionStorage.setItem(RETURN_KEY, safeAppPath(returnTo));
 
   const params = new URLSearchParams({
     response_type: "code",
@@ -117,7 +118,7 @@ export async function completeLogin(search: URLSearchParams): Promise<{
   const state = search.get("state");
   const expectedState = sessionStorage.getItem(STATE_KEY);
   const verifier = sessionStorage.getItem(VERIFIER_KEY);
-  const returnTo = sessionStorage.getItem(RETURN_KEY) ?? "/";
+  const returnTo = safeAppPath(sessionStorage.getItem(RETURN_KEY));
 
   // Cleared before the exchange, not after. The code is single-use, so a retry with the same verifier
   // would fail anyway, and leaving them behind means a later forged callback finds a usable verifier.

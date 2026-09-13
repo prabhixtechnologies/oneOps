@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,10 +76,10 @@ class CartTotalRecalculationTest {
         settings.setGstPercent(18);
 
         when(cartItemRepository.findByCartIdAndOrganizationId(cart.getId(), orgId)).thenReturn(List.of(item));
-        when(variantRepository.findById(variantId)).thenReturn(Optional.of(variant));
+        when(variantRepository.findAllById(any())).thenReturn(List.of(variant));
         when(settingsService.resolve(orgId)).thenReturn(settings);
         when(cartRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(cartItemRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(cartItemRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
 
         cartService.recalculate(cart);
 

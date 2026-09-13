@@ -195,14 +195,14 @@ management:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
-    enabled: ${SWAGGER_ENABLED:true}
+    enabled: ${SWAGGER_ENABLED:false}
   api-docs:
     path: /v3/api-docs
     # Gated by the same flag as the UI. Turning off only the UI while still serving the raw
     # document publishes every endpoint, schema and auth requirement to anyone who asks, which
     # defeats the point of disabling the UI in production. Generate mobile and TypeScript clients
     # from a local or CI instance, where this is on.
-    enabled: ${SWAGGER_ENABLED:true}
+    enabled: ${SWAGGER_ENABLED:false}
 
 logging:
   level:

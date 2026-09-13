@@ -33,8 +33,8 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-      isActive ? "bg-surface text-primary" : "text-text-muted",
+      "flex min-h-11 items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      isActive ? "bg-surface text-primary shadow-sm" : "text-text-muted",
     );
 
   const navLink = (item: NavItem) => (
@@ -64,7 +64,7 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
   return (
     <aside
       className={cn(
-        "flex h-full w-full flex-col border-r border-border bg-surface-muted/50 lg:w-52",
+        "flex h-full w-full flex-col border-r border-border bg-surface lg:w-56",
         className,
       )}
     >

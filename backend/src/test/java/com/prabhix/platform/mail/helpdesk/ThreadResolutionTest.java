@@ -171,8 +171,8 @@ class ThreadResolutionTest {
                 new ThreadDtos.UpdateThreadRequest(null, null));
 
         assertEquals(1, summary.tags().size());
-        assertEquals(tagId, summary.tags().getFirst().id());
-        assertEquals("Billing", summary.tags().getFirst().name());
+        assertEquals(tagId, summary.tags().get(0).id());
+        assertEquals("Billing", summary.tags().get(0).name());
     }
 
     private MailThreadTagRepository.ThreadTagView tagRow(UUID tagId, String slug, String name, String colour) {

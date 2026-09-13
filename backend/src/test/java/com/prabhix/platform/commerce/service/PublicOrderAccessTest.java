@@ -1,6 +1,7 @@
 package com.prabhix.platform.commerce.service;
 
 import com.prabhix.platform.commerce.config.CommerceProperties;
+import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.commerce.domain.CommerceInvoice;
 import com.prabhix.platform.commerce.domain.CommerceOrder;
 import com.prabhix.platform.commerce.domain.CommerceEnums.OrderStatus;
@@ -32,6 +33,7 @@ class PublicOrderAccessTest {
     @Mock private CommerceOrderRepository orderRepository;
     @Mock private CommerceInvoiceRepository invoiceRepository;
     @Mock private FileStorageService fileStorageService;
+    @Mock private PrabhixProperties prabhixProperties;
 
     private DownloadService downloadService;
     private CommerceInvoiceService invoiceService;
@@ -46,7 +48,7 @@ class PublicOrderAccessTest {
                 java.time.Duration.ofDays(14), java.time.Duration.ofMinutes(15),
                 java.util.List.of(), 60);
         downloadService = new DownloadService(
-                downloadRepository, orderItemRepository, orderRepository, fileStorageService, properties);
+                downloadRepository, orderItemRepository, orderRepository, fileStorageService, properties, prabhixProperties);
         invoiceService = new CommerceInvoiceService(
                 invoiceRepository, orderRepository, orderItemRepository,
                 null, null, null, null, fileStorageService);

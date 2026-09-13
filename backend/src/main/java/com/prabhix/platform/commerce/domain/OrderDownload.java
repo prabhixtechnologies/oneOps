@@ -25,7 +25,7 @@ public class OrderDownload extends TenantScopedEntity {
     @Column(name = "file_id", nullable = false)
     private UUID fileId;
 
-    @Column(name = "download_token", nullable = false, length = 64, updatable = false)
+    @Column(name = "download_token", nullable = false, length = 64)
     private String downloadToken;
 
     @Column(name = "download_count", nullable = false)

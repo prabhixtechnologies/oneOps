@@ -76,7 +76,7 @@ public class CommerceOrderService {
     public CommerceDtos.OrderDetail getByAccessToken(String accessToken) {
         CommerceOrder order = orderRepository.findByAccessToken(accessToken)
                 .orElseThrow(() -> ApiException.of(ErrorCode.ORDER_NOT_FOUND, "That order was not found"));
-        return toDetail(order);
+        return toDetail(order, false);
     }
 
     @Transactional
@@ -160,6 +160,10 @@ public class CommerceOrderService {
     }
 
     private CommerceDtos.OrderDetail toDetail(CommerceOrder order) {
+        return toDetail(order, true);
+    }
+
+    private CommerceDtos.OrderDetail toDetail(CommerceOrder order, boolean includeInternalNote) {
         CommerceCustomer customer = order.getCustomerId() == null ? null
                 : customerRepository.findById(order.getCustomerId()).orElse(null);
         List<OrderItem> items = orderItemRepository.findByOrderIdAndOrganizationId(
@@ -197,7 +201,7 @@ public class CommerceOrderService {
                 order.getInvoiceId(),
                 order.getPaidAt(),
                 order.getFulfilledAt(),
-                order.getInternalNote(),
+                includeInternalNote ? order.getInternalNote() : null,
                 shipments.stream().map(s -> new CommerceDtos.ShipmentView(
                         s.getOrderItemId(),
                         s.getStatus(),

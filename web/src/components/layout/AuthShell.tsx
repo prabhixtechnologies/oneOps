@@ -10,6 +10,12 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export function AuthShell() {
   return (
     <div className="auth-stage relative flex min-h-[100dvh] overflow-hidden">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:shadow-lg"
+      >
+        Skip to sign in
+      </a>
       <div className="auth-aurora" aria-hidden />
       <div className="auth-grid" aria-hidden />
       <div className="auth-orb auth-orb--a" aria-hidden />
@@ -45,7 +51,7 @@ export function AuthShell() {
           </p>
         </aside>
 
-        <section className="auth-panel mx-auto w-full max-w-md justify-self-center lg:justify-self-end">
+        <section id="main-content" className="auth-panel mx-auto w-full max-w-md justify-self-center lg:justify-self-end">
           <div className="auth-panel-inner rounded-2xl border border-border/80 bg-surface/75 p-7 shadow-px backdrop-blur-xl sm:p-8">
             <Outlet />
           </div>

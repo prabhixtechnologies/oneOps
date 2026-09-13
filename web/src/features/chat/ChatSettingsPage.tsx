@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { ErrorState } from "@/components/shared/states";
+import { ErrorState, EmptyState } from "@/components/shared/states";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { Button } from "@/components/ui/button";
 import {
@@ -193,7 +193,7 @@ export default function ChatSettingsPage() {
           {cannedQuery.isLoading ? (
             <Skeleton className="h-32" />
           ) : (cannedQuery.data?.length ?? 0) === 0 ? (
-            <p className="text-sm text-text-muted">No canned replies yet.</p>
+            <EmptyState title="No canned replies yet" description="Save replies you send often." />
           ) : (
             <div className="space-y-3">
               {cannedQuery.data?.map((cr) => (
@@ -229,16 +229,16 @@ export default function ChatSettingsPage() {
           <DialogHeader><DialogTitle>New canned reply</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Title</Label>
-              <Input value={cannedTitle} onChange={(e) => setCannedTitle(e.target.value)} />
+              <Label htmlFor="canned-title">Title</Label>
+              <Input id="canned-title" value={cannedTitle} onChange={(e) => setCannedTitle(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Shortcut</Label>
-              <Input value={cannedShortcut} onChange={(e) => setCannedShortcut(e.target.value)} placeholder="hello" />
+              <Label htmlFor="canned-shortcut">Shortcut</Label>
+              <Input id="canned-shortcut" value={cannedShortcut} onChange={(e) => setCannedShortcut(e.target.value)} placeholder="hello" />
             </div>
             <div className="space-y-2">
-              <Label>Body</Label>
-              <Textarea value={cannedBody} onChange={(e) => setCannedBody(e.target.value)} className="min-h-[100px]" />
+              <Label htmlFor="canned-body">Body</Label>
+              <Textarea id="canned-body" value={cannedBody} onChange={(e) => setCannedBody(e.target.value)} className="min-h-[100px]" />
             </div>
           </div>
           <DialogFooter>

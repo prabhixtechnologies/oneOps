@@ -170,10 +170,11 @@ export default function LogsPage() {
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="Search event logs"
           />
         </div>
         <Select value={severity ?? "all"} onValueChange={(v) => setSeverity(v)}>
-          <SelectTrigger className="w-full sm:w-36">
+          <SelectTrigger className="w-full sm:w-36" aria-label="Log severity">
             <SelectValue placeholder="Severity" />
           </SelectTrigger>
           <SelectContent>
@@ -183,7 +184,7 @@ export default function LogsPage() {
           </SelectContent>
         </Select>
         <Select value={category ?? "all"} onValueChange={(v) => setCategory(v)}>
-          <SelectTrigger className="w-full sm:w-40">
+          <SelectTrigger className="w-full sm:w-40" aria-label="Log category">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>

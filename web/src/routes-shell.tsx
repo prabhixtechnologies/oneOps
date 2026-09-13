@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Outlet, useRouteError, type RouteObject } from "react-router";
+import { Navigate, Outlet, useLocation, useRouteError, type RouteObject } from "react-router";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppShell } from "@/components/layout/AppShell";
 import { AuthShell } from "@/components/layout/AuthShell";
@@ -59,8 +59,11 @@ function RouteErrorBoundary() {
 
 function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
   if (isLoading) return <PageLoader />;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
+  }
   return <Outlet />;
 }
 

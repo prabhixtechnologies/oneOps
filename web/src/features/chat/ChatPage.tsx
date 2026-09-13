@@ -40,7 +40,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { CursorList } from "@/components/shared/CursorList";
 import { RelativeTime } from "@/components/shared/RelativeTime";
-import { ErrorState } from "@/components/shared/states";
+import { ErrorState, EmptyState } from "@/components/shared/states";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { connectChatStream, type StreamConnectionState } from "@/lib/sse";
 import type { ConversationSummary } from "@/lib/schemas/chat";
@@ -283,6 +283,15 @@ export default function ChatPage() {
     onError: (message) => toast.error(message),
   });
 
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
+  const conversationsQueryRef = useRef(conversationsQuery);
+  conversationsQueryRef.current = conversationsQuery;
+  const countsQueryRef = useRef(countsQuery);
+  countsQueryRef.current = countsQuery;
+  const conversationQueryRef = useRef(conversationQuery);
+  conversationQueryRef.current = conversationQuery;
+
   const hasAiUse = permissions.includes(PERMISSIONS.AI_USE);
 
   const rawConversations = useMemo(
@@ -332,10 +341,10 @@ export default function ChatPage() {
           event.event === "conversation.new" ||
           event.event === "message.new"
         ) {
-          void conversationsQuery.refetch();
-          void countsQuery.refetch();
-          if (event.conversationId && event.conversationId === selectedId) {
-            void conversationQuery.refetch();
+          void conversationsQueryRef.current.refetch();
+          void countsQueryRef.current.refetch();
+          if (event.conversationId && event.conversationId === selectedIdRef.current) {
+            void conversationQueryRef.current.refetch();
           }
           if (event.event === "message.new" && liveRegionRef.current) {
             liveRegionRef.current.textContent = "New chat message received";
@@ -345,7 +354,7 @@ export default function ChatPage() {
       undefined,
       setStreamState,
     );
-  }, [conversationsQuery, countsQuery, conversationQuery, selectedId]);
+  }, []);
 
   const selectConversation = (id: string) => {
     setSelectedId(id);
@@ -543,7 +552,9 @@ export default function ChatPage() {
 
         <div className="flex gap-2 border-b border-border p-2">
           <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-8 flex-1 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="h-8 flex-1 text-xs" aria-label="Conversation status filter">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -607,7 +618,11 @@ export default function ChatPage() {
             {conversationQuery.isLoading ? (
               <Skeleton className="h-64 w-3/4 max-w-lg" />
             ) : (
-              <p className="text-sm text-text-muted">Select a conversation</p>
+              <EmptyState
+                className="py-8"
+                title="Select a conversation"
+                description="Choose a thread from the list to read and reply."
+              />
             )}
           </div>
         ) : conversationQuery.isError || !conversation ? (
@@ -638,7 +653,7 @@ export default function ChatPage() {
                         .catch((err) => toast.error(getApiErrorMessage(err)))
                     }
                   >
-                    <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-8 w-32" aria-label="Conversation status"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
@@ -651,7 +666,7 @@ export default function ChatPage() {
                         .catch((err) => toast.error(getApiErrorMessage(err)))
                     }
                   >
-                    <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-8 w-32" aria-label="Conversation priority"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                     </SelectContent>
@@ -671,6 +686,7 @@ export default function ChatPage() {
                     onChange={(e) => setTagInput(e.target.value)}
                     placeholder="Add tag"
                     className="h-7 w-24 text-xs"
+                    aria-label="Add tag"
                     onKeyDown={(e) => e.key === "Enter" && void addTag()}
                   />
                   <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => void addTag()}>Add</Button>
