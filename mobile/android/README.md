@@ -207,8 +207,8 @@ messages but is not allowed to post a notification, which looks exactly like pus
 
 ## Screens
 
-Login (password / OTP / magic link) → Org select → Bottom nav: **Dashboard**, **Chat**
-(mine/unassigned/all queues), **Mail**, **Live visitors** → Conversation/thread detail.
+Login (Identity OIDC Custom Tab) → Org select → Bottom nav: **Dashboard**, **Chat**
+(mine/unassigned/all queues), **Live visitors** → Conversation detail.
 
 The admin flavor adds a fifth tab, **Platform**, shown only to an account the server reports as
 `platformAdmin`: the platform counts (tenants, accounts, backlogs, last 24 hours) and the tenant

@@ -166,7 +166,7 @@ Deep links and notification taps require the operator to be signed in with an or
 
 ## Screens
 
-Login (password / OTP / magic link) → Organization picker → Tabs:
+Login (Identity OIDC via ASWebAuthenticationSession) → Organization picker → Tabs:
 
 - **Dashboard** — KPIs, optional biometric toggle
 - **Chat** — mine / unassigned / all queues, conversation detail with reply, notes, AI suggest/rewrite

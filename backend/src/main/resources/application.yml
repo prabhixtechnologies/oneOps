@@ -484,6 +484,31 @@ prabhix:
       # Three missed probes, so a single slow tick is not mistaken for a dead subscription.
       tolerance: ${REALTIME_PUBSUB_MONITOR_TOLERANCE:PT90S}
 
+  # Admin ops hub — AWS cost/EC2, product health probes, optional GitHub Actions.
+  # Credentials: DefaultCredentialsProvider (instance role / AWS_* env). Never static keys here.
+  ops:
+    aws:
+      enabled: ${OPS_AWS_ENABLED:true}
+      region: ${AWS_REGION:ap-south-1}
+      ce-region: ${AWS_CE_REGION:us-east-1}
+      cost-cache-ttl-seconds: ${AWS_COST_CACHE_TTL:1800}
+    health:
+      timeout-seconds: ${OPS_HEALTH_TIMEOUT:5}
+      products:
+        identity: https://api.prabhixtechnologies.com/healthz
+        oneops: https://oneops.prabhixtechnologies.com/healthz
+        mobistack: https://mobistack.prabhixtechnologies.com/healthz
+        mailroom: https://mailroom.prabhixtechnologies.com/healthz
+        store: https://store.prabhixtechnologies.com/healthz
+    github:
+      api-url: ${GITHUB_API_URL:https://api.github.com}
+      repos:
+        - prabhixtechnologies/Mobile
+        - prabhixtechnologies/oneOps
+        - prabhixtechnologies/MobiStack
+        - prabhixtechnologies/Identity
+        - prabhixtechnologies/Mailroom
+
 ---
 # ElastiCache Serverless for Valkey. Its own profile rather than folded into `prod` so that running
 # the prod profile against a plain Redis container still works: SPRING_PROFILES_ACTIVE=prod,valkey.

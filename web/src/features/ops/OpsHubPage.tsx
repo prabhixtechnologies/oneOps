@@ -18,9 +18,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePlatformOverview } from "@/features/ops/api";
 import { ApplicationsTab, LeadsTab, SubscribersTab } from "@/features/ops/SitePipeline";
 import { TenantsTab } from "@/features/ops/TenantsTab";
+import { useQuery } from "@tanstack/react-query";
+import {
+  fetchAwsSummary,
+  fetchMobiRevenue,
+  fetchOneOpsRevenue,
+} from "@/features/ops/control-plane-api";
 import { useAuth } from "@/lib/auth";
 import { staffHandoffUrl } from "@/lib/staff-handoff";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router";
 
 /**
  * Where Prabhix's own work happens, which is not here.
@@ -85,6 +92,9 @@ export default function OpsHubPage() {
 
 function OverviewTab() {
   const { data, isLoading, isError, refetch, isFetching } = usePlatformOverview();
+  const mobi = useQuery({ queryKey: ["mobi-revenue"], queryFn: fetchMobiRevenue, retry: 1 });
+  const oneops = useQuery({ queryKey: ["oneops-revenue"], queryFn: fetchOneOpsRevenue, retry: 1 });
+  const aws = useQuery({ queryKey: ["aws-summary"], queryFn: fetchAwsSummary, retry: 1 });
 
   if (isLoading) {
     return (
@@ -101,6 +111,7 @@ function OverviewTab() {
   }
 
   const { tenants, accounts, queues, activity } = data;
+  const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
   return (
     <div className="space-y-6">
@@ -119,6 +130,48 @@ function OverviewTab() {
           Refresh
         </Button>
       </div>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+            Commerce & infra
+          </h2>
+          <div className="flex gap-2 text-xs">
+            <Link className="text-accent underline-offset-2 hover:underline" to="/commerce">
+              Commerce
+            </Link>
+            <Link className="text-accent underline-offset-2 hover:underline" to="/infra">
+              Infra
+            </Link>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="MobiStack received"
+            value={mobi.isError ? "—" : inr.format(mobi.data?.capturedTotal ?? 0)}
+            sub={mobi.isError ? "system_admin / API" : `${mobi.data?.capturedCount ?? 0} captured`}
+            icon={Users}
+          />
+          <StatCard
+            label="oneOps SaaS"
+            value={oneops.isError ? "—" : inr.format(oneops.data?.capturedTotal ?? 0)}
+            sub={`${oneops.data?.capturedCount ?? 0} captured`}
+            icon={Users}
+          />
+          <StatCard
+            label="AWS MTD"
+            value={aws.isError ? "—" : `$${(aws.data?.costs?.mtdUsd ?? 0).toFixed(2)}`}
+            sub="Cost Explorer via Ops Tool"
+            icon={ShieldAlert}
+          />
+          <StatCard
+            label="EC2 running"
+            value={aws.isError ? "—" : String(aws.data?.instances?.running ?? 0)}
+            sub={`of ${aws.data?.instances?.total ?? 0} instances`}
+            icon={AlertTriangle}
+          />
+        </div>
+      </section>
 
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">

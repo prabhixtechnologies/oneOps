@@ -2,6 +2,7 @@ import {
   Activity,
   BarChart3,
   Briefcase,
+  Cloud,
   CreditCard,
   FileText,
   Flag,
@@ -100,6 +101,8 @@ const platformGroups: NavGroup[] = [
     heading: "Platform",
     items: [
       { to: "/", icon: Briefcase, label: "Ops Hub", platformAdminOnly: true },
+      { to: "/commerce", icon: CreditCard, label: "Commerce", platformAdminOnly: true },
+      { to: "/infra", icon: Cloud, label: "Infra", platformAdminOnly: true },
       { to: "/logs", icon: ScrollText, label: "Event Logs", platformAdminOnly: true },
     ],
   },

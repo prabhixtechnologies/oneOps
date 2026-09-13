@@ -208,6 +208,23 @@
             <version>${awssdk.version}</version>
         </dependency>
 
+        <!-- Platform ops hub: Cost Explorer, EC2 inventory, CloudWatch CPU -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>costexplorer</artifactId>
+            <version>${awssdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>ec2</artifactId>
+            <version>${awssdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>cloudwatch</artifactId>
+            <version>${awssdk.version}</version>
+        </dependency>
+
         <!-- API docs -->
         <dependency>
             <groupId>org.springdoc</groupId>

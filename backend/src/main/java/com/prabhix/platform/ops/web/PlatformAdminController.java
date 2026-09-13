@@ -2,6 +2,7 @@ package com.prabhix.platform.ops.web;
 
 import com.prabhix.platform.common.web.CursorPage;
 import com.prabhix.platform.ops.dto.OpsDtos;
+import com.prabhix.platform.ops.service.PlatformBillingRevenueService;
 import com.prabhix.platform.ops.service.PlatformOverviewService;
 import com.prabhix.platform.security.rbac.Authorize;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlatformAdminController {
 
     private final PlatformOverviewService platformOverviewService;
+    private final PlatformBillingRevenueService platformBillingRevenueService;
 
     @GetMapping("/overview")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
@@ -38,5 +40,11 @@ public class PlatformAdminController {
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer limit) {
         return platformOverviewService.listTenants(status, cursor, limit);
+    }
+
+    @GetMapping("/billing/revenue")
+    @PreAuthorize(Authorize.PLATFORM_ADMIN)
+    public OpsDtos.PlatformBillingRevenue billingRevenue() {
+        return platformBillingRevenueService.revenue();
     }
 }

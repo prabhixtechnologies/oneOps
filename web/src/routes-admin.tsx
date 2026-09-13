@@ -32,6 +32,8 @@ import {
 /** Declared here rather than in the shared module so the OneOps bundle does not carry them. */
 const OpsHubPage = lazy(() => import("@/features/ops/OpsHubPage"));
 const LogsPage = lazy(() => import("@/features/logs/LogsPage"));
+const CommercePage = lazy(() => import("@/features/ops/CommercePage"));
+const InfraPage = lazy(() => import("@/features/ops/InfraPage"));
 
 const platformRoutes: RouteObject[] = [
   {
@@ -39,8 +41,9 @@ const platformRoutes: RouteObject[] = [
     children: [
       { index: true, element: <SuspenseWrap><OpsHubPage /></SuspenseWrap> },
       { path: "ops", element: <Navigate to="/" replace /> },
-      // The hub lived at /site before it was named; keep old bookmarks working.
       { path: "site", element: <Navigate to="/" replace /> },
+      { path: "commerce", element: <SuspenseWrap><CommercePage /></SuspenseWrap> },
+      { path: "infra", element: <SuspenseWrap><InfraPage /></SuspenseWrap> },
       { path: "logs", element: <SuspenseWrap><LogsPage /></SuspenseWrap> },
     ],
   },

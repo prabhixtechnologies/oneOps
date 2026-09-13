@@ -10,6 +10,10 @@ interface ImportMetaEnv {
   readonly VITE_MAILROOM_URL?: string;
   /** Identity's issuer. Blank falls back to the native password form. See lib/oidc.ts. */
   readonly VITE_IDENTITY_ISSUER?: string;
+  /** MobiStack admin API base (…/api/v1) for Commerce. */
+  readonly VITE_MOBISTACK_API_URL?: string;
+  /** Ops Tool base (…/ops) for Infra AWS/health. */
+  readonly VITE_OPS_TOOL_URL?: string;
 }
 
 interface ImportMeta {
