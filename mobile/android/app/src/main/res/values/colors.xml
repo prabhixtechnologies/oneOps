@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand purple, matching the primary token in web/src/index.css and the marketing mark.
-         Was Material Indigo 900 (#1A237E), which belonged to no part of the brand. -->
-    <color name="ic_launcher_background">#7C3AED</color>
-    <color name="brand_primary">#7C3AED</color>
+    <!-- House ink field so OneOps sits apart from Mailroom (teal) and MobiStack (stacked M). -->
+    <color name="ic_launcher_background">#0C1524</color>
+    <color name="brand_primary">#0E7490</color>
     <color name="brand_accent">#22D3EE</color>
 </resources>

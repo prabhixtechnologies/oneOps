@@ -47,50 +47,66 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-
-          if (
-            id.includes("react-dom") ||
-            id.includes("/react/") ||
-            id.includes("react-router") ||
-            id.includes("scheduler")
-          ) {
-            return "vendor-react";
-          }
-          if (id.includes("@tanstack/react-query") || id.includes("@tanstack/query-core")) {
-            return "vendor-query";
-          }
-          if (id.includes("@radix-ui") || id.includes("cmdk")) {
-            return "vendor-radix";
-          }
-          if (id.includes("@tanstack/react-virtual")) {
-            return "vendor-virtual";
-          }
-          if (id.includes("date-fns")) {
-            return "vendor-date";
-          }
-          if (id.includes("dompurify")) {
-            return "vendor-dompurify";
-          }
-          if (id.includes("lucide-react")) {
-            return "vendor-icons";
-          }
-          if (id.includes("react-hook-form") || id.includes("@hookform")) {
-            return "vendor-forms";
-          }
-          if (id.includes("/zod/") || id.endsWith("/zod")) {
-            return "vendor-zod";
-          }
-          if (id.includes("sonner")) {
-            return "vendor-sonner";
-          }
+        codeSplitting: {
+          includeDependenciesRecursively: false,
+          groups: [
+            {
+              name: "vendor-react",
+              test: /node_modules[\\/](react-dom|react-router|scheduler)[\\/]|node_modules[\\/]react[\\/]/,
+              priority: 30,
+            },
+            {
+              name: "vendor-query",
+              test: /node_modules[\\/]@tanstack[\\/](react-query|query-core)/,
+              priority: 25,
+            },
+            {
+              name: "vendor-radix",
+              test: /node_modules[\\/](@radix-ui|cmdk)/,
+              priority: 24,
+            },
+            {
+              name: "vendor-virtual",
+              test: /node_modules[\\/]@tanstack[\\/]react-virtual/,
+              priority: 23,
+            },
+            {
+              name: "vendor-date",
+              test: /node_modules[\\/]date-fns/,
+              priority: 22,
+            },
+            {
+              name: "vendor-dompurify",
+              test: /node_modules[\\/]dompurify/,
+              priority: 21,
+            },
+            {
+              name: "vendor-icons",
+              test: /node_modules[\\/]lucide-react/,
+              priority: 20,
+            },
+            {
+              name: "vendor-forms",
+              test: /node_modules[\\/](react-hook-form|@hookform)/,
+              priority: 19,
+            },
+            {
+              name: "vendor-zod",
+              test: /node_modules[\\/]zod/,
+              priority: 18,
+            },
+            {
+              name: "vendor-sonner",
+              test: /node_modules[\\/]sonner/,
+              priority: 17,
+            },
+          ],
         },
       },
     },
