@@ -160,6 +160,18 @@ SELECT :'owner_id',
        (SELECT id FROM organizations WHERE slug = 'prabhix-platform')
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = :'owner_email');
 
+-- Identity may have mirrored this account first (same id, no tenant). The INSERT above then no-ops,
+-- leaving an owner who can sign in but has no organizationId on /auth/me. Repair that case.
+UPDATE users
+SET platform_admin = true,
+    default_organization_id = COALESCE(
+        default_organization_id,
+        (SELECT id FROM organizations WHERE slug = 'prabhix-platform')),
+    full_name = CASE WHEN full_name IS NULL OR full_name = '' THEN :'owner_name' ELSE full_name END,
+    email_verified_at = COALESCE(email_verified_at, now()),
+    updated_at = now()
+WHERE email = :'owner_email';
+
 -- ---------------------------------------------------------------------------------------------
 -- Membership of the platform organization, as OWNER
 -- ---------------------------------------------------------------------------------------------

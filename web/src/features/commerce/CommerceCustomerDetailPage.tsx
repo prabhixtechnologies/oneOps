@@ -1,7 +1,7 @@
 import { Link, useParams } from "react-router";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { RelativeTime } from "@/components/shared/RelativeTime";
-import { ErrorState } from "@/components/shared/states";
+import { EmptyState, ErrorState } from "@/components/shared/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -72,7 +72,11 @@ export default function CommerceCustomerDetailPage() {
       <section>
         <h2 className="mb-3 font-medium">Order history</h2>
         {orders.length === 0 ? (
-          <p className="text-sm text-text-muted">No orders for this email yet.</p>
+          <EmptyState
+            className="py-8"
+            title="No orders yet"
+            description="Orders for this email appear here after checkout."
+          />
         ) : (
           <ResponsiveTable
             mobile={orders.map((o) => (

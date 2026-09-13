@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/states";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,8 +59,16 @@ export default function FilesPage() {
     <div className="space-y-6 p-4 md:p-6">
       <PageHeader
         title="Files"
-        description="Upload, download, and manage organization files. Browse-by-list is not available from the API yet — use upload or enter a file ID."
+        description="Upload, download, and manage organization files."
       />
+
+      {!lastUpload ? (
+        <EmptyState
+          className="py-8"
+          title="No file list yet"
+          description="Browse-by-list is not available from the API yet. Upload a file or enter a file ID to download or delete it."
+        />
+      ) : null}
 
       <PermissionGate permission={PERMISSIONS.FILE_UPLOAD}>
         <div

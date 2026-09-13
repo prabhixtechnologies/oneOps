@@ -126,7 +126,10 @@ export default function CommerceDiscountsPage() {
       )}
 
       {(query.data?.length ?? 0) === 0 && !query.isLoading && (
-        <EmptyState title="No discount codes" />
+        <EmptyState
+          title="No discount codes"
+          description="Create a code above, or wait until one exists for this store."
+        />
       )}
 
       <ResponsiveTable

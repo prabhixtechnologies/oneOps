@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { beginSignup, isOidcEnabled } from "@/lib/oidc";
-import { Skeleton } from "@/components/ui/skeleton";
 import { MissingIssuer } from "./LoginPage";
 
 /**
@@ -25,9 +24,9 @@ export function SignupPage() {
   if (!isOidcEnabled()) return <MissingIssuer />;
 
   return (
-    <div className="space-y-4 text-center">
-      <Skeleton className="mx-auto h-8 w-48" />
-      <p className="text-sm text-text-muted">Taking you to sign up…</p>
+    <div className="space-y-3 text-center">
+      <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Taking you to sign up</h1>
+      <p className="text-sm text-text-muted">One Prabhix account for every product.</p>
     </div>
   );
 }

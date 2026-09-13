@@ -190,14 +190,21 @@ export function beginLogout(): void {
   const idToken = sessionStorage.getItem(ID_TOKEN_KEY);
   sessionStorage.removeItem(ID_TOKEN_KEY);
 
-  const params = new URLSearchParams({ client_id: CLIENT_ID });
   if (idToken) {
-    params.set("id_token_hint", idToken);
-    // Only sent alongside a hint. The provider validates it against the hint's client, so on its own
-    // it is rejected — and being bounced back here would look like a sign-out that did nothing.
-    params.set("post_logout_redirect_uri", `${window.location.origin}/`);
+    const params = new URLSearchParams({
+      client_id: CLIENT_ID,
+      id_token_hint: idToken,
+      // Only sent alongside a hint. The provider validates it against the hint's client, so on its own
+      // it is rejected — and being bounced back here would look like a sign-out that did nothing.
+      post_logout_redirect_uri: `${window.location.origin}/`,
+    });
+    window.location.assign(`${identityIssuer()}/connect/logout?${params.toString()}`);
+    return;
   }
-  window.location.assign(`${identityIssuer()}/connect/logout?${params.toString()}`);
+
+  // No hint (reload wiped sessionStorage, or SSO arrived via another product's cookie). Hosted
+  // /logout still clears the Identity session cookie; /connect/logout without a hint is 400.
+  window.location.assign(`${identityIssuer()}/logout`);
 }
 
 function describeOauthError(code: string): string {

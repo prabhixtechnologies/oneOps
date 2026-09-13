@@ -53,23 +53,20 @@ export default defineConfig({
   build: {
     rolldownOptions: {
       output: {
+        // Keep UI runtime libraries in one graph. Splitting Radix / Floating UI away from React
+        // (especially with includeDependenciesRecursively: false) created circular chunks that
+        // crashed /login with "X is not a function" before paint.
         codeSplitting: {
-          includeDependenciesRecursively: false,
           groups: [
             {
               name: "vendor-react",
-              test: /node_modules[\\/](react-dom|react-router|scheduler)[\\/]|node_modules[\\/]react[\\/]/,
+              test: /node_modules[\\/](react-dom|react-router|scheduler|@radix-ui|@floating-ui|cmdk)[\\/]|node_modules[\\/]react[\\/]/,
               priority: 30,
             },
             {
               name: "vendor-query",
               test: /node_modules[\\/]@tanstack[\\/](react-query|query-core)/,
               priority: 25,
-            },
-            {
-              name: "vendor-radix",
-              test: /node_modules[\\/](@radix-ui|cmdk)/,
-              priority: 24,
             },
             {
               name: "vendor-virtual",

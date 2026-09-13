@@ -1,4 +1,4 @@
-import { Outlet, Link } from "react-router";
+import { Outlet, Link, useLocation } from "react-router";
 
 import { LogoMark } from "@/components/brand/LogoMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -8,6 +8,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
  * Atmosphere + motion live in CSS; the outlet is the only interaction card.
  */
 export function AuthShell() {
+  const { pathname } = useLocation();
+  const showSignupHint = pathname === "/login";
+
   return (
     <div className="auth-stage relative flex min-h-[100dvh] overflow-hidden">
       <a
@@ -55,12 +58,14 @@ export function AuthShell() {
           <div className="auth-panel-inner rounded-2xl border border-border/80 bg-surface/75 p-7 shadow-px backdrop-blur-xl sm:p-8">
             <Outlet />
           </div>
-          <p className="mt-5 text-center text-sm text-text-muted">
-            New workspace?{" "}
-            <Link className="font-medium text-primary underline-offset-4 hover:underline" to="/signup">
-              Create an account
-            </Link>
-          </p>
+          {showSignupHint ? (
+            <p className="mt-5 text-center text-sm text-text-muted">
+              New workspace?{" "}
+              <Link className="font-medium text-primary underline-offset-4 hover:underline" to="/signup">
+                Create an account
+              </Link>
+            </p>
+          ) : null}
         </section>
       </div>
     </div>

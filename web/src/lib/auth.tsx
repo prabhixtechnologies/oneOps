@@ -104,7 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMe(authMe);
     const [userProfile, org] = await Promise.all([
       fetchProfile().catch(() => null),
-      fetchOrganization(authMe.organizationId).catch(() => null),
+      authMe.organizationId
+        ? fetchOrganization(authMe.organizationId).catch(() => null)
+        : Promise.resolve(null),
     ]);
     setProfile(userProfile);
     setOrganization(org);

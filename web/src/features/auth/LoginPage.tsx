@@ -1,38 +1,31 @@
+import { useEffect } from "react";
 import { useLocation } from "react-router";
-import { beginLogin, beginSignup, isOidcEnabled } from "@/lib/oidc";
+import { beginLogin, isOidcEnabled } from "@/lib/oidc";
 import { safeAppPath } from "@/lib/safePath";
-import { Button } from "@/components/ui/button";
 
 /**
- * Product consoles never collect credentials. Sign-in / signup are always Prabhix Identity (OIDC).
+ * Product consoles never collect credentials. {@code /login} only forwards to Prabhix Identity.
+ *
+ * <p>No intermediate "Sign in" button: a second login UI on this origin is exactly the thing
+ * centralising identity is meant to remove. Mailroom already redirects the same way.
  */
 export function LoginPage() {
   const location = useLocation();
   const from = safeAppPath((location.state as { from?: string } | null)?.from);
 
+  useEffect(() => {
+    if (!isOidcEnabled()) return;
+    void beginLogin(from);
+  }, [from]);
+
   if (!isOidcEnabled()) return <MissingIssuer />;
 
   return (
-    <div className="auth-login space-y-6 text-center">
-      <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Welcome</h1>
-        <p className="mt-2 text-sm text-text-muted">
-          One Prabhix account for every product. Credentials are entered only on Identity.
-        </p>
-      </div>
-      <div className="flex flex-col gap-3">
-        <Button className="w-full" size="lg" onClick={() => void beginLogin(from)}>
-          Sign in
-        </Button>
-        <Button
-          className="w-full"
-          size="lg"
-          variant="outline"
-          onClick={() => void beginSignup(from)}
-        >
-          Create an account
-        </Button>
-      </div>
+    <div className="auth-login space-y-4 text-center">
+      <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+        Taking you to sign in
+      </h1>
+      <p className="text-sm text-text-muted">One Prabhix account for every product.</p>
     </div>
   );
 }

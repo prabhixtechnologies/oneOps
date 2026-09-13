@@ -31,7 +31,7 @@ export default function AuditPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="flex min-h-full flex-col space-y-6 p-6">
       <PageHeader
         title="Audit log"
         description="Append-only record of security-relevant actions in your organization"
@@ -51,7 +51,7 @@ export default function AuditPage() {
         </SelectContent>
       </Select>
 
-      <div className="h-[600px] rounded-lg border border-border">
+      <div className="min-h-[12rem] flex-1 rounded-lg border border-border">
         <CursorList<AuditLogEntry>
           items={logs}
           hasMore={!!auditQuery.hasNextPage}

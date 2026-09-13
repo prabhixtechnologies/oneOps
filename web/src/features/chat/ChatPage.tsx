@@ -36,7 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { CursorList } from "@/components/shared/CursorList";
 import { RelativeTime } from "@/components/shared/RelativeTime";
@@ -490,6 +490,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] overflow-hidden pb-[env(safe-area-inset-bottom)]">
+      <h1 className="sr-only">Chat</h1>
       <div ref={liveRegionRef} className="sr-only" aria-live="polite" aria-atomic="true" />
 
       <div
@@ -533,26 +534,30 @@ export default function ChatPage() {
         </div>
 
         <Tabs value={queue} onValueChange={(v) => setQueue(v as Queue)} className="border-b border-border px-2">
-          <TabsList className="h-9 w-full">
+          <TabsList className="w-full">
             <TabsTrigger value="mine" className="flex-1 text-xs">
               Mine
               {(countsQuery.data?.mineUnread ?? 0) > 0 && (
-                <Badge variant="secondary" className="ml-1 text-[10px]">{countsQuery.data?.mineUnread}</Badge>
+                <Badge variant="secondary" className="ml-1 text-[10px] text-text">{countsQuery.data?.mineUnread}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="unassigned" className="flex-1 text-xs">
               Unassigned
               {(countsQuery.data?.unassigned ?? 0) > 0 && (
-                <Badge variant="secondary" className="ml-1 text-[10px]">{countsQuery.data?.unassigned}</Badge>
+                <Badge variant="secondary" className="ml-1 text-[10px] text-text">{countsQuery.data?.unassigned}</Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="all" className="flex-1 text-xs">All</TabsTrigger>
           </TabsList>
+          {/* Radix sets aria-controls on triggers; without panels the id is invalid. */}
+          <TabsContent value="mine" className="hidden" tabIndex={-1} />
+          <TabsContent value="unassigned" className="hidden" tabIndex={-1} />
+          <TabsContent value="all" className="hidden" tabIndex={-1} />
         </Tabs>
 
         <div className="flex gap-2 border-b border-border p-2">
           <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-8 flex-1 text-xs" aria-label="Conversation status filter">
+            <SelectTrigger className="min-h-11 flex-1 text-xs" aria-label="Conversation status filter">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -561,7 +566,7 @@ export default function ChatPage() {
             </SelectContent>
           </Select>
           <Select value={priorityFilter || "all"} onValueChange={(v) => setPriorityFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-8 flex-1 text-xs" aria-label="Priority filter (loaded conversations)">
+            <SelectTrigger className="min-h-11 flex-1 text-xs" aria-label="Priority filter (loaded conversations)">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -653,7 +658,7 @@ export default function ChatPage() {
                         .catch((err) => toast.error(getApiErrorMessage(err)))
                     }
                   >
-                    <SelectTrigger className="h-8 w-32" aria-label="Conversation status"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="min-h-11 w-32" aria-label="Conversation status"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
@@ -666,7 +671,7 @@ export default function ChatPage() {
                         .catch((err) => toast.error(getApiErrorMessage(err)))
                     }
                   >
-                    <SelectTrigger className="h-8 w-32" aria-label="Conversation priority"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="min-h-11 w-32" aria-label="Conversation priority"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                     </SelectContent>
@@ -685,11 +690,11 @@ export default function ChatPage() {
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     placeholder="Add tag"
-                    className="h-7 w-24 text-xs"
+                    className="min-h-11 w-24 text-xs"
                     aria-label="Add tag"
                     onKeyDown={(e) => e.key === "Enter" && void addTag()}
                   />
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => void addTag()}>Add</Button>
+                  <Button size="sm" variant="ghost" className="min-h-11 text-xs" onClick={() => void addTag()}>Add</Button>
                 </div>
               </div>
             </div>
@@ -841,6 +846,9 @@ export default function ChatPage() {
               <TabsTrigger value="unassigned" className="flex-1">Unassigned</TabsTrigger>
               <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
             </TabsList>
+            <TabsContent value="mine" className="hidden" tabIndex={-1} />
+            <TabsContent value="unassigned" className="hidden" tabIndex={-1} />
+            <TabsContent value="all" className="hidden" tabIndex={-1} />
           </Tabs>
         </DialogContent>
       </Dialog>

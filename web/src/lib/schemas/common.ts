@@ -72,7 +72,8 @@ export const authMeSchema = z.object({
   userId: z.string(),
   email: z.string(),
   displayName: z.string(),
-  organizationId: z.string(),
+  // Null when Identity has signed the person in but they have not joined / selected a tenant yet.
+  organizationId: z.string().nullable(),
   sessionId: z.string(),
   permissions: z.array(z.string()),
   platformAdmin: z.boolean(),

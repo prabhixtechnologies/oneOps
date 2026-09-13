@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { CursorList } from "@/components/shared/CursorList";
 import { RelativeTime } from "@/components/shared/RelativeTime";
-import { ErrorState } from "@/components/shared/states";
+import { EmptyState, ErrorState } from "@/components/shared/states";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,7 +85,11 @@ export default function VisitorDetailPage() {
         <div>
           <h2 className="mb-3 font-semibold">Sessions</h2>
           {sessions.length === 0 ? (
-            <p className="text-sm text-text-muted">No sessions recorded.</p>
+            <EmptyState
+              className="py-8"
+              title="No sessions recorded"
+              description="Sessions appear after this visitor browses your site."
+            />
           ) : (
             <ul className="space-y-3">
               {sessions.map((s) => (

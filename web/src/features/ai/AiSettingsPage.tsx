@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { ErrorState } from "@/components/shared/states";
+import { EmptyState, ErrorState } from "@/components/shared/states";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -252,7 +252,11 @@ export default function AiSettingsPage() {
               ) : promptsQuery.isError ? (
                 <ErrorState message="Failed to load prompts" onRetry={() => void promptsQuery.refetch()} />
               ) : promptGroups.length === 0 ? (
-                <p className="text-sm text-text-muted">No prompts available.</p>
+                <EmptyState
+                  className="py-8"
+                  title="No prompts"
+                  description="Platform prompts appear here when AI tasks are configured."
+                />
               ) : (
                 promptGroups.map(([taskKey, { platform, override }]) => (
                   <div key={taskKey} className="rounded-lg border border-border p-4">

@@ -27,7 +27,7 @@ export function ForgotPasswordPage() {
 
   return (
     <div className="space-y-4 text-center">
-      <h2 className="font-display text-lg font-semibold">Opening Identity…</h2>
+      <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Opening Identity</h1>
       <p className="text-sm text-text-muted">
         Password reset is handled by Prabhix Identity.
       </p>
