@@ -35,7 +35,7 @@
         -->
         <java.version>25</java.version>
         <build.dir>${project.basedir}/target</build.dir>
-        <jjwt.version>0.12.6</jjwt.version>
+        <jjwt.version>0.13.0</jjwt.version>
         <!-- Published from Identity/client by that repository's CI; see <repositories> below. -->
         <identity.starter.version>1.0.0</identity.starter.version>
         <!--
@@ -44,16 +44,16 @@
           SwaggerConfig cannot be introspected and the context refuses to start. Not a compile error,
           since springdoc is only ever on the classpath — the integration tests are what catch it.
         -->
-        <springdoc.version>3.1.0</springdoc.version>
+        <springdoc.version>3.1.1</springdoc.version>
         <!--
           Testcontainers is version-managed by the Boot parent from 4.x on, so the pin is gone and the
           modules inherit it. Worth knowing that 2.x renamed every module to carry a testcontainers-
           prefix and dropped the self-referential generics.
         -->
-        <jsoup.version>1.18.3</jsoup.version>
-        <ognl.version>3.3.4</ognl.version>
+        <jsoup.version>1.23.2</jsoup.version>
+        <ognl.version>3.4.12</ognl.version>
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
-        <awssdk.version>2.29.52</awssdk.version>
+        <awssdk.version>2.54.16</awssdk.version>
         <logstash.encoder.version>8.0</logstash.encoder.version>
     </properties>
 
