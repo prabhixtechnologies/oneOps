@@ -54,7 +54,7 @@
         <ognl.version>3.3.4</ognl.version>
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
         <awssdk.version>2.29.52</awssdk.version>
-        <logstash.encoder.version>8.0</logstash.encoder.version>
+        <logstash.encoder.version>9.0</logstash.encoder.version>
     </properties>
 
     <dependencies>
