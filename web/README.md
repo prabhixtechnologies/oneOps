@@ -87,4 +87,4 @@ npm run test         # Vitest
 
 ## Stack
 
-React 19 · Vite 7 · TypeScript strict · Tailwind CSS v4 · shadcn/ui · TanStack Query v5 · React Router v7 · Zod · react-hook-form
+React 19 · Vite 8 · TypeScript strict · Tailwind CSS v4 · shadcn/ui · TanStack Query v5 · React Router v7 · Zod · react-hook-form
