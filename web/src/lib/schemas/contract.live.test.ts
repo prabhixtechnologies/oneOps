@@ -1,10 +1,10 @@
 /**
  * Contract check: every console endpoint, fetched for real and parsed with the schema the app uses.
  *
- * This is opt-in and skips unless PBX_CONTRACT_EMAIL and PBX_CONTRACT_PASSWORD are set, because it
- * needs a real account and a running API:
+ * Live hits skip unless CONTRACT_LIVE=1 or PBX_CONTRACT_EMAIL and PBX_CONTRACT_PASSWORD are set.
+ * Fixture checks in this file always run.
  *
- *   PBX_CONTRACT_EMAIL=you@example.com PBX_CONTRACT_PASSWORD=... \
+ *   CONTRACT_LIVE=1 PBX_CONTRACT_EMAIL=you@example.com PBX_CONTRACT_PASSWORD=... \
  *     PBX_CONTRACT_API=https://api.example.com npx vitest run contract.live
  *
  * It exists because a mismatch between a response and its schema is invisible until someone opens
@@ -39,6 +39,7 @@ import {
   conversationListPageSchema,
 } from "./chat";
 import {
+  cartViewSchema,
   customerListPageSchema,
   dashboardViewSchema,
   discountListSchema,
@@ -76,13 +77,53 @@ const API = `${process.env.PBX_CONTRACT_API ?? "https://api.prabhixtechnologies.
 const ORIGIN = process.env.PBX_CONTRACT_ORIGIN ?? "https://oneops.prabhixtechnologies.com";
 const EMAIL = process.env.PBX_CONTRACT_EMAIL ?? "";
 const PASSWORD = process.env.PBX_CONTRACT_PASSWORD ?? "";
-const enabled = EMAIL !== "" && PASSWORD !== "";
+const liveRequested = process.env.CONTRACT_LIVE === "1";
+const enabled = liveRequested || (EMAIL !== "" && PASSWORD !== "");
 
 let token = "";
 let orgId = "";
 
+describe("mocked commerce schemas", () => {
+  it("parses a storefront cart the BFF would return (token stripped)", () => {
+    const parsed = cartViewSchema.parse({
+      currency: "INR",
+      items: [],
+      subtotalMinor: 0,
+      discountMinor: 0,
+      taxMinor: 0,
+      shippingMinor: 0,
+      totalMinor: 0,
+      expiresAt: "2026-12-31T00:00:00Z",
+    });
+    expect(parsed.totalMinor).toBe(0);
+    expect(parsed.currency).toBe("INR");
+  });
+
+  it("parses a product summary page", () => {
+    const parsed = productListPageSchema.parse({
+      items: [
+        {
+          id: "17e45928-4888-47e6-9f72-554b0042c408",
+          slug: "oneops",
+          name: "OneOps",
+          productType: "SUBSCRIPTION",
+          featured: true,
+          fromPriceMinor: 9900,
+          currency: "INR",
+        },
+      ],
+      hasMore: false,
+    });
+    expect(parsed.items).toHaveLength(1);
+    expect(parsed.nextCursor).toBeNull();
+  });
+});
+
 beforeAll(async () => {
   if (!enabled) return;
+  if (liveRequested && (EMAIL === "" || PASSWORD === "")) {
+    throw new Error("CONTRACT_LIVE=1 but PBX_CONTRACT_EMAIL / PBX_CONTRACT_PASSWORD are unset");
+  }
 
   const res = await fetch(`${API}/auth/login`, {
     method: "POST",

@@ -1,49 +1,38 @@
 package com.prabhix.platform.auth.service;
 
-import com.prabhix.platform.auth.domain.DeviceSession;
-import com.prabhix.platform.auth.domain.DeviceSession.DeviceType;
-import com.prabhix.platform.auth.domain.RefreshToken;
+import com.prabhix.identity.client.IdentityToken;
+import com.prabhix.identity.client.IdentityTokenException;
+import com.prabhix.identity.client.IdentityTokenVerifier;
 import com.prabhix.platform.auth.dto.AuthDtos.AuthMeResponse;
-import com.prabhix.platform.auth.dto.AuthDtos.LoginRequest;
-import com.prabhix.platform.auth.dto.AuthDtos.RegisterRequest;
-import com.prabhix.platform.auth.dto.AuthDtos.TokenResponse;
-import com.prabhix.platform.auth.repository.DeviceSessionRepository;
-import com.prabhix.platform.auth.repository.RefreshTokenRepository;
-import com.prabhix.platform.common.error.ApiException;
-import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.event.AuditRequested;
-import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.observability.taxonomy.LogEventCode;
-import com.prabhix.platform.org.dto.OrgDtos.CreateOrganizationRequest;
-import com.prabhix.platform.org.service.ActiveOrganizationResolver;
 import com.prabhix.platform.org.service.OrganizationService;
 import com.prabhix.platform.org.service.PermissionResolver;
 import com.prabhix.platform.security.PrabhixPrincipal;
-import com.prabhix.platform.security.jwt.JwtService;
-import com.prabhix.platform.security.jwt.JwtService.IssuedToken;
 import com.prabhix.platform.security.jwt.TokenDenyList;
 import com.prabhix.platform.security.rbac.Permission;
 import com.prabhix.platform.user.domain.User;
-import com.prabhix.platform.user.domain.User.UserStatus;
 import com.prabhix.platform.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
-import java.util.HexFormat;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * What is left of authentication once identity owns the credentials.
+ *
+ * <p>Nobody signs in here. Prabhix Identity holds the passwords, links, one-time codes and Google
+ * accounts, runs the hosted login page and mints every token; this service never sees a credential
+ * and holds no key that could produce a token. What it still answers is the tenant half: which
+ * organization a verified person is acting in, what they may do there, and — on logout — that the
+ * token they were just using must stop working here before it expires.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -51,229 +40,67 @@ public class AuthService {
     private final UserService userService;
     private final OrganizationService organizationService;
     private final PermissionResolver permissionResolver;
-    private final ActiveOrganizationResolver activeOrganizations;
-    private final DeviceSessionRepository deviceSessionRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final IdentityTokenVerifier verifier;
     private final TokenDenyList tokenDenyList;
-    private final PrabhixProperties properties;
     private final ApplicationEventPublisher events;
     private final StructuredEventLogger eventLogger;
 
+    /**
+     * Stops the presented token working here, immediately.
+     *
+     * <p>Identity's own RP-initiated logout ends the single sign-on session, and the console sends the
+     * browser there right after this call; that is the part that stops the next {@code /authorize}
+     * silently signing the person back in. This part covers the gap it leaves: the access token the
+     * browser still holds is valid until it expires, and nothing at identity can recall it from a
+     * product's cache. So the session it names goes on the deny list, and a token that names no
+     * session is denied by its own id.
+     *
+     * <p>The token is verified again rather than reconstructed from the principal, because the principal
+     * carries the session id and not the token id, and a logout that could only revoke by session would
+     * leave a sessionless token live. It was verified moments ago by the filter; a second signature
+     * check is cheaper than a second field on every principal.
+     */
     @Transactional
-    public TokenResponse register(RegisterRequest request) {
-        User user = userService.createUser(request.email(), request.password(), request.fullName());
-        if (request.organizationName() != null && !request.organizationName().isBlank()) {
-            organizationService.create(user.getId(),
-                    new CreateOrganizationRequest(request.organizationName().trim()));
+    public void logout(PrabhixPrincipal principal, String bearerToken) {
+        if (bearerToken != null) {
+            try {
+                IdentityToken token = verifier.verify(bearerToken);
+                tokenDenyList.revoke(token);
+            } catch (IdentityTokenException ex) {
+                // The filter accepted this token a moment ago, so this is a token that expired in between
+                // — and an expired token needs no revoking. Fall back to the session the principal names.
+                tokenDenyList.revokeSession(principal.sessionId());
+            }
+        } else {
+            tokenDenyList.revokeSession(principal.sessionId());
         }
-        return issueTokens(user, null, null, null, null, null);
-    }
-
-    @Transactional
-    public TokenResponse login(LoginRequest request, String ipAddress, String userAgent) {
-        Optional<User> optionalUser = userService.findByEmail(request.email());
-        if (optionalUser.isEmpty()) {
-            events.publishEvent(AuditRequested.failure(null, null, "auth.login.failed",
-                    "unknown email"));
-            // No email in the payload: AUTH_LOGIN_FAILED is declared as carrying no PII, and an
-            // address typed at a login form is often a real one belonging to someone else.
-            eventLogger.logNow(LogEventCode.AUTH_LOGIN_FAILED, Map.of("reason", "unknown_email"));
-            throw ApiException.of(ErrorCode.INVALID_CREDENTIALS, "Email or password is not correct");
-        }
-
-        User user = optionalUser.get();
-        if (user.getStatus() == UserStatus.DISABLED) {
-            eventLogger.logNow(LogEventCode.AUTH_LOGIN_FAILED,
-                    Map.of("reason", "account_disabled", "userId", user.getId()));
-            throw ApiException.of(ErrorCode.ACCOUNT_DISABLED, "This account has been disabled");
-        }
-        if (user.isLockedNow()) {
-            eventLogger.logNow(LogEventCode.AUTH_ACCOUNT_LOCKED,
-                    Map.of("userId", user.getId(), "lockedUntil", user.getLockedUntil()));
-            throw ApiException.of(ErrorCode.ACCOUNT_LOCKED,
-                    "This account is temporarily locked. Try again later.");
-        }
-        if (user.getPasswordHash() == null
-                || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            userService.recordLoginFailure(user);
-            events.publishEvent(AuditRequested.failure(null, user.getId(), "auth.login.failed",
-                    "bad password"));
-            eventLogger.logNow(LogEventCode.AUTH_LOGIN_FAILED,
-                    Map.of("reason", "bad_password", "userId", user.getId()));
-            throw ApiException.of(ErrorCode.INVALID_CREDENTIALS, "Email or password is not correct");
-        }
-
-        userService.resetLoginFailures(user);
-        events.publishEvent(AuditRequested.of(null, user.getId(), "auth.login.success",
-                "user", user.getId()));
-        eventLogger.log(LogEventCode.AUTH_LOGIN_SUCCEEDED, Map.of("userId", user.getId()));
-
-        DeviceType deviceType = parseDeviceType(request.deviceType());
-        DeviceSession session = resolveSession(user.getId(), request.deviceId(), request.deviceName(),
-                deviceType, userAgent, ipAddress);
-
-        return issueTokens(user, session, ipAddress, userAgent, request.deviceId(), request.deviceName());
-    }
-
-    @Transactional
-    public TokenResponse refresh(String rawRefreshToken) {
-        String hash = sha256(rawRefreshToken);
-        RefreshToken token = refreshTokenRepository.findByTokenHash(hash)
-                .orElseThrow(() -> ApiException.of(ErrorCode.TOKEN_INVALID, "That refresh token is not valid"));
-
-        if (token.getUsedAt() != null) {
-            handleTokenTheft(token);
-            throw ApiException.of(ErrorCode.TOKEN_REVOKED,
-                    "This session was revoked because a refresh token was reused");
-        }
-        if (token.getRevokedAt() != null || token.getExpiresAt().isBefore(Instant.now())) {
-            throw ApiException.of(ErrorCode.TOKEN_INVALID, "That refresh token is not valid");
-        }
-
-        token.setUsedAt(Instant.now());
-        refreshTokenRepository.save(token);
-
-        User user = userService.requireActive(token.getUserId());
-        DeviceSession session = deviceSessionRepository.findById(token.getSessionId())
-                .orElseThrow(() -> ApiException.of(ErrorCode.TOKEN_INVALID, "That session no longer exists"));
-        if (!session.isActive()) {
-            throw ApiException.of(ErrorCode.TOKEN_REVOKED, "This session was signed out");
-        }
-
-        session.setLastSeenAt(Instant.now());
-        deviceSessionRepository.save(session);
-
-        UUID orgId = resolveActiveOrganization(user.getId(), user.getDefaultOrganizationId());
-        Set<Permission> permissions = permissionResolver.resolve(user.getId(), orgId);
-
-        String newRaw = com.prabhix.platform.common.util.Ids.token();
-        RefreshToken successor = createRefreshToken(user.getId(), session.getId(), newRaw);
-        token.setReplacedBy(successor.getId());
-        refreshTokenRepository.save(token);
-
-        PrabhixPrincipal principal = new PrabhixPrincipal(
-                user.getId(), user.getEmail(), user.effectiveDisplayName(),
-                orgId, permissions, session.getId(), user.isPlatformAdmin());
-        IssuedToken access = jwtService.issue(principal);
-
-        // Not persisted: every session refreshes on the access-token interval, so writing a row
-        // each time would bury the events an operator actually reads. It still reaches the
-        // application log and the event counter.
-        eventLogger.log(LogEventCode.AUTH_TOKEN_REFRESHED,
-                Map.of("userId", user.getId(), "sessionId", session.getId()), false);
-
-        return new TokenResponse(
-                access.token(),
-                newRaw,
-                access.expiresInSeconds(),
-                orgId,
-                permissions.stream().map(Permission::name).collect(Collectors.toUnmodifiableSet()),
-                session.getId());
+        events.publishEvent(AuditRequested.of(null, principal.userId(), "auth.logout", "user",
+                principal.userId()));
+        eventLogger.log(LogEventCode.AUTH_LOGOUT, Map.of("userId", principal.userId()));
     }
 
     /**
-     * Mints an access token from the shared browser session cookie.
+     * Makes an organization the one the caller lands in when a request names none.
      *
-     * <p>Deliberately unlike {@link #refresh(String)}: nothing is consumed, nothing is rotated, and
-     * no new refresh token is handed out. That is what makes it safe for two console hostnames to
-     * call it at the same instant — the failure this replaces was two apps racing on one rotating
-     * refresh token and having the session revoked as a replay.
-     *
-     * <p>The response carries no {@code refreshToken}. A browser has no need of one now that the
-     * cookie can be exchanged again, and not returning one keeps it out of {@code localStorage},
-     * where any injected script could have read it.
+     * <p>Nothing is minted. The token stays the same — it says who the person is, not where they are —
+     * and the organization is resolved again on every request, so the console only has to remember the
+     * new id for its {@code X-Prabhix-Org} header. The response is what {@code /auth/me} would say in the
+     * chosen organization, so the console can adopt it without a second round trip.
      */
     @Transactional
-    public TokenResponse exchangeSessionCookie(String rawCookieToken) {
-        DeviceSession session = deviceSessionRepository.findByCookieTokenHash(sha256(rawCookieToken))
-                .orElseThrow(AuthService::noSessionCookie);
+    public AuthMeResponse selectOrganization(PrabhixPrincipal principal, UUID organizationId) {
+        organizationService.requireActiveMembership(organizationId, principal.userId());
+        User user = userService.requireActive(principal.userId());
+        userService.setDefaultOrganization(user.getId(), organizationId);
 
-        // Distinguishing these two is not worth doing for the caller — both mean "sign in again" —
-        // but the distinction matters in the log, where a revoked session is an expected
-        // consequence of someone signing out and an expired cookie is just the passage of time.
-        if (!session.isActive()) {
-            eventLogger.log(LogEventCode.AUTH_REQUEST_UNAUTHENTICATED,
-                    Map.of("reason", "session_revoked", "sessionId", session.getId()), false);
-            throw ApiException.of(ErrorCode.TOKEN_REVOKED, "This session was signed out");
-        }
-        if (!session.hasUsableCookie(Instant.now())) {
-            throw noSessionCookie();
-        }
-
-        User user = userService.requireActive(session.getUserId());
-        session.setLastSeenAt(Instant.now());
-        deviceSessionRepository.save(session);
-
-        UUID orgId = resolveActiveOrganization(user.getId(), user.getDefaultOrganizationId());
-        Set<Permission> permissions = permissionResolver.resolve(user.getId(), orgId);
-
-        PrabhixPrincipal principal = new PrabhixPrincipal(
-                user.getId(), user.getEmail(), user.effectiveDisplayName(),
-                orgId, permissions, session.getId(), user.isPlatformAdmin());
-        IssuedToken access = jwtService.issue(principal);
-
-        // Not persisted, for the same reason as a refresh: this happens on the access-token
-        // interval for every open tab, and rows for it would bury what an operator reads.
-        eventLogger.log(LogEventCode.AUTH_TOKEN_REFRESHED,
-                Map.of("userId", user.getId(), "sessionId", session.getId(), "via", "cookie"), false);
-
-        return new TokenResponse(
-                access.token(),
-                null,
-                access.expiresInSeconds(),
-                orgId,
-                permissions.stream().map(Permission::name).collect(Collectors.toUnmodifiableSet()),
-                session.getId());
-    }
-
-    static ApiException noSessionCookie() {
-        return ApiException.of(ErrorCode.UNAUTHENTICATED, "No active session for this browser");
-    }
-
-    @Transactional
-    public void logout(UUID userId, UUID sessionId, String rawRefreshToken) {
-        if (sessionId != null) {
-            deviceSessionRepository.findById(sessionId).ifPresent(session -> {
-                if (session.getUserId().equals(userId) && session.getRevokedAt() == null) {
-                    session.setRevokedAt(Instant.now());
-                    session.setRevokedReason("logout");
-                    // Cleared as well as revoked. The revocation alone is enough to refuse the
-                    // exchange, but dropping the hash means the cookie value the browser may still
-                    // be holding no longer corresponds to any row at all.
-                    session.setCookieTokenHash(null);
-                    session.setCookieExpiresAt(null);
-                    deviceSessionRepository.save(session);
-                }
-            });
-            tokenDenyList.revokeSession(sessionId);
-        }
-        if (rawRefreshToken != null && !rawRefreshToken.isBlank()) {
-            refreshTokenRepository.findByTokenHash(sha256(rawRefreshToken)).ifPresent(token -> {
-                token.setRevokedAt(Instant.now());
-                refreshTokenRepository.save(token);
-            });
-        }
-        events.publishEvent(AuditRequested.of(null, userId, "auth.logout", "user", userId));
-        eventLogger.log(LogEventCode.AUTH_LOGOUT, Map.of("userId", userId));
-    }
-
-    @Transactional
-    public TokenResponse selectOrganization(UUID userId, UUID organizationId, UUID sessionId) {
-        organizationService.requireActiveMembership(organizationId, userId);
-        User user = userService.requireActive(userId);
-        userService.setDefaultOrganization(userId, organizationId);
-
-        DeviceSession session = sessionId != null
-                ? deviceSessionRepository.findById(sessionId).orElse(null)
-                : null;
-        if (session != null && session.isActive()) {
-            session.setLastSeenAt(Instant.now());
-            deviceSessionRepository.save(session);
-        }
-
-        return issueTokens(user, session, null, null, null, null);
+        return new AuthMeResponse(
+                user.getId(),
+                user.getEmail(),
+                user.effectiveDisplayName(),
+                organizationId,
+                principal.sessionId(),
+                permissionNames(permissionResolver.resolve(user.getId(), organizationId)),
+                user.isPlatformAdmin());
     }
 
     @Transactional(readOnly = true)
@@ -284,169 +111,11 @@ public class AuthService {
                 principal.displayName(),
                 principal.organizationId(),
                 principal.sessionId(),
-                principal.permissions().stream().map(Permission::name).collect(Collectors.toUnmodifiableSet()),
+                permissionNames(principal.permissions()),
                 principal.platformAdmin());
     }
 
-    @Transactional
-    public TokenResponse issueTokensForUser(User user, DeviceSession session) {
-        return issueTokens(user, session, null, null, null, null);
-    }
-
-    @Transactional
-    public TokenResponse completeSignIn(User user,
-                                        String deviceId,
-                                        String deviceName,
-                                        String deviceType,
-                                        String ipAddress,
-                                        String userAgent) {
-        DeviceType type = parseDeviceType(deviceType);
-        DeviceSession session = resolveSession(user.getId(), deviceId, deviceName, type, userAgent, ipAddress);
-        return issueTokens(user, session, ipAddress, userAgent, deviceId, deviceName);
-    }
-
-    private TokenResponse issueTokens(User user,
-                                      DeviceSession session,
-                                      String ipAddress,
-                                      String userAgent,
-                                      String deviceId,
-                                      String deviceName) {
-        if (session == null) {
-            session = resolveSession(user.getId(), deviceId, deviceName, DeviceType.WEB, userAgent, ipAddress);
-        }
-
-        UUID orgId = resolveActiveOrganization(user.getId(), user.getDefaultOrganizationId());
-        Set<Permission> permissions = permissionResolver.resolve(user.getId(), orgId);
-
-        PrabhixPrincipal principal = new PrabhixPrincipal(
-                user.getId(), user.getEmail(), user.effectiveDisplayName(),
-                orgId, permissions, session.getId(), user.isPlatformAdmin());
-        IssuedToken access = jwtService.issue(principal);
-
-        String rawRefresh = com.prabhix.platform.common.util.Ids.token();
-        createRefreshToken(user.getId(), session.getId(), rawRefresh);
-
-        return new TokenResponse(
-                access.token(),
-                rawRefresh,
-                access.expiresInSeconds(),
-                orgId,
-                permissions.stream().map(Permission::name).collect(Collectors.toUnmodifiableSet()),
-                session.getId());
-    }
-
-    private DeviceSession resolveSession(UUID userId,
-                                         String deviceId,
-                                         String deviceName,
-                                         DeviceType deviceType,
-                                         String userAgent,
-                                         String ipAddress) {
-        if (deviceId != null && !deviceId.isBlank()) {
-            Optional<DeviceSession> existing =
-                    deviceSessionRepository.findByUserIdAndDeviceIdAndRevokedAtIsNull(userId, deviceId);
-            if (existing.isPresent()) {
-                DeviceSession session = existing.get();
-                session.setLastSeenAt(Instant.now());
-                if (deviceName != null && !deviceName.isBlank()) {
-                    session.setDeviceName(deviceName);
-                }
-                if (userAgent != null) {
-                    session.setUserAgent(truncate(userAgent, 500));
-                }
-                if (ipAddress != null) {
-                    session.setIpAddress(ipAddress);
-                }
-                return deviceSessionRepository.save(session);
-            }
-        }
-
-        DeviceSession session = new DeviceSession();
-        session.setUserId(userId);
-        session.setDeviceId(deviceId);
-        session.setDeviceName(deviceName);
-        session.setDeviceType(deviceType != null ? deviceType : DeviceType.WEB);
-        session.setUserAgent(truncate(userAgent, 500));
-        session.setIpAddress(ipAddress);
-        session.setLastSeenAt(Instant.now());
-        return deviceSessionRepository.save(session);
-    }
-
-    private RefreshToken createRefreshToken(UUID userId, UUID sessionId, String rawToken) {
-        RefreshToken token = new RefreshToken();
-        token.setUserId(userId);
-        token.setSessionId(sessionId);
-        token.setTokenHash(sha256(rawToken));
-        token.setExpiresAt(Instant.now().plus(properties.security().jwt().refreshTokenTtl()));
-        return refreshTokenRepository.save(token);
-    }
-
-    private UUID resolveActiveOrganization(UUID userId, UUID defaultOrgId) {
-        return activeOrganizations.resolve(userId, defaultOrgId);
-    }
-
-    /**
-     * A replayed refresh token is either a genuine attacker holding a stolen token or a client that
-     * raced itself into sending the same token twice. Both are answered by revoking the affected
-     * token family and the one session it belongs to.
-     *
-     * <p>This deliberately leaves the user's other devices signed in. Revoking everything used to
-     * mean a race in one browser tab also signed the user out on their phone, and it handed anyone
-     * able to replay a single token a cheap way to lock the real owner out of every device at once.
-     * Confining the damage to the compromised family is what RFC 9700 asks for.
-     */
-    private void handleTokenTheft(RefreshToken reused) {
-        revokeTokenChain(reused.getId());
-        revokeCompromisedSession(reused.getSessionId());
-        events.publishEvent(AuditRequested.of(null, reused.getUserId(),
-                LogEventCode.AUTH_TOKEN_REUSED.code(), "session", reused.getSessionId()));
-        eventLogger.logNow(LogEventCode.AUTH_TOKEN_REUSED, Map.of(
-                "userId", reused.getUserId(),
-                "sessionId", reused.getSessionId()));
-    }
-
-    private void revokeCompromisedSession(UUID sessionId) {
-        deviceSessionRepository.findById(sessionId).ifPresent(session -> {
-            if (session.getRevokedAt() == null) {
-                session.setRevokedAt(Instant.now());
-                session.setRevokedReason("token_theft");
-                deviceSessionRepository.save(session);
-            }
-        });
-        // Unconditional, and after the session update: access tokens already minted for this
-        // session remain valid until they expire unless the deny list is told about it.
-        tokenDenyList.revokeSession(sessionId);
-    }
-
-    private void revokeTokenChain(UUID tokenId) {
-        refreshTokenRepository.findById(tokenId).ifPresent(token -> {
-            token.setRevokedAt(Instant.now());
-            refreshTokenRepository.save(token);
-            if (token.getReplacedBy() != null) {
-                revokeTokenChain(token.getReplacedBy());
-            }
-        });
-    }
-
-    private DeviceType parseDeviceType(String value) {
-        if (value == null || value.isBlank()) {
-            return DeviceType.WEB;
-        }
-        return DeviceType.valueOf(value.trim().toUpperCase());
-    }
-
-    private String truncate(String value, int max) {
-        if (value == null) {
-            return null;
-        }
-        return value.length() <= max ? value : value.substring(0, max);
-    }
-
-    static String sha256(String raw) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(raw.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("SHA-256 unavailable", ex);
-        }
+    private static Set<String> permissionNames(Set<Permission> permissions) {
+        return permissions.stream().map(Permission::name).collect(Collectors.toUnmodifiableSet());
     }
 }

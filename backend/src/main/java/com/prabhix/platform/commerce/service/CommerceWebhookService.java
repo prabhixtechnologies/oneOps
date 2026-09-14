@@ -12,6 +12,8 @@ import com.prabhix.platform.commerce.repository.CommerceWebhookEventRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class CommerceWebhookService {
     private final CommerceOrderProvisioningService provisioningService;
     private final ObjectMapper objectMapper;
     private final PrabhixProperties properties;
+    private final StructuredEventLogger eventLogger;
 
     @Transactional
     public void receive(String signature, String eventId, byte[] rawBody) {
@@ -60,6 +63,8 @@ public class CommerceWebhookService {
         event.setStatus(WebhookEventStatus.PENDING);
         event.setReceivedAt(Instant.now());
         event = webhookEventRepository.save(event);
+        eventLogger.log(LogEventCode.COMMERCE_WEBHOOK_RECEIVED, Map.of(
+                "eventType", eventType, "providerEventId", eventId == null ? "" : eventId));
 
         try {
             processEvent(event, root);

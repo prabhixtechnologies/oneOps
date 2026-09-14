@@ -25,17 +25,7 @@ class ChatTokenServiceTest {
 
     @BeforeEach
     void setUp() {
-        PrabhixProperties.Security.Jwt jwt = new PrabhixProperties.Security.Jwt(
-                "dev-only-insecure-secret-change-me-0123456789abcdefghijklmnop",
-                "prabhix-platform", Duration.ofMinutes(15), Duration.ofDays(30));
-        PrabhixProperties.Security security = new PrabhixProperties.Security(
-                jwt, TestProperties.identityDisabled(),
-                new PrabhixProperties.Security.RateLimit(true, 10, 600),
-                new PrabhixProperties.Security.Password(10, 12),
-                TestProperties.sessionCookie());
-        PrabhixProperties properties = new PrabhixProperties(
-                null, null, security, null, null, null, null,
-                new PrabhixProperties.Limits(100000, 200, 26214400L, 25, 200));
+        PrabhixProperties properties = TestProperties.withSecurity(TestProperties.security());
         ChatProperties chatProperties = new ChatProperties(
                 Duration.ofHours(1), 30, List.of("http://localhost:3000"),
                 new ChatProperties.BusinessHoursDefaults("09:00", "18:00", "Asia/Kolkata"));

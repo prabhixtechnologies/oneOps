@@ -19,7 +19,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     long countByPlatformAdminTrueAndDeletedAtIsNull();
 
-    long countByLockedUntilAfterAndDeletedAtIsNull(Instant now);
-
     long countByCreatedAtGreaterThanEqualAndDeletedAtIsNull(Instant since);
 }

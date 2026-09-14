@@ -21,13 +21,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -202,24 +200,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(properties.security().password().bcryptStrength());
-    }
-
-    /**
-     * Registered so Spring Security has a provider for form-style checks, but the primary
-     * path is {@code AuthService}, which verifies credentials directly to control lockout
-     * and audit behaviour.
-     */
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
-                                                           PasswordEncoder passwordEncoder) {
-        // Spring Security 7 dropped the no-argument constructor and setUserDetailsService: a provider
-        // without a service was a half-built object that failed at authentication time rather than at
-        // construction, so it is now required up front.
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder);
-        provider.setHideUserNotFoundExceptions(true);
-        return provider;
+        return new BCryptPasswordEncoder(12);
     }
 
     /**

@@ -56,7 +56,7 @@ class InvitationAcceptTest {
 
     @BeforeEach
     void setUp() {
-        PrabhixProperties properties = new PrabhixProperties(null, null, null, null, null, null, null, null);
+        PrabhixProperties properties = new PrabhixProperties(null, null, null, null, null, null, null);
         invitationService = new InvitationService(
                 invitationRepository, membershipRepository, roleRepository, organizationService,
                 memberService, roleService, domainService, userService, events, mail, properties,

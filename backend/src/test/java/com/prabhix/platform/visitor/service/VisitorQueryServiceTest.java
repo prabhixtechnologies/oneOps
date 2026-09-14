@@ -51,7 +51,7 @@ class VisitorQueryServiceTest {
     @BeforeEach
     void setUp() {
         PrabhixProperties properties = new PrabhixProperties(
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 new PrabhixProperties.Limits(100000, 200, 26214400L, 25, 200));
         queryService = new VisitorQueryService(
                 visitorRepository, sessionRepository, pageViewRepository, eventRepository,

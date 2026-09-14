@@ -65,6 +65,13 @@ public enum LogEventCode {
     MAIL_TRACKING_OPENED("mail.tracking.opened", LogCategory.MAIL, LogSeverity.DEBUG, false, true),
     MAIL_TRACKING_CLICKED("mail.tracking.clicked", LogCategory.MAIL, LogSeverity.DEBUG, false, true),
     MAIL_SLA_BREACHED("mail.sla.breached", LogCategory.MAIL, LogSeverity.WARN, false, false),
+    /**
+     * Someone with {@code MAIL_READ_ALL} read a mailbox they do not own and are not a member of.
+     *
+     * <p>Company mail is a deliberate oversight surface, not silent access: Event logs have to
+     * show who opened whose mail. Member and owner reads of their own boxes do not emit this.
+     */
+    MAIL_ADMIN_READ("mail.admin.read", LogCategory.MAIL, LogSeverity.INFO, true, true),
 
     // --- Billing / payments ---
     BILLING_SUBSCRIPTION_CREATED("billing.subscription.created", LogCategory.BILLING, LogSeverity.INFO, false, false),

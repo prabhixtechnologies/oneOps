@@ -38,7 +38,7 @@ public class DkimSigningService {
 
         try {
             String decrypted = DkimKeyCipher.decrypt(
-                    properties.security().jwt().secret(), domain.getDkimPrivateKeyEnc());
+                    properties.security().internalSigningSecret(), domain.getDkimPrivateKeyEnc());
             PrivateKey privateKey = DkimSigner.loadPrivateKey(decrypted);
 
             Map<String, String> headers = new LinkedHashMap<>();

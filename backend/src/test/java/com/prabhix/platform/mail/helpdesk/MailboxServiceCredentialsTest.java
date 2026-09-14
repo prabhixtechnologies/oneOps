@@ -34,6 +34,7 @@ class MailboxServiceCredentialsTest {
     @Mock private MailRoutingRuleRepository routingRuleRepository;
     @Mock private OrganizationMembershipRepository membershipRepository;
     @Mock private com.prabhix.platform.org.repository.TeamRepository teamRepository;
+    @Mock private com.prabhix.platform.mail.repository.MailDomainRepository mailDomainRepository;
     @Mock private EntitlementGate entitlements;
 
     private MailboxCredentialsCipher cipher;
@@ -47,7 +48,8 @@ class MailboxServiceCredentialsTest {
         cipher = new MailboxCredentialsCipher(properties);
         service = new MailboxService(
                 mailboxRepository, memberRepository, routingRuleRepository,
-                membershipRepository, teamRepository, properties, entitlements, cipher);
+                membershipRepository, teamRepository, mailDomainRepository,
+                properties, entitlements, cipher);
     }
 
     @Test
@@ -57,7 +59,7 @@ class MailboxServiceCredentialsTest {
         when(mailboxRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.create(orgId, new MailboxDtos.CreateMailboxRequest(
-                "support@example.com", "Support", null, null, "imap-secret", "smtp-secret"));
+                "support@example.com", "Support", null, null, "imap-secret", "smtp-secret", null));
 
         ArgumentCaptor<Mailbox> saved = ArgumentCaptor.forClass(Mailbox.class);
         verify(mailboxRepository).save(saved.capture());

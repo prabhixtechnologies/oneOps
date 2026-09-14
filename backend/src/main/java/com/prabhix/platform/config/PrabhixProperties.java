@@ -1,6 +1,5 @@
 package com.prabhix.platform.config;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
@@ -22,7 +21,6 @@ public record PrabhixProperties(
         @DefaultValue Urls urls,
         @DefaultValue Cors cors,
         @DefaultValue Security security,
-        @DefaultValue Otp otp,
         @DefaultValue Mail mail,
         @DefaultValue Billing billing,
         @DefaultValue Storage storage,
@@ -38,117 +36,37 @@ public record PrabhixProperties(
                        List<String> allowedOrigins) {
     }
 
+    /**
+     * What this API still keeps secret on its own account.
+     *
+     * <p>Bearer tokens are not in here. Every one of them is issued by Prabhix Identity and verified
+     * against its published RS256 keys through {@code prabhix.identity.*}, which the identity starter
+     * binds; this service holds no key that could produce one. What remains is the material for
+     * things that are not credentials for a person: the chat visitor token and the envelope around
+     * stored DKIM private keys.
+     */
     public record Security(
-            @DefaultValue Jwt jwt,
-            @DefaultValue Identity identity,
-            @DefaultValue RateLimit rateLimit,
-            @DefaultValue Password password,
-            @DefaultValue SessionCookie sessionCookie) {
-
-        /**
-         * Trust for tokens issued by Prabhix Identity, verified against its published JWKS.
-         *
-         * <p>Blank {@code issuer} disables it, which is the default and the state of every deployment
-         * until identity is actually running. While disabled the backend accepts only its own HS256
-         * tokens, exactly as before.
-         *
-         * <p>Both signature families are accepted at once on purpose. An access token lives 15 minutes
-         * and a refresh token 30 days, so a hard switch would sign out everyone holding a token minted
-         * a moment earlier. Accepting both means the changeover is invisible, and HS256 can be dropped
-         * once no token that old can still be in circulation.
-         *
-         * <p>An identity token deliberately carries no organization and no permissions. Those are
-         * resolved per request from this database instead — which is also strictly better than the
-         * HS256 path, where permissions freeze into the token at sign-in and a revoked role keeps
-         * working until it expires.
-         */
-        public record Identity(
-                @DefaultValue("") String issuer,
-                /** Defaults to {@code {issuer}/.well-known/jwks.json}; set only if that is not where it is. */
-                @DefaultValue("") String jwksUri,
-                /**
-                 * How long a fetched key set is reused. An unknown key id forces a refresh regardless,
-                 * so this is the ceiling on how long a *retired* key stays accepted, not on how long a
-                 * new one takes to be noticed.
-                 */
-                @DefaultValue("PT10M") Duration jwksCacheTtl,
-                /** Floor between refreshes, so a stream of tokens naming absent key ids cannot be used to hammer identity. */
-                @DefaultValue("PT30S") Duration jwksMinRefreshInterval,
-                /**
-                 * Where {@code /internal/users/lookup} lives, for filling in the local users mirror.
-                 * An internal address, not the issuer: {@code /internal} is not routed publicly.
-                 */
-                @DefaultValue("http://identity:8081") String internalBaseUrl,
-                /**
-                 * Shared secret presented as {@code X-Prabhix-Service-Token}. Blank means the mirror
-                 * cannot be filled in on demand, and a subject with no local row is refused.
-                 */
-                @DefaultValue("") String serviceToken) {
-
-            public boolean canMirror() {
-                return serviceToken != null && !serviceToken.isBlank();
-            }
-
-            public boolean enabled() {
-                return issuer != null && !issuer.isBlank();
-            }
-
-            public String effectiveJwksUri() {
-                if (jwksUri != null && !jwksUri.isBlank()) {
-                    return jwksUri;
-                }
-                String base = issuer.endsWith("/") ? issuer.substring(0, issuer.length() - 1) : issuer;
-                return base + "/.well-known/jwks.json";
-            }
-        }
-
-        /**
-         * The browser session cookie that lets one sign-in cover every console hostname.
-         *
-         * <p>{@code domain} must be the parent of every host that should share the session
-         * ({@code .prabhixtechnologies.com}), and blank in local development, where a host-only
-         * cookie on localhost is what works. Setting it to a domain the response is not served from
-         * makes the browser drop the cookie silently, which presents as "login does nothing".
-         *
-         * <p>{@code SameSite=Lax} is what keeps this off the CSRF surface: the cookie is not
-         * attached to cross-site POSTs, so a form on another origin cannot drive the exchange
-         * endpoint, and no other endpoint reads cookies at all.
-         */
-        public record SessionCookie(
-                @DefaultValue("pbx_session") String name,
-                @DefaultValue("") String domain,
-                @DefaultValue("true") boolean secure,
-                @DefaultValue("Lax") String sameSite) {
-
-            public String domainOrNull() {
-                return domain == null || domain.isBlank() ? null : domain;
-            }
-        }
-
-        public record Jwt(
-                @NotBlank @DefaultValue("dev-only-insecure-secret-change-me-0123456789abcdefghijklmnop")
-                String secret,
-                @DefaultValue("prabhix-platform") String issuer,
-                @DefaultValue("PT15M") Duration accessTokenTtl,
-                @DefaultValue("P30D") Duration refreshTokenTtl) {
-        }
+            /**
+             * HMAC key for chat visitor tokens and the cipher key for DKIM private keys at rest.
+             * Never used to verify a bearer token — {@link com.prabhix.platform.security.jwt.JwtAuthenticationFilter}
+             * has no HS256 path — so knowing it lets nobody act as a user. Rotating it invalidates
+             * open chat conversations and makes stored DKIM keys unreadable until regenerated.
+             */
+            @NotBlank @DefaultValue("dev-only-insecure-secret-change-me-0123456789abcdefghijklmnop")
+            String internalSigningSecret,
+            /**
+             * How long a revocation stays in the deny list. Must cover identity's access-token
+             * lifetime: an entry that expires before the tokens it denies would let a signed-out
+             * session back in for the remainder.
+             */
+            @DefaultValue("PT15M") Duration denyListTtl,
+            @DefaultValue RateLimit rateLimit) {
 
         public record RateLimit(
                 @DefaultValue("true") boolean enabled,
                 @DefaultValue("10") int authAttemptsPerMinute,
                 @DefaultValue("600") int apiRequestsPerMinute) {
         }
-
-        public record Password(
-                @DefaultValue("10") @Min(8) int minLength,
-                @DefaultValue("12") @Min(10) int bcryptStrength) {
-        }
-    }
-
-    public record Otp(
-            @DefaultValue("6") int length,
-            @DefaultValue("PT10M") Duration ttl,
-            @DefaultValue("5") int maxAttempts) {
     }
 
     public record Mail(

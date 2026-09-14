@@ -17,7 +17,11 @@ public interface MailboxRepository extends JpaRepository<Mailbox, UUID> {
 
     List<Mailbox> findByOrganizationIdAndDeletedAtIsNullOrderByName(UUID organizationId);
 
+    List<Mailbox> findByOrganizationIdAndOwnerUserIdAndDeletedAtIsNull(UUID organizationId, UUID ownerUserId);
+
     long countByOrganizationIdAndDeletedAtIsNull(UUID organizationId);
+
+    long countByDeletedAtIsNull();
 
     @Query("""
             SELECT m FROM Mailbox m

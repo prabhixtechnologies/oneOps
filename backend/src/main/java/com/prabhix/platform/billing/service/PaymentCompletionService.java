@@ -17,6 +17,8 @@ import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +54,7 @@ public class PaymentCompletionService {
     private final BillingOrgReader orgReader;
     private final MailClient mail;
     private final PrabhixProperties properties;
+    private final StructuredEventLogger eventLogger;
 
     public record PaymentCaptureDetails(
             String razorpayPaymentId,
@@ -91,6 +94,19 @@ public class PaymentCompletionService {
         orgReader.activateOrganization(order.getOrganizationId());
         entitlementService.evictCache(order.getOrganizationId());
         sendPaymentSuccessMail(order, subscription, invoice);
+        eventLogger.log(LogEventCode.BILLING_PAYMENT_CAPTURED, Map.of(
+                "orderId", order.getId(),
+                "organizationId", order.getOrganizationId()));
+        if (order.getPurpose() == BillingEnums.OrderPurpose.SUBSCRIPTION_NEW && subscription != null) {
+            eventLogger.log(LogEventCode.BILLING_SUBSCRIPTION_CREATED, Map.of(
+                    "subscriptionId", subscription.getId(),
+                    "organizationId", order.getOrganizationId()));
+        } else if (subscription != null && (order.getPurpose() == BillingEnums.OrderPurpose.UPGRADE
+                || order.getPurpose() == BillingEnums.OrderPurpose.SEAT_ADDITION)) {
+            eventLogger.log(LogEventCode.BILLING_SUBSCRIPTION_CHANGED, Map.of(
+                    "subscriptionId", subscription.getId(),
+                    "organizationId", order.getOrganizationId()));
+        }
 
         return order;
     }

@@ -3,6 +3,8 @@ package com.prabhix.platform.chat.service;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.event.AuditRequested;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.common.spi.EntitlementGate;
@@ -58,6 +60,7 @@ public class ChatConversationService {
     private final PrabhixProperties properties;
     private final ApplicationEventPublisher events;
     private final MailClient mail;
+    private final StructuredEventLogger eventLogger;
 
     public Organization resolveOrg(String orgSlug) {
         return organizationRepository.findBySlug(orgSlug)
@@ -102,6 +105,8 @@ public class ChatConversationService {
                     conversation.getVisitorId());
             events.publishEvent(AuditRequested.of(org.getId(), null,
                     "chat.conversation.started", "chat_conversation", conversation.getId()));
+            eventLogger.log(LogEventCode.CHAT_CONVERSATION_STARTED, Map.of(
+                    "conversationId", conversation.getId(), "organizationId", org.getId()));
             return new ChatDtos.StartConversationResponse(
                     conversation.getId(), token, conversation.getStatus(), available);
         });
@@ -146,6 +151,8 @@ public class ChatConversationService {
         events.publishEvent(AuditRequested.changed(conversation.getOrganizationId(), principal.userId(),
                 "chat.conversation.assigned", "chat_conversation", conversationId,
                 Map.of("agentId", request.agentId())));
+        eventLogger.log(LogEventCode.CHAT_CONVERSATION_ASSIGNED, Map.of(
+                "conversationId", conversationId, "agentId", request.agentId()));
         return toSummary(conversation);
     }
 
@@ -158,6 +165,8 @@ public class ChatConversationService {
             if (request.status() == ChatEnums.ConversationStatus.CLOSED) {
                 conversation.setClosedAt(Instant.now());
                 sendTranscript(conversation);
+                eventLogger.log(LogEventCode.CHAT_CONVERSATION_CLOSED, Map.of(
+                        "conversationId", conversation.getId()));
             }
         }
         if (request.priority() != null) {
@@ -229,6 +238,8 @@ public class ChatConversationService {
                         "message", opening)));
         events.publishEvent(AuditRequested.of(orgId, principal.userId(),
                 "chat.conversation.started.proactive", "chat_conversation", conversation.getId()));
+        eventLogger.log(LogEventCode.CHAT_CONVERSATION_STARTED, Map.of(
+                "conversationId", conversation.getId(), "proactive", true));
 
         return new ChatDtos.StartWithVisitorResponse(conversation.getId(), token, opening);
     }

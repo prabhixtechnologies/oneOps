@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Refuses to boot outside dev/test when outbound mail would only be logged, mirroring
- * {@link com.prabhix.platform.security.jwt.JwtService#validateSecretStrength()}.
+ * {@link com.prabhix.platform.security.InternalSigningSecretValidator}.
  *
  * <p>This guards the configured transport. It is not sufficient on its own: a correctly configured
  * transport that is unreachable at runtime used to fall through to logging anyway, which

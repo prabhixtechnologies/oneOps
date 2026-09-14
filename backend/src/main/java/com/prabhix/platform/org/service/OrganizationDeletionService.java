@@ -1,6 +1,5 @@
 package com.prabhix.platform.org.service;
 
-import com.prabhix.platform.auth.repository.DeviceSessionRepository;
 import com.prabhix.platform.billing.domain.BillingEnums;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;
 import com.prabhix.platform.billing.service.EntitlementService;
@@ -38,7 +37,7 @@ import java.util.UUID;
  * </ul>
  *
  * <p>On success the service cancels any live subscription immediately (so billing stops), marks
- * every active membership suspended, revokes all device sessions for affected users, and sets
+ * every active membership suspended, deny-lists tokens for affected users, and sets
  * {@code purge_scheduled_at} thirty days out. Data remains recoverable until that date; a
  * separate purge job (not invoked here) performs the irreversible removal.
  */
@@ -53,7 +52,6 @@ public class OrganizationDeletionService {
     private final RoleRepository roleRepository;
     private final BillingSubscriptionRepository subscriptionRepository;
     private final EntitlementService entitlementService;
-    private final DeviceSessionRepository deviceSessionRepository;
     private final TokenDenyList tokenDenyList;
     private final PermissionResolver permissionResolver;
     private final ApplicationEventPublisher events;
@@ -135,12 +133,6 @@ public class OrganizationDeletionService {
                 orgId, null, null, null, null, null, null, 10_000);
         for (OrganizationMembership membership : members) {
             tokenDenyList.revokeUser(membership.getUserId());
-            deviceSessionRepository.findByUserIdAndRevokedAtIsNullOrderByLastSeenAtDesc(membership.getUserId())
-                    .forEach(session -> {
-                        session.setRevokedAt(Instant.now());
-                        session.setRevokedReason("organization_deleted");
-                        deviceSessionRepository.save(session);
-                    });
         }
     }
 }

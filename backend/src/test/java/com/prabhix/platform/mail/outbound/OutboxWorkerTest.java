@@ -8,6 +8,7 @@ import com.prabhix.platform.mail.repository.MailDeliveryEventRepository;
 import com.prabhix.platform.mail.repository.MailOutboxRepository;
 import com.prabhix.platform.mail.outbound.transport.LoggingTransport;
 import com.prabhix.platform.mail.outbound.transport.MailTransportRouter;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.common.util.OutboxBackoff;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +47,8 @@ class OutboxWorkerTest {
     MailTrackingInjector trackingInjector;
     @Mock
     OutboundAttachmentResolver attachmentResolver;
+    @Mock
+    StructuredEventLogger eventLogger;
 
     OutboxWorker worker;
 
@@ -54,7 +57,7 @@ class OutboxWorkerTest {
         PrabhixProperties props = TestProperties.defaults();
         worker = new OutboxWorker(props, outboxRepository, deliveryEventRepository,
                 templateRenderer, suppressionService, transportRouter, trackingInjector,
-                attachmentResolver);
+                attachmentResolver, eventLogger);
     }
 
     @Test

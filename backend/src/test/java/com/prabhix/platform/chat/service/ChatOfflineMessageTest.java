@@ -19,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.common.mail.MailRequest;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -49,6 +50,7 @@ class ChatOfflineMessageTest {
     @Mock private ApplicationEventPublisher events;
     @Mock private MailClient mail;
     @Mock private ChatMessageIdempotencyService idempotencyService;
+    @Mock private StructuredEventLogger eventLogger;
 
     private ChatMessageService messageService;
 
@@ -58,12 +60,12 @@ class ChatOfflineMessageTest {
     @BeforeEach
     void setUp() {
         PrabhixProperties properties = new PrabhixProperties(
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 new PrabhixProperties.Limits(100000, 200, 26214400L, 25, 200));
         messageService = new ChatMessageService(
                 conversationRepository, messageRepository, settingsRepository,
                 tokenService, assignmentRouter, attachmentValidationService,
-                mailboxes, entitlements, properties, events, mail, idempotencyService);
+                mailboxes, entitlements, properties, events, mail, idempotencyService, eventLogger);
         when(idempotencyService.execute(any(), any(), any(), any()))
                 .thenAnswer(inv -> ((java.util.function.Supplier<?>) inv.getArgument(3)).get());
     }

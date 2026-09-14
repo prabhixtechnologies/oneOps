@@ -26,6 +26,8 @@ import com.prabhix.platform.common.event.AuditRequested;
 import com.prabhix.platform.common.util.Ids;
 import com.prabhix.platform.common.web.PageResponse;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
@@ -59,6 +61,7 @@ public class BillingService {
     private final ApplicationEventPublisher events;
     private final PaymentCompletionService paymentCompletionService;
     private final BillingPaymentInstrumentService paymentInstrumentService;
+    private final StructuredEventLogger eventLogger;
 
     @Transactional(readOnly = true)
     public PageResponse<PlanView> listPlans(int page, int size) {
@@ -111,6 +114,8 @@ public class BillingService {
 
         events.publishEvent(AuditRequested.of(
                 organizationId, userId, "billing.order.created", "billing_order", order.getId()));
+        eventLogger.log(LogEventCode.BILLING_PAYMENT_INITIATED, Map.of(
+                "orderId", order.getId(), "organizationId", organizationId));
 
         return toOrderView(order);
     }
@@ -221,6 +226,8 @@ public class BillingService {
         events.publishEvent(AuditRequested.changed(
                 organizationId, userId, "billing.plan.changed", "billing_subscription",
                 subscription.getId(), Map.of("planKey", newPlan.getPlanKey(), "seats", seats)));
+        eventLogger.log(LogEventCode.BILLING_SUBSCRIPTION_CHANGED, Map.of(
+                "subscriptionId", subscription.getId(), "organizationId", organizationId));
 
         return new BillingChangeResponse(
                 toSubscriptionView(subscription, newPlan.getName()),
@@ -296,6 +303,8 @@ public class BillingService {
         events.publishEvent(AuditRequested.of(
                 organizationId, userId, "billing.subscription.cancelled",
                 "billing_subscription", subscription.getId()));
+        eventLogger.log(LogEventCode.BILLING_SUBSCRIPTION_CANCELLED, Map.of(
+                "subscriptionId", subscription.getId(), "organizationId", organizationId));
 
         return toSubscriptionView(subscription, plan == null ? "" : plan.getName());
     }

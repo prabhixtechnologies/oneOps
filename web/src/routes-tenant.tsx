@@ -3,7 +3,7 @@ import { type RouteObject } from "react-router";
 import { SuspenseWrap } from "@/routes-shell";
 
 /**
- * The pages that operate on one organization's data: chat, visitors, shop, settings.
+ * The pages that operate on one organization's data: inbox, chat, visitors, shop, settings.
  *
  * <p>Imported only by {@link ./routes.tsx}, the OneOps product. Every page here needs an
  * organization to be meaningful, and OneOps always has exactly one — the account's own, or a
@@ -36,9 +36,27 @@ const CommerceDiscountsPage = lazy(() => import("@/features/commerce/CommerceDis
 const CommerceSettingsPage = lazy(() => import("@/features/commerce/CommerceSettingsPage"));
 const AiSettingsPage = lazy(() => import("@/features/ai/AiSettingsPage"));
 const AiUsagePage = lazy(() => import("@/features/ai/AiUsagePage"));
+const InboxPage = lazy(() => import("@/features/helpdesk/InboxPage"));
+const MailSettingsLayout = lazy(() => import("@/features/settings/mail/MailSettingsLayout"));
+const MailboxesPage = lazy(() => import("@/features/settings/mail/MailboxesPage"));
+const TagsPage = lazy(() => import("@/features/settings/mail/TagsPage"));
+const CannedRepliesPage = lazy(() => import("@/features/settings/mail/CannedRepliesPage"));
+const DomainsPage = lazy(() => import("@/features/settings/mail/DomainsPage"));
+const MailboxDetailLayout = lazy(() => import("@/features/settings/mail/MailboxDetailLayout"));
+const MailboxGeneralSection = lazy(() =>
+  import("@/features/settings/mail/MailboxGeneralSection").then((m) => ({ default: m.MailboxGeneralSection })),
+);
+const MailboxMembersSection = lazy(() =>
+  import("@/features/settings/mail/MailboxMembersSection").then((m) => ({ default: m.MailboxMembersSection })),
+);
+const MailboxRoutingSection = lazy(() =>
+  import("@/features/settings/mail/MailboxRoutingSection").then((m) => ({ default: m.MailboxRoutingSection })),
+);
 
 export const tenantRoutes: RouteObject[] = [
   { index: true, element: <SuspenseWrap><DashboardPage /></SuspenseWrap> },
+  { path: "inbox", element: <SuspenseWrap><InboxPage /></SuspenseWrap> },
+  { path: "inbox/:threadId", element: <SuspenseWrap><InboxPage /></SuspenseWrap> },
   { path: "chat", element: <SuspenseWrap><ChatPage /></SuspenseWrap> },
   { path: "chat/settings", element: <SuspenseWrap><ChatSettingsPage /></SuspenseWrap> },
   { path: "visitors", element: <SuspenseWrap><VisitorsPage /></SuspenseWrap> },
@@ -60,4 +78,24 @@ export const tenantRoutes: RouteObject[] = [
   { path: "ai/settings", element: <SuspenseWrap><AiSettingsPage /></SuspenseWrap> },
   { path: "ai/usage", element: <SuspenseWrap><AiUsagePage /></SuspenseWrap> },
   { path: "settings", element: <SuspenseWrap><SettingsPage /></SuspenseWrap> },
+  { path: "settings/api-keys", element: <SuspenseWrap><SettingsPage /></SuspenseWrap> },
+  {
+    path: "settings/mail",
+    element: <SuspenseWrap><MailSettingsLayout /></SuspenseWrap>,
+    children: [
+      { index: true, element: <SuspenseWrap><MailboxesPage /></SuspenseWrap> },
+      { path: "tags", element: <SuspenseWrap><TagsPage /></SuspenseWrap> },
+      { path: "canned-replies", element: <SuspenseWrap><CannedRepliesPage /></SuspenseWrap> },
+      { path: "domains", element: <SuspenseWrap><DomainsPage /></SuspenseWrap> },
+      {
+        path: ":mailboxId",
+        element: <SuspenseWrap><MailboxDetailLayout /></SuspenseWrap>,
+        children: [
+          { index: true, element: <SuspenseWrap><MailboxGeneralSection /></SuspenseWrap> },
+          { path: "members", element: <SuspenseWrap><MailboxMembersSection /></SuspenseWrap> },
+          { path: "routing", element: <SuspenseWrap><MailboxRoutingSection /></SuspenseWrap> },
+        ],
+      },
+    ],
+  },
 ];

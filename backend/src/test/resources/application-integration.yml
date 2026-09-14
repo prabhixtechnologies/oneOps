@@ -7,10 +7,14 @@ spring:
       enabled: false
 
 prabhix:
+  identity:
+    # The startup checks do not need a reachable identity, only a configured one: with no issuer the
+    # filter refuses every bearer token, which is the intended production behaviour, and nothing in
+    # the integration tests presents one. Keys are fetched lazily, on the first token that names a kid.
+    issuer: http://identity.test
   security:
-    jwt:
-      # Must clear the 64-character production minimum, which this profile is subject to.
-      secret: integration-test-signing-key-not-the-shipped-default-0123456789abcdef
+    # Must clear the 64-character production minimum, which this profile is subject to.
+    internal-signing-secret: integration-test-signing-key-not-the-shipped-default-0123456789abcdef
     rate-limit:
       enabled: false
   mail:

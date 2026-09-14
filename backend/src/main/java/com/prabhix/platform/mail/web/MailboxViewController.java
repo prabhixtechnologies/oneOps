@@ -5,6 +5,7 @@ import com.prabhix.platform.mail.mailbox.MailAliasService;
 import com.prabhix.platform.mail.mailbox.MailDraftService;
 import com.prabhix.platform.mail.mailbox.MailFlagService;
 import com.prabhix.platform.mail.mailbox.MailFolderService;
+import com.prabhix.platform.mail.mailbox.MailboxAccess;
 import com.prabhix.platform.mail.mailbox.MailboxDtos;
 import com.prabhix.platform.mail.mailbox.MailboxListService;
 import com.prabhix.platform.security.CurrentUser;
@@ -52,8 +53,9 @@ public class MailboxViewController {
 
     @GetMapping
     @PreAuthorize(Authorize.MAIL_READ)
-    public List<MailboxDtos.MailboxSummaryView> sidebar(@CurrentUser PrabhixPrincipal principal) {
-        return list.sidebar(principal);
+    public List<MailboxDtos.MailboxSummaryView> sidebar(@CurrentUser PrabhixPrincipal principal,
+                                                        @RequestParam(required = false) String mode) {
+        return list.sidebar(principal, MailboxAccess.Visibility.fromQuery(mode));
     }
 
     @GetMapping("/folders/{folderId}/threads")
@@ -70,6 +72,13 @@ public class MailboxViewController {
     public MailboxDtos.MailThreadView thread(@CurrentUser PrabhixPrincipal principal,
                                              @PathVariable UUID threadId) {
         return list.thread(principal, threadId);
+    }
+
+    @GetMapping("/threads/{threadId}/messages")
+    @PreAuthorize(Authorize.MAIL_READ)
+    public List<MailboxDtos.MessageView> messages(@CurrentUser PrabhixPrincipal principal,
+                                                 @PathVariable UUID threadId) {
+        return list.messages(principal, threadId);
     }
 
     @GetMapping("/starred")

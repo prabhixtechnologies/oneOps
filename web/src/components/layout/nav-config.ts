@@ -1,18 +1,22 @@
 import {
   Activity,
-  BarChart3,
   Briefcase,
+  Building2,
   Cloud,
   CreditCard,
   FileText,
   Flag,
   FolderOpen,
+  Inbox,
+  KeyRound,
   LayoutDashboard,
+  Mail,
   MessageSquare,
   Percent,
   Receipt,
   ScrollText,
   Settings,
+  Shield,
   ShoppingBag,
   Sparkles,
   Store,
@@ -28,13 +32,24 @@ export interface NavItem {
   label: string;
   /** Hides the link unless the signed-in member holds this permission. */
   permission?: Permission;
+  /** Hides the link unless the signed-in member holds at least one of these. */
+  anyPermission?: Permission[];
   /** Hides the link unless the signed-in user is a platform admin. */
   platformAdminOnly?: boolean;
+  /**
+   * Platform staff roles that may see this link. OWNER always sees every item. Unset means any
+   * platform admin. The server still gates the API.
+   */
+  staffRoles?: readonly string[];
+  /** Exact path match. Defaults to true only for `/`; Inbox stays active on `/inbox/:id`. */
+  end?: boolean;
 }
 
 export interface NavGroup {
   heading: string;
   items: NavItem[];
+  /** Renders as a nested heading under Settings (Advanced). */
+  nested?: boolean;
 }
 
 /**
@@ -42,15 +57,19 @@ export interface NavGroup {
  *
  * <p>The admin console has none of these. They act on one organization, and its subject is the
  * platform; staff needing a customer's inbox are handed off to OneOps instead.
+ *
+ * <p>OneOps is the operations console for a small online business: website visitors and live chat, a
+ * shared helpdesk inbox, storefront and orders, team and billing.
  */
 const tenantGroups: NavGroup[] = [
   {
     heading: "Overview",
-    items: [{ to: "/", icon: LayoutDashboard, label: "Dashboard" }],
+    items: [{ to: "/", icon: LayoutDashboard, label: "Overview" }],
   },
   {
     heading: "Conversations",
     items: [
+      { to: "/inbox", icon: Inbox, label: "Inbox", permission: PERMISSIONS.MAIL_READ },
       { to: "/chat", icon: MessageSquare, label: "Live Chat", permission: PERMISSIONS.CHAT_READ },
       { to: "/visitors", icon: Activity, label: "Visitors", permission: PERMISSIONS.VISITOR_READ },
     ],
@@ -67,27 +86,36 @@ const tenantGroups: NavGroup[] = [
     ],
   },
   {
-    heading: "Workspace",
+    heading: "Team",
     items: [
+      { to: "/members", icon: Users, label: "Members", permission: PERMISSIONS.ORG_MEMBER_READ },
+      { to: "/billing", icon: CreditCard, label: "Billing", permission: PERMISSIONS.BILLING_READ },
+    ],
+  },
+  {
+    heading: "Settings",
+    items: [
+      { to: "/settings", icon: Settings, label: "Org", end: true },
+      { to: "/settings/mail", icon: Mail, label: "Mail", anyPermission: [
+        PERMISSIONS.MAIL_MAILBOX_MANAGE,
+        PERMISSIONS.MAIL_THREAD_UPDATE,
+        PERMISSIONS.MAIL_DOMAIN_READ,
+      ] },
+      { to: "/ai/settings", icon: Sparkles, label: "AI", permission: PERMISSIONS.AI_CONFIGURE },
+      { to: "/settings/api-keys", icon: KeyRound, label: "API keys", permission: PERMISSIONS.ORG_API_KEY_MANAGE, end: true },
+    ],
+  },
+  {
+    heading: "Advanced",
+    nested: true,
+    items: [
+      { to: "/flags", icon: Flag, label: "Flags" },
+      { to: "/logs", icon: ScrollText, label: "Event logs", permission: PERMISSIONS.LOG_READ },
+      { to: "/audit", icon: FileText, label: "Audit", permission: PERMISSIONS.AUDIT_READ },
       { to: "/files", icon: FolderOpen, label: "Files", permission: PERMISSIONS.FILE_READ },
-      { to: "/members", icon: Users, label: "Members & Roles", permission: PERMISSIONS.ORG_MEMBER_READ },
-      { to: "/ai/settings", icon: Sparkles, label: "AI settings", permission: PERMISSIONS.AI_CONFIGURE },
-      { to: "/ai/usage", icon: BarChart3, label: "AI usage", permission: PERMISSIONS.AI_USAGE_READ },
-      { to: "/audit", icon: FileText, label: "Audit Log", permission: PERMISSIONS.AUDIT_READ },
-      { to: "/logs", icon: ScrollText, label: "Event Logs", permission: PERMISSIONS.LOG_READ },
-      { to: "/flags", icon: Flag, label: "Feature flags" },
-      { to: "/settings", icon: Settings, label: "Settings" },
     ],
   },
 ];
-
-/** Appended to the Workspace group in OneOps only; Prabhix does not bill itself. */
-const billingItem: NavItem = {
-  to: "/billing",
-  icon: CreditCard,
-  label: "Billing",
-  permission: PERMISSIONS.BILLING_READ,
-};
 
 /**
  * The whole of the admin console: the surfaces that span every organization.
@@ -100,26 +128,23 @@ const platformGroups: NavGroup[] = [
   {
     heading: "Platform",
     items: [
-      { to: "/", icon: Briefcase, label: "Ops Hub", platformAdminOnly: true },
-      { to: "/commerce", icon: CreditCard, label: "Commerce", platformAdminOnly: true },
-      { to: "/infra", icon: Cloud, label: "Infra", platformAdminOnly: true },
-      { to: "/logs", icon: ScrollText, label: "Event Logs", platformAdminOnly: true },
+      { to: "/", icon: Briefcase, label: "Overview", platformAdminOnly: true },
+      { to: "/tenants", icon: Building2, label: "Tenants and shops", platformAdminOnly: true, staffRoles: ["SUPPORT"] },
+      { to: "/identity", icon: Shield, label: "Identity", platformAdminOnly: true, staffRoles: ["SECURITY"] },
+      { to: "/revenue", icon: CreditCard, label: "Revenue", platformAdminOnly: true, staffRoles: ["BILLING"] },
+      { to: "/infra", icon: Cloud, label: "Infra", platformAdminOnly: true, staffRoles: ["OPERATOR"] },
+      { to: "/mail", icon: Mail, label: "Mail health", platformAdminOnly: true, staffRoles: ["SUPPORT"] },
+      { to: "/staff", icon: Users, label: "Staff", platformAdminOnly: true, staffRoles: ["OWNER"] },
+      { to: "/mobistack", icon: Store, label: "MobiStack ops", platformAdminOnly: true, staffRoles: ["SUPPORT"] },
+      { to: "/commons", icon: Flag, label: "Commons review", platformAdminOnly: true, staffRoles: ["SUPPORT"] },
+      { to: "/logs", icon: ScrollText, label: "Event logs", platformAdminOnly: true },
     ],
   },
 ];
-
-function withBilling(groups: NavGroup[]): NavGroup[] {
-  return groups.map((group) =>
-    group.heading === "Workspace"
-      ? // Before Settings, which reads as the last entry in a list.
-        { ...group, items: [...group.items.slice(0, -1), billingItem, ...group.items.slice(-1)] }
-      : group,
-  );
-}
 
 /**
  * The navigation for this build, decided at module scope: the answer cannot change while the app is
  * running, and this way the branch not taken is dropped from the bundle along with every string in
  * the groups it names.
  */
-export const navGroups: NavGroup[] = IS_ADMIN_APP ? platformGroups : withBilling(tenantGroups);
+export const navGroups: NavGroup[] = IS_ADMIN_APP ? platformGroups : tenantGroups;

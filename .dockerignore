@@ -1,0 +1,14 @@
+# Context is the oneOps repository root (web image + packages/oneops-api).
+**/node_modules
+web/dist
+.git
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+coverage
+.vscode
+.idea
+backend/target
+backend/target-*

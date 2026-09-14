@@ -1,55 +1,43 @@
-import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { EmptyState } from "@/components/shared/states";
+import { EmptyState, ErrorState } from "@/components/shared/states";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useDeleteFile, useUploadFile } from "@/features/files/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDeleteFile, useFiles, useUploadFile } from "@/features/files/api";
 import { apiDownload, getApiErrorMessage, triggerBlobDownload } from "@/lib/api-client";
 import { PERMISSIONS } from "@/lib/permissions";
 import { formatBytes } from "@/lib/utils";
 
 export default function FilesPage() {
-  const [fileId, setFileId] = useState("");
+  const files = useFiles();
   const upload = useUploadFile();
   const del = useDeleteFile();
-  const [lastUpload, setLastUpload] = useState<{
-    id: string;
-    filename: string;
-    sizeBytes: number;
-    scanStatus: string;
-  } | null>(null);
+  const rows = files.data?.pages.flatMap((p) => p.items) ?? [];
 
   const onUpload = async (file: File) => {
     try {
       const result = await upload.mutateAsync({ file, purpose: "DOCUMENT" });
-      setLastUpload(result);
-      setFileId(result.id);
       toast.success(`Uploaded ${result.filename}`);
     } catch (err) {
       toast.error(getApiErrorMessage(err));
     }
   };
 
-  const onDownload = async () => {
-    if (!fileId) return;
+  const onDownload = async (id: string, fallbackName: string) => {
     try {
-      const { blob, filename } = await apiDownload(`/files/${fileId}`);
-      triggerBlobDownload(blob, filename);
+      const { blob, filename } = await apiDownload(`/files/${id}`);
+      triggerBlobDownload(blob, filename || fallbackName);
     } catch (err) {
       toast.error(getApiErrorMessage(err));
     }
   };
 
-  const onDelete = async () => {
-    if (!fileId) return;
+  const onDelete = async (id: string) => {
     try {
-      await del.mutateAsync(fileId);
+      await del.mutateAsync(id);
       toast.success("File deleted");
-      setLastUpload(null);
-      setFileId("");
     } catch (err) {
       toast.error(getApiErrorMessage(err));
     }
@@ -57,18 +45,7 @@ export default function FilesPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <PageHeader
-        title="Files"
-        description="Upload, download, and manage organization files."
-      />
-
-      {!lastUpload ? (
-        <EmptyState
-          className="py-8"
-          title="No file list yet"
-          description="Browse-by-list is not available from the API yet. Upload a file or enter a file ID to download or delete it."
-        />
-      ) : null}
+      <PageHeader title="Files" description="Upload, download, and manage organization files." />
 
       <PermissionGate permission={PERMISSIONS.FILE_UPLOAD}>
         <div
@@ -93,34 +70,60 @@ export default function FilesPage() {
         </div>
       </PermissionGate>
 
-      {lastUpload && (
-        <div className="rounded-lg border border-border p-4 text-sm">
-          <p className="font-medium">{lastUpload.filename}</p>
-          <p className="text-text-muted">
-            {formatBytes(lastUpload.sizeBytes)} · Scan: {lastUpload.scanStatus}
-          </p>
-          <p className="font-mono text-xs">{lastUpload.id}</p>
+      {files.isPending ? (
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-14 w-full" />
+          ))}
         </div>
+      ) : files.isError ? (
+        <ErrorState message="Failed to load files" onRetry={() => void files.refetch()} />
+      ) : rows.length === 0 ? (
+        <EmptyState title="No files yet" description="Upload a document to keep it with this organization." />
+      ) : (
+        <ul className="divide-y divide-border rounded-lg border border-border">
+          {rows.map((file) => (
+            <li
+              key={file.id}
+              className="flex flex-col gap-2 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-medium">{file.filename}</p>
+                <p className="text-text-muted">
+                  {formatBytes(file.sizeBytes)} · {file.purpose.toLowerCase()} · Scan: {file.scanStatus}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <PermissionGate permission={PERMISSIONS.FILE_READ}>
+                  <Button variant="outline" size="sm" onClick={() => void onDownload(file.id, file.filename)}>
+                    Download
+                  </Button>
+                </PermissionGate>
+                <PermissionGate permission={PERMISSIONS.FILE_DELETE}>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={del.isPending}
+                    onClick={() => void onDelete(file.id)}
+                  >
+                    Delete
+                  </Button>
+                </PermissionGate>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
 
-      <div className="max-w-md space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="fileId">File ID</Label>
-          <Input id="fileId" value={fileId} onChange={(e) => setFileId(e.target.value)} placeholder="UUID" />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <PermissionGate permission={PERMISSIONS.FILE_READ}>
-            <Button variant="outline" onClick={() => void onDownload()} disabled={!fileId}>
-              Download
-            </Button>
-          </PermissionGate>
-          <PermissionGate permission={PERMISSIONS.FILE_DELETE}>
-            <Button variant="destructive" onClick={() => void onDelete()} disabled={!fileId || del.isPending}>
-              Delete
-            </Button>
-          </PermissionGate>
-        </div>
-      </div>
+      {files.hasNextPage ? (
+        <Button
+          variant="outline"
+          disabled={files.isFetchingNextPage}
+          onClick={() => void files.fetchNextPage()}
+        >
+          {files.isFetchingNextPage ? "Loading…" : "Load more"}
+        </Button>
+      ) : null}
     </div>
   );
 }

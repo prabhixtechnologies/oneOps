@@ -103,7 +103,12 @@ public final class MailboxDtos {
             MailEnums.MailboxKind kind,
             String description,
             String imapPassword,
-            String smtpPassword) {
+            String smtpPassword,
+            /**
+             * Required when {@code kind} is {@link MailEnums.MailboxKind#PERSONAL}: whose mailbox
+             * this is. Ignored for shared and system boxes.
+             */
+            UUID ownerUserId) {
     }
 
     public record UpdateMailboxRequest(

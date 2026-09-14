@@ -129,6 +129,8 @@ function ConversationRow({
       onClick={onSelect}
       role="button"
       tabIndex={0}
+      data-testid="chat-conversation-row"
+      data-conversation-id={conversation.id}
       onKeyDown={(e) => e.key === "Enter" && onSelect()}
     >
       <div className="flex items-center gap-2">
@@ -759,6 +761,7 @@ export default function ChatPage() {
 
                 <Textarea
                   id="chat-composer"
+                  data-testid="chat-agent-composer"
                   placeholder={composerMode === "note" ? "Write a private note for your team…" : "Write a reply the visitor will receive…"}
                   value={composerBody}
                   onChange={(e) => setComposerBody(e.target.value)}
@@ -800,6 +803,7 @@ export default function ChatPage() {
                     <Button
                       onClick={() => void sendComposer()}
                       disabled={sendMessage.isPending || !composerBody.trim()}
+                      data-testid="chat-agent-send"
                       variant={composerMode === "note" ? "default" : "default"}
                       className={cn(composerMode === "note" && "bg-warning hover:bg-warning/90")}
                     >

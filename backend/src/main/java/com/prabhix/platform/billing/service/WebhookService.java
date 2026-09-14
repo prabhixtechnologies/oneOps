@@ -12,6 +12,8 @@ import com.prabhix.platform.billing.repository.BillingWebhookEventRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -37,6 +39,7 @@ public class WebhookService {
     private final BillingPaymentInstrumentService paymentInstrumentService;
     private final ObjectMapper objectMapper;
     private final PrabhixProperties properties;
+    private final StructuredEventLogger eventLogger;
 
     /**
      * Signature is verified before persist; once stored we always acknowledge with 200 so
@@ -46,6 +49,7 @@ public class WebhookService {
     public void receive(String signature, String eventId, byte[] rawBody) {
         if (!com.prabhix.platform.billing.razorpay.RazorpaySignature.verifyWebhook(
                 rawBody, signature, properties.billing().razorpay().webhookSecret())) {
+            eventLogger.logNow(LogEventCode.BILLING_WEBHOOK_REJECTED, Map.of("reason", "signature"));
             throw ApiException.of(ErrorCode.PAYMENT_SIGNATURE_MISMATCH, "Webhook signature did not match");
         }
 
@@ -73,6 +77,8 @@ public class WebhookService {
         event.setStatus(BillingEnums.WebhookEventStatus.PENDING);
         event.setReceivedAt(Instant.now());
         event = webhookEventRepository.save(event);
+        eventLogger.log(LogEventCode.BILLING_WEBHOOK_RECEIVED, Map.of(
+                "eventType", eventType, "providerEventId", eventId == null ? "" : eventId));
 
         try {
             processEvent(event, root);

@@ -37,6 +37,7 @@ class MailboxAccessTeamTest {
     @Mock private MailboxMemberRepository memberRepository;
     @Mock private MailThreadRepository threadRepository;
     @Mock private TeamMemberRepository teamMemberRepository;
+    @Mock private com.prabhix.platform.observability.service.StructuredEventLogger eventLogger;
 
     @InjectMocks private MailboxAccess mailboxAccess;
 

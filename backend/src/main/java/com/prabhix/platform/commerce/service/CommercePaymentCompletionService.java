@@ -19,6 +19,8 @@ import com.prabhix.platform.commerce.repository.OrderItemRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.event.AuditRequested;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.config.PrabhixProperties;
@@ -55,6 +57,7 @@ public class CommercePaymentCompletionService {
     private final PrabhixProperties properties;
     private final OrderDownloadRepository downloadRepository;
     private final OrderItemRepository orderItemRepository;
+    private final StructuredEventLogger eventLogger;
 
     public record CaptureDetails(
             String razorpayPaymentId,
@@ -99,6 +102,8 @@ public class CommercePaymentCompletionService {
         events.publishEvent(AuditRequested.labelled(
                 order.getOrganizationId(), null,
                 "commerce.order.paid", "commerce_order", order.getId(), order.getOrderNumber()));
+        eventLogger.log(LogEventCode.COMMERCE_ORDER_PAID, Map.of(
+                "orderId", order.getId(), "orderNumber", order.getOrderNumber()));
 
         return order;
     }

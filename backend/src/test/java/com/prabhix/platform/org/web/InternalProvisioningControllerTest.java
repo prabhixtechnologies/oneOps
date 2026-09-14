@@ -1,16 +1,17 @@
 package com.prabhix.platform.org.web;
 
+import com.prabhix.identity.client.IdentityClientProperties;
+import com.prabhix.identity.client.IdentityInternalClient;
+import com.prabhix.identity.client.IdentityUserMirror;
+import com.prabhix.identity.client.ServiceTokenGuard;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
-import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.org.domain.OrganizationMembership;
 import com.prabhix.platform.org.domain.OrganizationMembership.MembershipStatus;
 import com.prabhix.platform.org.dto.OrgDtos.OrganizationView;
 import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
 import com.prabhix.platform.org.service.OrganizationService;
 import com.prabhix.platform.org.web.InternalProvisioningController.ProvisionRequest;
-import com.prabhix.platform.support.TestProperties;
-import com.prabhix.platform.user.service.IdentityUserMirror;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,8 +19,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.mock.web.MockHttpServletRequest;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -58,7 +59,7 @@ class InternalProvisioningControllerTest {
     @BeforeEach
     void setUp() {
         controller = new InternalProvisioningController(
-                propertiesWithToken(TOKEN), organizations, memberships, mirror);
+                new ServiceTokenGuard(identity(TOKEN)), organizations, memberships, mirror);
 
         when(memberships.findByUserIdAndStatus(any(), any())).thenReturn(List.of());
         when(organizations.create(any(), any())).thenReturn(view(orgId));
@@ -66,7 +67,7 @@ class InternalProvisioningControllerTest {
 
     @Test
     void createsTheWorkspaceAndTheMirrorRowItNeeds() {
-        var response = controller.provision(TOKEN, request("Acme"));
+        var response = controller.provision(http(TOKEN), request("Acme"));
 
         assertThat(response.organizationId()).isEqualTo(orgId);
         assertThat(response.created()).isTrue();
@@ -82,7 +83,7 @@ class InternalProvisioningControllerTest {
         when(memberships.findByUserIdAndStatus(userId, MembershipStatus.ACTIVE))
                 .thenReturn(List.of(membership(existing)));
 
-        var response = controller.provision(TOKEN, request("Acme"));
+        var response = controller.provision(http(TOKEN), request("Acme"));
 
         assertThat(response.organizationId()).isEqualTo(existing);
         assertThat(response.created()).isFalse();
@@ -93,7 +94,7 @@ class InternalProvisioningControllerTest {
 
     @Test
     void refusesAWrongToken() {
-        assertThatThrownBy(() -> controller.provision("not-the-token", request("Acme")))
+        assertThatThrownBy(() -> controller.provision(http("not-the-token"), request("Acme")))
                 .isInstanceOf(ApiException.class)
                 .extracting(ex -> ((ApiException) ex).getCode())
                 .isEqualTo(ErrorCode.FORBIDDEN);
@@ -104,7 +105,7 @@ class InternalProvisioningControllerTest {
 
     @Test
     void refusesAMissingToken() {
-        assertThatThrownBy(() -> controller.provision(null, request("Acme")))
+        assertThatThrownBy(() -> controller.provision(new MockHttpServletRequest(), request("Acme")))
                 .isInstanceOf(ApiException.class);
         verify(organizations, never()).create(any(), any());
     }
@@ -114,14 +115,12 @@ class InternalProvisioningControllerTest {
         // Fails closed. A deployment that forgot to set one must not accept a blank header as a match,
         // which is what comparing two empty strings would do.
         var unconfigured = new InternalProvisioningController(
-                propertiesWithToken(""), organizations, memberships, mirror);
+                new ServiceTokenGuard(identity("")), organizations, memberships, mirror);
 
-        assertThatThrownBy(() -> unconfigured.provision("", request("Acme")))
+        assertThatThrownBy(() -> unconfigured.provision(http(""), request("Acme")))
                 .isInstanceOf(ApiException.class);
         verify(organizations, never()).create(any(), any());
     }
-
-    // ------------------------------------------------------------------
 
     private ProvisionRequest request(String organizationName) {
         return new ProvisionRequest(userId, "someone@example.com", false, "Someone", organizationName);
@@ -141,9 +140,15 @@ class InternalProvisioningControllerTest {
                 Instant.now(), "Asia/Kolkata", "en-IN", "INR", Instant.now());
     }
 
-    private PrabhixProperties propertiesWithToken(String token) {
-        return TestProperties.withSecurity(TestProperties.security(
-                Duration.ofMinutes(15), Duration.ofDays(30),
-                TestProperties.identityWithServiceToken(token)));
+    private static MockHttpServletRequest http(String token) {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader(IdentityInternalClient.SERVICE_TOKEN_HEADER, token);
+        return request;
+    }
+
+    private static IdentityClientProperties identity(String token) {
+        return new IdentityClientProperties(
+                "https://id.prabhix.test", null, null, null, null,
+                "http://identity.test", token, null);
     }
 }

@@ -1,12 +1,13 @@
 package com.prabhix.platform.org.web;
 
+import com.prabhix.identity.client.IdentityUserMirror;
+import com.prabhix.identity.client.ServiceTokenGuard;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
-import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.org.dto.OrgDtos.CreateOrganizationRequest;
 import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
 import com.prabhix.platform.org.service.OrganizationService;
-import com.prabhix.platform.user.service.IdentityUserMirror;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -16,12 +17,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.UUID;
 
 /**
@@ -39,9 +37,9 @@ import java.util.UUID;
  * pass through this service at all.
  *
  * <p>Not routed publicly: Caddy answers {@code /internal} with a 404 at the edge, and the shared token
- * below is the second lock rather than the only one. Same token as the mirror lookup in the other
- * direction, deliberately: it is one trust relationship between two services, and a second secret to
- * rotate would be a second secret to forget to rotate.
+ * checked by {@link ServiceTokenGuard} is the second lock rather than the only one. Same token as the
+ * mirror lookup in the other direction, deliberately: it is one trust relationship between two
+ * services, and a second secret to rotate would be a second secret to forget to rotate.
  */
 @Slf4j
 @RestController
@@ -49,7 +47,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class InternalProvisioningController {
 
-    private final PrabhixProperties properties;
+    private final ServiceTokenGuard serviceToken;
     private final OrganizationService organizations;
     private final OrganizationMembershipRepository memberships;
     private final IdentityUserMirror mirror;
@@ -59,10 +57,9 @@ public class InternalProvisioningController {
      *     error.
      */
     @PostMapping("/organizations")
-    public ProvisionResponse provision(
-            @RequestHeader(value = "X-Prabhix-Service-Token", required = false) String token,
-            @Valid @RequestBody ProvisionRequest request) {
-        requireServiceToken(token);
+    public ProvisionResponse provision(HttpServletRequest http,
+                                       @Valid @RequestBody ProvisionRequest request) {
+        requireServiceToken(http);
 
         // The mirror row first, because the membership this is about to write has a foreign key to it.
         // Written from what identity sent rather than fetched back from identity: it is the caller, and
@@ -91,22 +88,16 @@ public class InternalProvisioningController {
 
     /**
      * A blank configured token disables the endpoint rather than accepting a blank header, so a
-     * deployment that forgot to set one fails closed. Mirrors identity's check in the other direction.
+     * deployment that forgot to set one fails closed. The guard makes that distinction itself; the two
+     * messages here exist so an operator can tell a misconfiguration from a wrong caller in the logs.
      */
-    private void requireServiceToken(String presented) {
-        String expected = properties.security().identity().serviceToken();
-        if (expected == null || expected.isBlank()) {
+    private void requireServiceToken(HttpServletRequest http) {
+        if (!serviceToken.configured()) {
             throw ApiException.of(ErrorCode.FORBIDDEN, "Service provisioning is not configured");
         }
-        if (presented == null || !constantTimeEquals(expected, presented)) {
+        if (!serviceToken.permits(http)) {
             throw ApiException.of(ErrorCode.FORBIDDEN, "Invalid service token");
         }
-    }
-
-    private static boolean constantTimeEquals(String a, String b) {
-        return MessageDigest.isEqual(
-                a.getBytes(StandardCharsets.UTF_8),
-                b.getBytes(StandardCharsets.UTF_8));
     }
 
     /**

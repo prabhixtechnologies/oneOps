@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- House ink field so OneOps sits apart from Mailroom (teal) and MobiStack (stacked M). -->
-    <color name="ic_launcher_background">#0C1524</color>
-    <color name="brand_primary">#0E7490</color>
-    <color name="brand_accent">#22D3EE</color>
-</resources>

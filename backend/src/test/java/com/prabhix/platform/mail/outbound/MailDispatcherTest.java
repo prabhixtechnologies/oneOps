@@ -3,6 +3,7 @@ package com.prabhix.platform.mail.outbound;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.mail.domain.MailOutbox;
 import com.prabhix.platform.mail.repository.MailOutboxRepository;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.support.TestProperties;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.*;
 class MailDispatcherTest {
 
     @Mock MailOutboxRepository outboxRepository;
+    @Mock StructuredEventLogger eventLogger;
 
     MailDispatcher dispatcher;
     UUID existingId = UUID.randomUUID();
@@ -31,7 +33,7 @@ class MailDispatcherTest {
     @BeforeEach
     void setUp() {
         PrabhixProperties props = TestProperties.defaults();
-        dispatcher = new MailDispatcher(outboxRepository, props);
+        dispatcher = new MailDispatcher(outboxRepository, props, eventLogger);
     }
 
     @Test

@@ -10,6 +10,7 @@ import com.prabhix.platform.mail.domain.MailboxMember;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.dto.MailboxDtos;
 import com.prabhix.platform.mail.provisioning.MailboxCredentialsCipher;
+import com.prabhix.platform.mail.repository.MailDomainRepository;
 import com.prabhix.platform.mail.repository.MailRoutingRuleRepository;
 import com.prabhix.platform.mail.repository.MailboxMemberRepository;
 import com.prabhix.platform.mail.repository.MailboxRepository;
@@ -40,6 +41,7 @@ public class MailboxService {
     private final MailRoutingRuleRepository routingRuleRepository;
     private final OrganizationMembershipRepository membershipRepository;
     private final TeamRepository teamRepository;
+    private final MailDomainRepository mailDomainRepository;
     private final PrabhixProperties properties;
     private final EntitlementGate entitlements;
     private final MailboxCredentialsCipher credentialsCipher;
@@ -65,17 +67,41 @@ public class MailboxService {
         }
         // The check above is the platform-wide ceiling; this one is what the plan actually sold.
         entitlements.requireQuota(organizationId, "mailboxes", count);
-        if (mailboxRepository.findByAddressIgnoreCaseAndDeletedAtIsNull(request.address()).isPresent()) {
+        MailEnums.MailboxKind kind = request.kind() != null ? request.kind() : MailEnums.MailboxKind.SHARED;
+        if (kind == MailEnums.MailboxKind.SYSTEM) {
+            throw ApiException.of(com.prabhix.platform.common.error.ErrorCode.VALIDATION_FAILED,
+                    "System mailboxes cannot be created here");
+        }
+        if (kind == MailEnums.MailboxKind.PERSONAL) {
+            if (request.ownerUserId() == null) {
+                throw ApiException.withFields(com.prabhix.platform.common.error.ErrorCode.VALIDATION_FAILED,
+                        "A personal mailbox needs an owner",
+                        Map.of("ownerUserId", "Required for a personal mailbox"));
+            }
+            membershipRepository.findByOrganizationIdAndUserId(organizationId, request.ownerUserId())
+                    .orElseThrow(() -> ApiException.notFound("Member"));
+        }
+
+        String address = request.address().toLowerCase().trim();
+        if (mailboxRepository.findByAddressIgnoreCaseAndDeletedAtIsNull(address).isPresent()) {
             throw ApiException.conflict("That address is already in use");
         }
         Mailbox mailbox = new Mailbox();
         mailbox.setOrganizationId(organizationId);
-        mailbox.setAddress(request.address().toLowerCase());
+        mailbox.setAddress(address);
         mailbox.setName(request.name());
-        mailbox.setKind(request.kind() != null ? request.kind() : MailEnums.MailboxKind.SHARED);
+        mailbox.setKind(kind);
         mailbox.setDescription(request.description());
+        if (kind == MailEnums.MailboxKind.PERSONAL) {
+            mailbox.setOwnerUserId(request.ownerUserId());
+        }
+        bindDomain(organizationId, mailbox, address, kind == MailEnums.MailboxKind.PERSONAL);
         applyCredentialUpdates(mailbox, request.imapPassword(), request.smtpPassword());
-        return toSummary(mailboxRepository.save(mailbox));
+        Mailbox saved = mailboxRepository.save(mailbox);
+        if (kind == MailEnums.MailboxKind.PERSONAL) {
+            ensureOwnerMember(organizationId, saved);
+        }
+        return toSummary(saved);
     }
 
     @Transactional
@@ -271,6 +297,45 @@ public class MailboxService {
         if (smtpPassword != null && !smtpPassword.isBlank()) {
             credentialsCipher.storeSmtpPassword(mailbox, smtpPassword);
         }
+    }
+
+    /**
+     * Attaches the sending domain from the address. Personal mailboxes must land on a verified
+     * domain of this organization; a shared box takes the domain if one exists and does not fail
+     * if the address is still on someone else's IMAP host.
+     */
+    private void bindDomain(UUID organizationId, Mailbox mailbox, String address, boolean requireVerified) {
+        int at = address.lastIndexOf('@');
+        if (at <= 0 || at == address.length() - 1) {
+            throw ApiException.withFields(com.prabhix.platform.common.error.ErrorCode.VALIDATION_FAILED,
+                    "Address is not valid", Map.of("address", "Use local-part@domain"));
+        }
+        String host = address.substring(at + 1);
+        var domain = mailDomainRepository.findByDomainIgnoreCaseAndDeletedAtIsNull(host)
+                .filter(d -> organizationId.equals(d.getOrganizationId()));
+        if (requireVerified) {
+            var verified = domain
+                    .filter(d -> d.getStatus() == MailEnums.DomainStatus.VERIFIED)
+                    .orElseThrow(() -> ApiException.of(
+                            com.prabhix.platform.common.error.ErrorCode.MAIL_DOMAIN_NOT_VERIFIED,
+                            "Pick a verified domain"));
+            mailbox.setMailDomainId(verified.getId());
+            return;
+        }
+        domain.ifPresent(d -> mailbox.setMailDomainId(d.getId()));
+    }
+
+    private void ensureOwnerMember(UUID organizationId, Mailbox mailbox) {
+        UUID ownerUserId = mailbox.getOwnerUserId();
+        if (ownerUserId == null || memberRepository.existsByMailboxIdAndUserId(mailbox.getId(), ownerUserId)) {
+            return;
+        }
+        MailboxMember member = new MailboxMember();
+        member.setOrganizationId(organizationId);
+        member.setMailboxId(mailbox.getId());
+        member.setUserId(ownerUserId);
+        member.setAccessLevel(MailEnums.MemberAccessLevel.LEAD);
+        memberRepository.save(member);
     }
 
     private Mailbox requireMailbox(UUID organizationId, UUID mailboxId) {

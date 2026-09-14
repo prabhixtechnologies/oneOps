@@ -11,6 +11,7 @@ import com.prabhix.platform.billing.repository.BillingWebhookEventRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,8 @@ class WebhookServiceTest {
     private BillingPaymentInstrumentService paymentInstrumentService;
     @Mock
     private PrabhixProperties properties;
+    @Mock
+    private StructuredEventLogger eventLogger;
 
     private WebhookService webhookService;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -63,7 +66,8 @@ class WebhookServiceTest {
                 entitlementService,
                 paymentInstrumentService,
                 objectMapper,
-                properties);
+                properties,
+                eventLogger);
     }
 
     @Test

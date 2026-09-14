@@ -85,7 +85,7 @@ export default function CommerceOrdersPage() {
             <MobileCardRow label="Total" value={<Money amount={o.totalMinor} />} />
             <MobileCardRow label="Created" value={<RelativeTime date={o.createdAt} />} />
             <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
-              <Link to={`/commerce/orders/${o.id}`}>View</Link>
+              <Link to={`/commerce/orders/${o.id}`} data-testid="commerce-order-open">View</Link>
             </Button>
           </MobileCard>
         ))}
@@ -103,7 +103,7 @@ export default function CommerceOrdersPage() {
           </TableHeader>
           <TableBody>
             {orders.map((o) => (
-              <TableRow key={o.id}>
+              <TableRow key={o.id} data-testid="commerce-order-row">
                 <TableCell className="font-mono text-sm">{o.orderNumber}</TableCell>
                 <TableCell>
                   <Badge variant="secondary">{o.status.replace(/_/g, " ")}</Badge>
@@ -117,7 +117,7 @@ export default function CommerceOrdersPage() {
                 </TableCell>
                 <TableCell>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link to={`/commerce/orders/${o.id}`}>View</Link>
+                    <Link to={`/commerce/orders/${o.id}`} data-testid="commerce-order-open">View</Link>
                   </Button>
                 </TableCell>
               </TableRow>

@@ -57,7 +57,7 @@ class TokenDenyListTest {
         when(redis.opsForValue()).thenReturn(valueOps);
         when(valueOps.get(userKey())).thenReturn(Long.toString(revokedAt.toEpochMilli()));
 
-        assertFalse(denyList.isRevoked(userId, null, revokedAt.plusSeconds(5)));
+        assertFalse(denyList.isRevoked(userId, null, null, revokedAt.plusSeconds(5)));
     }
 
     @Test
@@ -66,7 +66,7 @@ class TokenDenyListTest {
         when(redis.opsForValue()).thenReturn(valueOps);
         when(valueOps.get(userKey())).thenReturn(Long.toString(revokedAt.toEpochMilli()));
 
-        assertTrue(denyList.isRevoked(userId, null, revokedAt.minusSeconds(60)));
+        assertTrue(denyList.isRevoked(userId, null, null, revokedAt.minusSeconds(60)));
     }
 
     /**
@@ -77,7 +77,7 @@ class TokenDenyListTest {
     void rejectsARevokedSessionRegardlessOfIssueTime() {
         when(redis.hasKey(sessionKey())).thenReturn(true);
 
-        assertTrue(denyList.isRevoked(userId, sessionId, Instant.now().plusSeconds(300)));
+        assertTrue(denyList.isRevoked(userId, sessionId, null, Instant.now().plusSeconds(300)));
     }
 
     @Test
@@ -85,7 +85,7 @@ class TokenDenyListTest {
         when(redis.opsForValue()).thenReturn(valueOps);
         when(valueOps.get(userKey())).thenReturn(null);
 
-        assertFalse(denyList.isRevoked(userId, null, Instant.now()));
+        assertFalse(denyList.isRevoked(userId, null, null, Instant.now()));
     }
 
     /**
@@ -97,7 +97,7 @@ class TokenDenyListTest {
         when(redis.opsForValue()).thenReturn(valueOps);
         when(valueOps.get(userKey())).thenReturn("1");
 
-        assertTrue(denyList.isRevoked(userId, null, Instant.now()));
+        assertTrue(denyList.isRevoked(userId, null, null, Instant.now()));
     }
 
     @Test
@@ -105,7 +105,7 @@ class TokenDenyListTest {
         when(redis.opsForValue()).thenReturn(valueOps);
         when(valueOps.get(userKey())).thenReturn(Long.toString(Instant.now().toEpochMilli()));
 
-        assertTrue(denyList.isRevoked(userId, null, null));
+        assertTrue(denyList.isRevoked(userId, null, null, null));
     }
 
     /** Redis being down must not lock every user out; the exposure is capped by the token TTL. */
@@ -113,7 +113,7 @@ class TokenDenyListTest {
     void failsOpenWhenRedisIsUnavailable() {
         when(redis.opsForValue()).thenThrow(new RedisConnectionFailureException("down"));
 
-        assertFalse(denyList.isRevoked(userId, null, Instant.now()));
+        assertFalse(denyList.isRevoked(userId, null, null, Instant.now()));
     }
 
     @Test

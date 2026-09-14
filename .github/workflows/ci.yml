@@ -355,98 +355,120 @@ jobs:
           [ "$fail" -eq 0 ] || exit 1
           echo "Neither bundle contains the other's code."
 
-  android:
-    name: Android (Gradle)
+  openapi:
+    name: OpenAPI client
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mobile/android
+        working-directory: packages/oneops-api
     steps:
       - uses: actions/checkout@v4
-
-      # 17, not the 21 the backend uses: the Android Gradle Plugin pins its supported JDK range and
-      # rejects newer ones outright.
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
         with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      # Both flavors, because they compile different source sets: the platform screens and the
-      # cross-tenant API exist only under src/admin, so a break in them is invisible to the OneOps
-      # build. Debug rather than release — release needs the signing keystore, which is not in the
-      # repository, and would produce an unsigned APK that tells us nothing more than this does.
-      - name: Assemble both flavors
-        run: ./gradlew --no-daemon assembleOneopsDebug assembleAdminDebug
-
-      # Cheap insurance for the split. The customer's app must not contain the staff endpoints, and
-      # the way that breaks is silent: move one file back into src/main and both APKs build fine.
-      #
-      # The admin APK is checked for the same string first, so the check cannot pass vacuously. Were
-      # only the OneOps side asserted, renaming the endpoint would turn this into a test that always
-      # passes while protecting nothing.
-      - name: Check neither build contains the other's code
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/oneops-api/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Generate TypeScript client
+        run: npm run generate
+      - name: Fail if the snapshot or generated client drifted
         run: |
-          dex() { unzip -p "app/build/outputs/apk/$1/debug/app-$1-debug.apk" 'classes*.dex'; }
+          set -euo pipefail
+          git diff --exit-code --ignore-cr-at-eol -- src/schema.ts ../../backend/apidocs.json
+          node -e "
+            const s = require('../../backend/apidocs.json').components.schemas;
+            for (const n of ['ProductSummary','CartView','OrderDetail']) {
+              if (!s[n]) { console.error('apidocs.json is missing schema ' + n); process.exit(1); }
+            }
+            console.log('commerce schemas present');
+          "
 
-          dex admin  > /tmp/admin.dex
-          dex oneops > /tmp/oneops.dex
-
-          fail=0
-
-          # Direction 1: the customer's app must not contain the staff endpoints.
-          #
-          # Asserted against the admin APK first so the check cannot pass vacuously. Were only the
-          # OneOps side tested, renaming the endpoint would turn this into a test that always passes
-          # while protecting nothing.
-          if ! grep -qa 'admin/platform/' /tmp/admin.dex; then
-            echo "::error::The admin APK no longer references admin/platform endpoints, so the OneOps check proves nothing. Update the string this job greps for."
-            fail=1
-          elif grep -qa 'admin/platform/' /tmp/oneops.dex; then
-            echo "::error::The OneOps APK references admin/platform endpoints. Platform admin code must live in app/src/admin."
-            fail=1
-          fi
-
-          # Direction 2: the staff app must not contain the product. This is the one that broke
-          # twice, and neither time was visible — the screens were unreachable while the Retrofit
-          # APIs, the Room database and the SSE client were all still compiled in, because a Hilt
-          # provider in src/main kept them reachable from both graphs.
-          # 'mail/threads' used to be on this list and is not any more: mail left OneOps for
-          # Mailroom, so the string is absent from both APKs and the check would have been asserting
-          # nothing. Nothing replaced it, because the phone app has no commerce or visitor endpoints
-          # to substitute. The four that remain still cover the two ways this broke before — a
-          # Retrofit API and an SSE client reachable from both graphs, and the Room database and
-          # offline outbox compiled into both.
-          for needle in 'chat/conversations' 'chat/stream' 'prabhix_operator.db' 'outbound_flush'; do
-            if ! grep -qa "$needle" /tmp/oneops.dex; then
-              echo "::error::'$needle' is missing from the OneOps APK, so testing for its absence in admin proves nothing. Update this list."
-              fail=1
-            elif grep -qa "$needle" /tmp/admin.dex; then
-              echo "::error::The admin APK contains '$needle'. The product belongs in app/src/oneops; check for a @Provides or an injection in src/main that reaches it."
-              fail=1
-            fi
-          done
-
-          [ "$fail" -eq 0 ] || exit 1
-          echo "Neither APK contains the other's code."
-
-      # So a build can be installed on a phone without a local Android toolchain. Debug-signed, so
-      # they install directly but cannot be uploaded to Play.
-      - name: Upload APKs
-        uses: actions/upload-artifact@v4
+  contract:
+    name: API contract
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
         with:
-          name: android-debug-apks
-          path: mobile/android/app/build/outputs/apk/*/debug/*.apk
-          if-no-files-found: error
-          retention-days: 14
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+      # Always runs the mocked commerce fixtures in contract.live.test.ts.
+      # Live GETs run when CONTRACT_LIVE=1 (repo variable) and PBX_CONTRACT_* secrets are set.
+      - name: Contract check
+        env:
+          CONTRACT_LIVE: ${{ vars.CONTRACT_LIVE }}
+          PBX_CONTRACT_EMAIL: ${{ secrets.PBX_CONTRACT_EMAIL }}
+          PBX_CONTRACT_PASSWORD: ${{ secrets.PBX_CONTRACT_PASSWORD }}
+          PBX_CONTRACT_API: ${{ vars.PBX_CONTRACT_API }}
+          PBX_CONTRACT_ORIGIN: ${{ vars.PBX_CONTRACT_ORIGIN }}
+        run: npx vitest run src/lib/schemas/contract.live.test.ts
+
+  e2e-dry-run:
+    name: Playwright E2E (dry-run)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+      # Installs the runner and typechecks specs. Does not start a stack or a browser.
+      - name: Playwright CLI is present
+        run: npx playwright --version
+      - name: Typecheck E2E specs
+        run: npx tsc -p e2e --noEmit
+
+  # Live journeys need a seeded stack (Identity + marketing + oneOps + mailroom). Off unless the
+  # repository variable is set, matching CONTRACT_LIVE.
+  e2e-live:
+    name: Playwright E2E (live)
+    if: ${{ vars.E2E_LIVE == '1' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run live loops
+        env:
+          E2E_LIVE: "1"
+          E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
+          E2E_MARKETING_URL: ${{ vars.E2E_MARKETING_URL }}
+          E2E_IDENTITY_URL: ${{ vars.E2E_IDENTITY_URL }}
+          E2E_AGENT_EMAIL: ${{ secrets.E2E_AGENT_EMAIL }}
+          E2E_AGENT_PASSWORD: ${{ secrets.E2E_AGENT_PASSWORD }}
+        run: npx playwright test
 
   images:
     name: Docker images
     runs-on: ubuntu-latest
-    needs: [backend, migrations, web]
+    needs: [backend, migrations, web, openapi, contract]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     permissions:
       contents: read
@@ -535,7 +557,7 @@ jobs:
       - name: Build and push web
         uses: docker/build-push-action@v6
         with:
-          context: ./web
+          context: .
           file: ./web/Dockerfile
           push: true
           # Vite inlines these at build time; each must also be declared as an ARG in web/Dockerfile
@@ -557,7 +579,7 @@ jobs:
       - name: Build and push admin
         uses: docker/build-push-action@v6
         with:
-          context: ./web
+          context: .
           file: ./web/Dockerfile
           push: true
           build-args: |

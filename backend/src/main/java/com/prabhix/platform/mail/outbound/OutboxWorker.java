@@ -8,6 +8,8 @@ import com.prabhix.platform.mail.repository.MailDeliveryEventRepository;
 import com.prabhix.platform.mail.repository.MailOutboxRepository;
 import com.prabhix.platform.mail.outbound.transport.MailTransport;
 import com.prabhix.platform.mail.outbound.transport.MailTransportRouter;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.common.util.OutboxBackoff;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ public class OutboxWorker {
     private final MailTransportRouter transportRouter;
     private final MailTrackingInjector trackingInjector;
     private final OutboundAttachmentResolver attachmentResolver;
+    private final StructuredEventLogger eventLogger;
 
     @Scheduled(fixedDelayString = "${prabhix.mail.outbox.poll-interval}")
     @Transactional
@@ -69,6 +72,8 @@ public class OutboxWorker {
                 row.setStatus(MailEnums.OutboxStatus.SUPPRESSED);
                 row.setLastError("Address suppressed: " + address);
                 outboxRepository.save(row);
+                eventLogger.log(LogEventCode.MAIL_OUTBOUND_SUPPRESSED, Map.of(
+                        "outboxId", row.getId(), "address", address));
                 return;
             }
         }
@@ -100,6 +105,8 @@ public class OutboxWorker {
                 row.setProviderMessageId(result.providerMessageId());
                 transportRouter.recordSuccess(transport.providerId());
                 recordDelivery(row, MailEnums.DeliveryEventType.SENT, null);
+                eventLogger.log(LogEventCode.MAIL_OUTBOUND_SENT, Map.of(
+                        "outboxId", row.getId(), "transport", transport.providerId()));
             } else {
                 handleFailure(row, transport.providerId(), result.error());
             }
@@ -114,6 +121,8 @@ public class OutboxWorker {
         row.setLastError(error);
         transportRouter.recordFailure(providerId);
         recordDelivery(row, MailEnums.DeliveryEventType.FAILED, error);
+        eventLogger.log(LogEventCode.MAIL_OUTBOUND_FAILED, Map.of(
+                "outboxId", row.getId(), "provider", providerId));
 
         if (row.getAttempts() >= row.getMaxAttempts()) {
             row.setStatus(MailEnums.OutboxStatus.DEAD);

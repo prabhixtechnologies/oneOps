@@ -21,6 +21,8 @@ import com.prabhix.platform.commerce.domain.OrderShipment;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.event.AuditRequested;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.common.web.Cursor;
 import com.prabhix.platform.common.web.CursorPage;
 import com.prabhix.platform.security.PrabhixPrincipal;
@@ -32,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -51,6 +54,7 @@ public class CommerceOrderService {
     private final ProductRepository productRepository;
     private final StockService stockService;
     private final ApplicationEventPublisher events;
+    private final StructuredEventLogger eventLogger;
 
     @Transactional(readOnly = true)
     public CursorPage<CommerceDtos.OrderSummary> list(
@@ -109,6 +113,8 @@ public class CommerceOrderService {
         events.publishEvent(AuditRequested.of(
                 order.getOrganizationId(), principal.userId(),
                 "commerce.order.fulfilled", "commerce_order", order.getId()));
+        eventLogger.log(LogEventCode.COMMERCE_ORDER_FULFILLED, Map.of(
+                "orderId", order.getId(), "orderNumber", order.getOrderNumber()));
         return toDetail(order);
     }
 
@@ -128,6 +134,8 @@ public class CommerceOrderService {
         appendEvent(order, "CANCELLED", "Order cancelled");
         events.publishEvent(AuditRequested.of(orgId, principal.userId(),
                 "commerce.order.cancelled", "commerce_order", order.getId()));
+        eventLogger.log(LogEventCode.COMMERCE_ORDER_CANCELLED, Map.of(
+                "orderId", order.getId(), "orderNumber", order.getOrderNumber()));
         return toDetail(order);
     }
 

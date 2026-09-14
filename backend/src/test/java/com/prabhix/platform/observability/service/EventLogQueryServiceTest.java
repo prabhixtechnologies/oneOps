@@ -45,7 +45,7 @@ class EventLogQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        PrabhixProperties props = new PrabhixProperties(null, null, null, null, null, null, null, null);
+        PrabhixProperties props = new PrabhixProperties(null, null, null, null, null, null, null);
         service = new EventLogQueryService(eventLogRepository, entityManager, props);
     }
 

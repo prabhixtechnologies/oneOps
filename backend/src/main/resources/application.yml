@@ -191,6 +191,21 @@ management:
     # asks the router what it would actually send through, and contributes under "mailTransport".
     mail:
       enabled: false
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      cloudwatch:
+        # Alias of management.cloudwatch.metrics.export (Micrometer CloudWatchConfig prefix).
+        enabled: ${CLOUDWATCH_METRICS:false}
+        namespace: Prabhix
+        step: 1m
+  cloudwatch:
+    metrics:
+      export:
+        enabled: ${CLOUDWATCH_METRICS:false}
+        namespace: Prabhix
+        step: 1m
 
 springdoc:
   swagger-ui:
@@ -220,61 +235,46 @@ prabhix:
     console: ${CONSOLE_URL:http://localhost:5173}
     api: ${API_URL:http://localhost:8080}
 
-  # When Identity is the auth source of truth, keep this false so products cannot keep a second
-  # browser login path on this API. Password/register/magic-link/OTP/Google SSO and anonymous
-  # password-reset then return 410 (AUTH_MOVED_TO_IDENTITY) pointing at Identity hosted login.
-  # Session refresh, cookie exchange, logout, /me, and authenticated change-password stay on.
-  # Set true only for emergency rollback while Identity is unavailable.
-  auth:
-    legacy-credential-login: ${LEGACY_CREDENTIAL_LOGIN:false}
-
   cors:
     # 3000 marketing, 5173 OneOps console, 5174 admin console. All three send credentials, so this
     # can never become "*" — a wildcard origin is rejected by browsers for credentialed requests.
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:5174}
 
+  # Prabhix Identity is the only issuer of bearer tokens this API accepts. Bound by the identity
+  # starter (com.prabhix:identity-spring-boot-starter); the keys are its, the environment variable
+  # names are the ones every product backend shares. A blank issuer refuses every bearer token, so
+  # IDENTITY_ISSUER is mandatory for anything but a build check. See Infra/docs/IDENTITY.md.
+  identity:
+    issuer: ${IDENTITY_ISSUER:}
+    # Only if the key set is not at {issuer}/.well-known/jwks.json. In compose it is: the issuer is
+    # the public origin, and fetching through Caddy would depend on routing that may be mid-change.
+    jwks-uri: ${IDENTITY_JWKS_URI:}
+    jwks-cache-ttl: ${IDENTITY_JWKS_CACHE_TTL:PT10M}
+    jwks-min-refresh-interval: ${IDENTITY_JWKS_MIN_REFRESH:PT30S}
+    # Where the local users mirror is filled in from and where break-glass revocations go. Internal
+    # address: /internal is not routed publicly, and the token below is the second lock.
+    internal-base-url: ${IDENTITY_INTERNAL_URL:http://identity:8081}
+    service-token: ${IDENTITY_SERVICE_TOKEN:}
+
+  # MobiStack platform admin, for the BFF. Compose-network origin; the browser never sees this.
+  mobistack:
+    internal-base-url: ${MOBISTACK_INTERNAL_URL:http://mobistack-backend:8080}
+
   security:
-    jwt:
-      # MUST be overridden outside dev. Startup fails if it is short or default in prod.
-      secret: ${JWT_SECRET:dev-only-insecure-secret-change-me-0123456789abcdefghijklmnop}
-      issuer: ${JWT_ISSUER:prabhix-platform}
-      access-token-ttl: ${JWT_ACCESS_TTL:PT15M}
-      refresh-token-ttl: ${JWT_REFRESH_TTL:P30D}
-    # Tokens issued by Prabhix Identity, verified against its published JWKS. Blank disables it and
-    # only HS256 tokens minted here are accepted, which is the state until identity is running.
-    # Both families are accepted at once so the changeover signs nobody out. See Infra/docs/IDENTITY.md.
-    identity:
-      issuer: ${IDENTITY_ISSUER:}
-      # Only if the key set is not at {issuer}/.well-known/jwks.json.
-      jwks-uri: ${IDENTITY_JWKS_URI:}
-      jwks-cache-ttl: ${IDENTITY_JWKS_CACHE_TTL:PT10M}
-      jwks-min-refresh-interval: ${IDENTITY_JWKS_MIN_REFRESH:PT30S}
-      # Where the local users mirror is filled in from. Internal address: /internal is not routed
-      # publicly, and the token below is the second lock rather than the only one.
-      internal-base-url: ${IDENTITY_INTERNAL_URL:http://identity:8081}
-      service-token: ${IDENTITY_SERVICE_TOKEN:}
+    # HMAC key for chat visitor tokens and the cipher key around stored DKIM private keys. Not a
+    # bearer-token secret: nothing verifies a person's token with it. Falls back to JWT_SECRET for one
+    # release so existing deployments keep reading their DKIM keys; set INTERNAL_SIGNING_SECRET to the
+    # same value and drop JWT_SECRET once every environment has it. Startup fails outside dev if it
+    # is short or still the development default.
+    internal-signing-secret: ${INTERNAL_SIGNING_SECRET:${JWT_SECRET:dev-only-insecure-secret-change-me-0123456789abcdefghijklmnop}}
+    # Deny-list entries outlive the longest access token identity issues, so a signed-out session
+    # cannot come back for the remainder of a token's life.
+    deny-list-ttl: PT15M
     # Sliding-window limits enforced in Redis, per IP and per organization.
     rate-limit:
       enabled: ${RATE_LIMIT_ENABLED:true}
       auth-attempts-per-minute: 10
       api-requests-per-minute: 600
-    password:
-      min-length: 10
-      bcrypt-strength: 12
-    # Shared browser session. The domain must be the parent of every console hostname that should
-    # share one sign-in, and empty locally, where a cookie scoped to "localhost" is what browsers
-    # accept. Lifetime follows jwt.refresh-token-ttl above, so there is one knob for how long a
-    # signed-in browser stays signed in.
-    session-cookie:
-      name: ${SESSION_COOKIE_NAME:pbx_session}
-      domain: ${SESSION_COOKIE_DOMAIN:}
-      secure: ${SESSION_COOKIE_SECURE:true}
-      same-site: ${SESSION_COOKIE_SAME_SITE:Lax}
-
-  otp:
-    length: 6
-    ttl: PT10M
-    max-attempts: 5
 
   mail:
     # Identity used for platform-generated mail (auth, billing, notifications).
@@ -492,6 +492,16 @@ prabhix:
       region: ${AWS_REGION:ap-south-1}
       ce-region: ${AWS_CE_REGION:us-east-1}
       cost-cache-ttl-seconds: ${AWS_COST_CACHE_TTL:1800}
+      ecr-repositories:
+        - prabhix/backend
+        - prabhix/web
+        - prabhix/admin
+        - prabhix/identity
+        - prabhix/mailroom
+        - prabhix/marketing
+        - prabhix/mobistack-backend
+        - prabhix/mobistack-web
+        - prabhix/app-store
     health:
       timeout-seconds: ${OPS_HEALTH_TIMEOUT:5}
       products:
@@ -502,12 +512,16 @@ prabhix:
         store: https://store.prabhixtechnologies.com/healthz
     github:
       api-url: ${GITHUB_API_URL:https://api.github.com}
+      deploy-repo: ${OPS_GITHUB_DEPLOY_REPO:prabhixtechnologies/Infra}
+      deploy-workflow: ${OPS_GITHUB_DEPLOY_WORKFLOW:deploy.yml}
+      deploy-ref: ${OPS_GITHUB_DEPLOY_REF:main}
       repos:
         - prabhixtechnologies/Mobile
         - prabhixtechnologies/oneOps
         - prabhixtechnologies/MobiStack
         - prabhixtechnologies/Identity
         - prabhixtechnologies/Mailroom
+        - prabhixtechnologies/Infra
 
 ---
 # ElastiCache Serverless for Valkey. Its own profile rather than folded into `prod` so that running
@@ -549,3 +563,23 @@ spring:
       # detail is not worth a migration. No default, so a blank value fails startup loudly instead
       # of falling back to localhost and looking like a working cache that simply has no data.
       url: rediss://${REDIS_CLUSTER_NODES}
+
+---
+# Micrometer → CloudWatch namespace Prabhix. Same effect as CLOUDWATCH_METRICS=true.
+# Off unless this profile is active, so local tests never open an AWS client.
+spring:
+  config:
+    activate:
+      on-profile: cloudwatch
+management:
+  metrics:
+    export:
+      cloudwatch:
+        enabled: true
+        namespace: Prabhix
+  cloudwatch:
+    metrics:
+      export:
+        enabled: true
+        namespace: Prabhix
+        step: 1m

@@ -1,12 +1,20 @@
 # Prabhix Web Console
 
-Two apps from one source tree — shared team inbox, mail management, billing, and organization
-administration for customers, plus the private console Prabhix runs the platform from.
+Two apps from one source tree. OneOps is the operations console for a small online business:
+website visitors and live chat, a shared helpdesk inbox, storefront and orders, team and billing.
+The same source also builds the private console Prabhix runs the platform from.
 
 | Build | Host | Port (dev) | What it is |
 |---|---|---|---|
 | `APP=oneops` (default) | `oneops.prabhixtechnologies.com` | 5173 | The product. One organization — the one the account belongs to. Prabhix's own team works here too. |
 | `APP=admin` | `admin.prabhixtechnologies.com` | 5174 | Prabhix staff. The platform itself: who the customers are, what the pipeline is doing, what the logs say. |
+
+## Tenant navigation (OneOps)
+
+Overview; Conversations (Inbox, Live Chat, Visitors); Shop; Team (Members, Billing); Settings
+(Org, Mail, AI, API keys, Advanced: Flags, Event logs, Audit, Files). Helpdesk is `/inbox`. Mail
+administration is Settings → Mail. Personal mail is Mailroom, linked as "My mail" when
+`VITE_MAILROOM_URL` is set.
 
 ## The boundary between them
 
@@ -83,6 +91,8 @@ npm run build:admin  # Production build, admin console
 npm run preview      # Preview production build
 npm run typecheck    # TypeScript strict check
 npm run test         # Vitest
+npm run e2e:typecheck
+npm run e2e          # Playwright loops; skipped unless E2E_LIVE=1 — see e2e/README.md
 ```
 
 ## Stack

@@ -34,56 +34,19 @@ public final class TestProperties {
                 new PrabhixProperties.Urls("http://localhost:3000", "http://localhost:5173",
                         "http://localhost:8080"),
                 new PrabhixProperties.Cors(java.util.List.of()),
-                security, null, mail, null, null, limits());
+                security, mail, null, null, limits());
     }
 
-    public static PrabhixProperties.Security security(Duration accessTokenTtl) {
-        return security(accessTokenTtl, Duration.ofDays(30));
+    /** The internal signing secret and a fifteen-minute deny list, matching identity's token life. */
+    public static PrabhixProperties.Security security() {
+        return security(Duration.ofMinutes(15));
     }
 
-    public static PrabhixProperties.Security security(Duration accessTokenTtl,
-                                                     Duration refreshTokenTtl) {
-        return security(accessTokenTtl, refreshTokenTtl, identityDisabled());
-    }
-
-    public static PrabhixProperties.Security security(Duration accessTokenTtl,
-                                                     Duration refreshTokenTtl,
-                                                     PrabhixProperties.Security.Identity identity) {
+    public static PrabhixProperties.Security security(Duration denyListTtl) {
         return new PrabhixProperties.Security(
-                new PrabhixProperties.Security.Jwt(
-                        "test-jwt-secret-long-enough-for-hmac-sha256-0123456789abcdefgh",
-                        "prabhix-platform", accessTokenTtl, refreshTokenTtl),
-                identity, null, null, sessionCookie());
-    }
-
-    /** A blank issuer, which is how every deployment starts and what most tests want. */
-    public static PrabhixProperties.Security.Identity identityDisabled() {
-        return new PrabhixProperties.Security.Identity(
-                "", "", Duration.ofMinutes(10), Duration.ofSeconds(30),
-                "http://identity:8081", "");
-    }
-
-    /** Trusts an identity issuer, for the tests that present an RS256 token. */
-    public static PrabhixProperties.Security.Identity identityTrusting(String issuer) {
-        return new PrabhixProperties.Security.Identity(
-                issuer, issuer + "/.well-known/jwks.json",
-                Duration.ofMinutes(10), Duration.ofSeconds(30),
-                "http://identity:8081", "test-service-token");
-    }
-
-    /**
-     * A named service token, for the tests that exercise the gate on {@code /internal} rather than
-     * token verification. Takes the value so a test can pass a wrong one and a blank one.
-     */
-    public static PrabhixProperties.Security.Identity identityWithServiceToken(String token) {
-        return new PrabhixProperties.Security.Identity(
-                "", "", Duration.ofMinutes(10), Duration.ofSeconds(30),
-                "http://identity:8081", token);
-    }
-
-    /** Host-only and insecure, matching how a browser accepts cookies on localhost. */
-    public static PrabhixProperties.Security.SessionCookie sessionCookie() {
-        return new PrabhixProperties.Security.SessionCookie("pbx_session", "", false, "Lax");
+                "test-internal-signing-secret-long-enough-for-hmac-sha256-0123456789abcdefgh",
+                denyListTtl,
+                new PrabhixProperties.Security.RateLimit(true, 10, 600));
     }
 
     public static PrabhixProperties.Limits limits() {

@@ -86,6 +86,8 @@ public class ThreadService {
         MailThread thread = threadRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(threadId, orgId)
                 .orElseThrow(() -> ApiException.notFound("Thread"));
         assertVisible(principal, thread);
+        mailboxRepository.findById(thread.getMailboxId())
+                .ifPresent(mailbox -> mailboxAccess.recordAdminRead(principal, mailbox, threadId));
 
         var messages = messageRepository.findByThreadIdAndDeletedAtIsNullOrderByOccurredAtAsc(threadId)
                 .stream().map(this::toMessage).toList();

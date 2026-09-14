@@ -1,9 +1,10 @@
 package com.prabhix.platform.user.web;
 
+import com.prabhix.platform.common.error.ApiException;
+import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.security.CurrentUser;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Authorize;
-import com.prabhix.platform.user.dto.UserDtos.ChangePasswordRequest;
 import com.prabhix.platform.user.dto.UserDtos.NotificationPrefsRequest;
 import com.prabhix.platform.user.dto.UserDtos.UpdateProfileRequest;
 import com.prabhix.platform.user.dto.UserDtos.UserProfile;
@@ -24,13 +25,15 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
+
+    private static final String IDENTITY_ACCOUNT =
+            "Passwords and sessions are managed by Identity. Open the hosted account page.";
 
     private final UserService userService;
 
@@ -47,11 +50,11 @@ public class UserController {
         return userService.updateProfile(principal.userId(), request);
     }
 
+    /** Kept as 410 so old consoles get a stable "moved" rather than a silent 404. */
     @PostMapping("/me/password")
     @PreAuthorize(Authorize.AUTHENTICATED)
-    public void changePassword(@CurrentUser PrabhixPrincipal principal,
-                               @Valid @RequestBody ChangePasswordRequest request) {
-        userService.changePassword(principal.userId(), request);
+    public void changePassword() {
+        throw ApiException.of(ErrorCode.AUTH_MOVED_TO_IDENTITY, IDENTITY_ACCOUNT);
     }
 
     @PatchMapping("/me/notification-prefs")
@@ -69,11 +72,11 @@ public class UserController {
                 file.getBytes(), file.getOriginalFilename(), file.getContentType());
     }
 
+    /** Kept as 410 so old consoles get a stable "moved" rather than a silent 404. */
     @GetMapping("/me/sessions")
     @PreAuthorize(Authorize.AUTHENTICATED)
-    public List<com.prabhix.platform.user.dto.UserDtos.DeviceSessionView> sessions(
-            @CurrentUser PrabhixPrincipal principal) {
-        return userService.listSessions(principal.userId(), principal.sessionId());
+    public void sessions() {
+        throw ApiException.of(ErrorCode.AUTH_MOVED_TO_IDENTITY, IDENTITY_ACCOUNT);
     }
 
     @DeleteMapping("/me/sessions/{id}")

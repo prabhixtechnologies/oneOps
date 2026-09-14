@@ -14,6 +14,7 @@ import com.prabhix.platform.commerce.repository.OrderItemRepository;
 import com.prabhix.platform.commerce.repository.OrderShipmentRepository;
 import com.prabhix.platform.commerce.repository.ProductRepository;
 import com.prabhix.platform.security.PrabhixPrincipal;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +44,7 @@ class CommerceOrderServiceFulfillTest {
     @Mock private ProductRepository productRepository;
     @Mock private StockService stockService;
     @Mock private ApplicationEventPublisher events;
+    @Mock private StructuredEventLogger eventLogger;
     @Mock private PrabhixPrincipal principal;
 
     private CommerceOrderService orderService;
@@ -52,7 +54,7 @@ class CommerceOrderServiceFulfillTest {
         orderService = new CommerceOrderService(
                 orderRepository, orderItemRepository, addressRepository, eventRepository,
                 customerRepository, downloadRepository, shipmentRepository, productRepository,
-                stockService, events);
+                stockService, events, eventLogger);
     }
 
     @Test

@@ -30,3 +30,7 @@ Caddyfile text eol=lf
 *.pdf binary
 *.zip binary
 *.keystore binary
+
+# CI-generated OpenAPI TypeScript client.
+packages/oneops-api/src/schema.ts linguist-generated=true
+backend/apidocs.json linguist-generated=true

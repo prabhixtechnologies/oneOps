@@ -1,31 +1,26 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { RelativeTime } from "@/components/shared/RelativeTime";
-import { ErrorState } from "@/components/shared/states";
 import { PermissionGate } from "@/components/shared/PermissionGate";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { PASSWORD_MIN_LENGTH, PASSWORD_RULE } from "@/lib/password";
 import { PERMISSIONS } from "@/lib/permissions";
+import { ACCOUNT_URL } from "@/lib/config";
 import {
   useApiKeys,
-  useChangePassword,
   useCreateApiKey,
   useOrganization,
   useProfile,
   useRevokeApiKey,
-  useRevokeSession,
-  useSessions,
   useUpdateNotificationPrefs,
   useUpdateOrganization,
   useUpdateProfile,
@@ -34,25 +29,26 @@ import {
 
 export default function SettingsPage() {
   const { me, organization, organizationId } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const tab =
+    location.pathname.endsWith("/api-keys")
+      ? "api-keys"
+      : (searchParams.get("tab") ?? "organization");
   const profileQuery = useProfile();
   const orgQuery = useOrganization(organizationId);
-  const sessionsQuery = useSessions();
   const apiKeysQuery = useApiKeys();
   const updateProfile = useUpdateProfile();
-  const changePassword = useChangePassword();
   const updateNotif = useUpdateNotificationPrefs();
   const updateOrg = useUpdateOrganization();
   const uploadAvatar = useUploadAvatar();
   const createApiKey = useCreateApiKey();
   const revokeApiKey = useRevokeApiKey();
-  const revokeSession = useRevokeSession();
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState("");
   const [fullName, setFullName] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [emailNotif, setEmailNotif] = useState(true);
   const [pushNotif, setPushNotif] = useState(false);
   const [orgName, setOrgName] = useState("");
@@ -89,28 +85,6 @@ export default function SettingsPage() {
     }
   };
 
-  const onChangePassword = async () => {
-    // Checked here as well as shown under the field, because the server's rejection names the
-    // constraint rather than the rule ("size must be between 10 and 128").
-    if (newPassword.length < PASSWORD_MIN_LENGTH) {
-      toast.error(PASSWORD_RULE);
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-    try {
-      await changePassword.mutateAsync({ currentPassword, newPassword });
-      toast.success("Password updated");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err));
-    }
-  };
-
   const saveNotif = async () => {
     try {
       await updateNotif.mutateAsync({ email: emailNotif, push: pushNotif });
@@ -133,7 +107,16 @@ export default function SettingsPage() {
     <div className="space-y-6 p-4 md:p-6">
       <PageHeader title="Settings" description="Manage your profile, security, and organization preferences" />
 
-      <Tabs defaultValue="profile">
+      <Tabs
+        value={tab}
+        onValueChange={(value) => {
+          if (value === "api-keys") {
+            void navigate("/settings/api-keys");
+            return;
+          }
+          void navigate(value === "organization" ? "/settings" : `/settings?tab=${value}`);
+        }}
+      >
         <TabsList className="flex h-auto flex-wrap">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
@@ -194,72 +177,17 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="security" className="mt-4 space-y-6">
-          <div className="max-w-md space-y-4">
-            <h3 className="font-medium">Change password</h3>
-            <div className="space-y-2">
-              <Label htmlFor="current-password">Current password</Label>
-              <Input id="current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                minLength={PASSWORD_MIN_LENGTH}
-                autoComplete="new-password"
-                aria-describedby="new-password-rule"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-              <p id="new-password-rule" className="text-xs text-text-muted">
-                {PASSWORD_RULE}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm new password</Label>
-              <Input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-            </div>
-            <Button variant="secondary" disabled={changePassword.isPending} onClick={() => void onChangePassword()}>
-              Update password
-            </Button>
-          </div>
-          <Separator />
-          <div>
-            <h3 className="mb-4 font-medium">Active sessions</h3>
-            {sessionsQuery.isError ? (
-              <ErrorState message="Failed to load sessions" onRetry={() => void sessionsQuery.refetch()} />
+          <div className="max-w-md space-y-3">
+            <h3 className="font-medium">Password and sessions</h3>
+            <p className="text-sm text-text-muted">
+              Password, passkeys, and signed-in devices are managed on your Prabhix Identity account.
+            </p>
+            {ACCOUNT_URL ? (
+              <Button asChild>
+                <a href={ACCOUNT_URL}>Manage account</a>
+              </Button>
             ) : (
-              <ul className="divide-y divide-border rounded-lg border border-border">
-                {(sessionsQuery.data ?? []).map((s) => (
-                  <li key={s.id} className="flex flex-col gap-2 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium">
-                        {s.deviceName ?? s.deviceType ?? "Unknown device"}
-                      </p>
-                      <p className="text-text-muted">{s.ipAddress ?? "IP not recorded"}</p>
-                      <RelativeTime date={s.lastSeenAt} className="text-xs" />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {s.current && <Badge variant="success">Current</Badge>}
-                      {!s.current && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={revokeSession.isPending}
-                          onClick={() =>
-                            void revokeSession
-                              .mutateAsync(s.id)
-                              .then(() => toast.success("Session revoked"))
-                              .catch((e) => toast.error(getApiErrorMessage(e)))
-                          }
-                        >
-                          Revoke
-                        </Button>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <p className="text-sm text-text-muted">Identity is not configured in this build.</p>
             )}
           </div>
         </TabsContent>

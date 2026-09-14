@@ -1,7 +1,6 @@
 import { RouterProvider, type createBrowserRouter } from "react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster, TooltipProvider } from "@prabhix/ui";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { AuthProvider } from "@/lib/auth";
 import { queryClient } from "@/lib/query";

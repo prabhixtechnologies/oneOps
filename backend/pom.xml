@@ -36,6 +36,8 @@
         <java.version>25</java.version>
         <build.dir>${project.basedir}/target</build.dir>
         <jjwt.version>0.12.6</jjwt.version>
+        <!-- Published from Identity/client by that repository's CI; see <repositories> below. -->
+        <identity.starter.version>1.0.0</identity.starter.version>
         <!--
           3.x is the line built against Boot 4; 2.8.x reads
           org.springframework.boot.autoconfigure.web.servlet.WebMvcProperties, which Boot 4 moved, so
@@ -76,9 +78,9 @@
             <artifactId>spring-boot-starter-jackson</artifactId>
         </dependency>
         <!--
-          Nor does webmvc auto-configure an HTTP client any more, and RestClient.Builder is injected by
-          IdentityKeySource to fetch Identity's JWKS. Without this the context cannot be built at all,
-          which is a strange way for "cannot verify a token" to present itself.
+          Nor does webmvc auto-configure an HTTP client any more, and RestClient.Builder is what the
+          identity starter builds its JWKS and internal-API client from. Without this the context
+          cannot be built at all, which is a strange way for "cannot verify a token" to present itself.
         -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -91,6 +93,15 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!--
+          Boot 4 does not auto-configure CloudWatch export. The registry is on the classpath so
+          CloudWatchMetricsConfiguration can build it when CLOUDWATCH_METRICS=true (or profile
+          cloudwatch). Off by default — tests must not open an AWS client.
+        -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-cloudwatch2</artifactId>
         </dependency>
 
         <!-- Persistence -->
@@ -128,6 +139,23 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <!--
+          The only way a bearer token gets into this API. The starter verifies Prabhix Identity's
+          RS256 tokens against its published JWKS, mirrors identity users into the local users table
+          through the UserMirrorStore this application provides, and wraps identity's internal API.
+          Nothing here signs or verifies a bearer token itself any more: a product that could verify
+          with a shared secret could also mint with it, which is the property the split removed.
+        -->
+        <dependency>
+            <groupId>com.prabhix</groupId>
+            <artifactId>identity-spring-boot-starter</artifactId>
+            <version>${identity.starter.version}</version>
+        </dependency>
+        <!--
+          Kept for what is not a bearer token: chat visitor tokens (ChatTokenService), and the signed
+          JWTs the FCM and APNs push providers authenticate to Google and Apple with. The starter has
+          its own jjwt dependency for verification; this one is for this application's own signing.
+        -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -224,6 +252,26 @@
             <artifactId>cloudwatch</artifactId>
             <version>${awssdk.version}</version>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>rds</artifactId>
+            <version>${awssdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>elasticache</artifactId>
+            <version>${awssdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>ecr</artifactId>
+            <version>${awssdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>ses</artifactId>
+            <version>${awssdk.version}</version>
+        </dependency>
 
         <!-- API docs -->
         <dependency>
@@ -292,6 +340,20 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <!--
+      Where com.prabhix:identity-spring-boot-starter comes from. GitHub Packages requires a token
+      even for reads: CI authenticates through actions/setup-java with server-id `github`, and a
+      laptop through a <server><id>github</id> entry in ~/.m2/settings.xml. The offline path is
+      `mvn -f Identity/client/pom.xml install`, which puts the same artifact in the local repository
+      and makes this entry irrelevant. Maven Central is still consulted first for everything else.
+    -->
+    <repositories>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/prabhixtechnologies/Identity</url>
+        </repository>
+    </repositories>
 
     <build>
         <finalName>prabhix-platform</finalName>
@@ -440,6 +502,32 @@
             <properties>
                 <testcontainers.docker.host>unix:///var/run/docker.sock</testcontainers.docker.host>
             </properties>
+        </profile>
+
+        <!--
+          Writes backend/apidocs.json from a running instance. The plugin is an HTTP client, not a
+          compiler: springdoc has to be serving /v3/api-docs (SWAGGER_ENABLED=true) or this is a
+          connection error rather than an empty file.
+
+            $env:SWAGGER_ENABLED='true'; mvn spring-boot:run
+            mvn -Pgenerate-openapi springdoc-openapi:generate
+        -->
+        <profile>
+            <id>generate-openapi</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springdoc</groupId>
+                        <artifactId>springdoc-openapi-maven-plugin</artifactId>
+                        <version>1.5</version>
+                        <configuration>
+                            <apiDocsUrl>http://localhost:8080/v3/api-docs</apiDocsUrl>
+                            <outputFileName>apidocs.json</outputFileName>
+                            <outputDir>${project.basedir}</outputDir>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

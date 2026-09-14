@@ -6,6 +6,8 @@ import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.mail.domain.MailOutbox;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.repository.MailOutboxRepository;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class MailDispatcher implements MailRequestHandler {
 
     private final MailOutboxRepository outboxRepository;
     private final PrabhixProperties properties;
+    private final StructuredEventLogger eventLogger;
 
     @Transactional
     public UUID enqueue(UUID organizationId, String templateKey, String locale,
@@ -43,6 +46,7 @@ public class MailDispatcher implements MailRequestHandler {
                     Json.toJson(to), dedupeKey, priority,
                     properties.mail().outbox().maxAttempts());
             if (inserted != null) {
+                eventLogger.log(LogEventCode.MAIL_OUTBOUND_QUEUED, Map.of("outboxId", inserted));
                 return inserted;
             }
             return outboxRepository.findByDedupeKey(dedupeKey)
@@ -63,7 +67,9 @@ public class MailDispatcher implements MailRequestHandler {
         row.setStatus(MailEnums.OutboxStatus.PENDING);
         row.setScheduledAt(Instant.now());
         row.setMaxAttempts(properties.mail().outbox().maxAttempts());
-        return outboxRepository.save(row).getId();
+        UUID id = outboxRepository.save(row).getId();
+        eventLogger.log(LogEventCode.MAIL_OUTBOUND_QUEUED, Map.of("outboxId", id));
+        return id;
     }
 
     @Transactional
@@ -83,13 +89,16 @@ public class MailDispatcher implements MailRequestHandler {
                     row.getAttachmentIds(), row.getDedupeKey(), row.getPriority(),
                     row.getMaxAttempts());
             if (inserted != null) {
+                eventLogger.log(LogEventCode.MAIL_OUTBOUND_QUEUED, Map.of("outboxId", inserted));
                 return inserted;
             }
             return outboxRepository.findByDedupeKey(row.getDedupeKey())
                     .map(MailOutbox::getId)
                     .orElseThrow(() -> new IllegalStateException("Dedupe conflict without existing row"));
         }
-        return outboxRepository.save(row).getId();
+        UUID id = outboxRepository.save(row).getId();
+        eventLogger.log(LogEventCode.MAIL_OUTBOUND_QUEUED, Map.of("outboxId", id));
+        return id;
     }
 
     /**

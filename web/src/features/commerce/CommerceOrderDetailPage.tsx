@@ -22,7 +22,7 @@ import {
   useReissueDownload,
 } from "@/features/commerce/api";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { paiseToRupeesString, rupeesToPaise } from "@/lib/commerce-money";
+import { paiseToRupeesString, rupeesToPaise } from "@prabhix/oneops-api";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export default function CommerceOrderDetailPage() {
@@ -203,6 +203,7 @@ export default function CommerceOrderDetailPage() {
             {order.status === "PAID" && (
               <Button
                 disabled={fulfill.isPending}
+                data-testid="order-fulfill"
                 onClick={() => {
                   void fulfill.mutateAsync().then(() => toast.success("Order fulfilled"));
                 }}

@@ -142,6 +142,22 @@ public final class MailboxDtos {
             String name,
             MailEnums.MailboxKind kind,
             boolean mine,
+            UUID ownerUserId,
+            String ownerLabel,
             List<FolderView> folders) {
+    }
+
+    public record MessageView(
+            UUID id,
+            MailEnums.MessageDirection direction,
+            String fromAddress,
+            String fromName,
+            String subject,
+            String snippet,
+            String bodyText,
+            String bodyHtml,
+            MailEnums.DeliveryStatus deliveryStatus,
+            Instant occurredAt,
+            int attachmentCount) {
     }
 }

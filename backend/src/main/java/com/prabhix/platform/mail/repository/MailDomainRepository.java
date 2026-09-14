@@ -18,6 +18,10 @@ public interface MailDomainRepository extends JpaRepository<MailDomain, UUID> {
 
     Optional<MailDomain> findByDomainIgnoreCaseAndDeletedAtIsNull(String domain);
 
+    long countByDeletedAtIsNull();
+
+    long countByStatusAndDeletedAtIsNull(MailEnums.DomainStatus status);
+
     boolean existsByDomainIgnoreCaseAndDeletedAtIsNull(String domain);
 
     @Query(value = """

@@ -162,6 +162,13 @@ public class GlobalExceptionHandler {
                 "That content type is not supported by this endpoint", null, request);
     }
 
+    @ExceptionHandler(com.prabhix.identity.client.IdentityClientException.class)
+    public ResponseEntity<ApiError> handleIdentity(
+            com.prabhix.identity.client.IdentityClientException ex, HttpServletRequest request) {
+        ApiException mapped = com.prabhix.platform.ops.client.IdentityAdminClient.map(ex);
+        return handleApi(mapped, request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
         String traceId = traceId();

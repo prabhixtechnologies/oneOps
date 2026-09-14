@@ -229,7 +229,7 @@ public class PlatformAwsOpsService {
                 ? List.of()
                 : costs.byService().stream().limit(5).toList();
 
-        return new OpsDtos.AwsSummaryResponse(
+            return new OpsDtos.AwsSummaryResponse(
                 Boolean.TRUE.equals(costs.ok()) && Boolean.TRUE.equals(instances.ok()),
                 properties.region(),
                 properties.ceRegion(),
@@ -247,6 +247,103 @@ public class PlatformAwsOpsService {
                         instances.ok(),
                         instances.error()),
                 Instant.now());
+    }
+
+    public OpsDtos.AwsRdsResponse listRds() {
+        if (!properties.enabled()) {
+            return new OpsDtos.AwsRdsResponse(false,
+                    errorMap("Disabled", "AWS ops is disabled"), properties.region(), List.of());
+        }
+        try (software.amazon.awssdk.services.rds.RdsClient rds = software.amazon.awssdk.services.rds.RdsClient.builder()
+                .region(Region.of(properties.region()))
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .build()) {
+            List<OpsDtos.AwsRdsRow> rows = new ArrayList<>();
+            var page = rds.describeDBInstances();
+            for (var db : page.dbInstances()) {
+                String endpoint = db.endpoint() == null ? null : db.endpoint().address();
+                rows.add(new OpsDtos.AwsRdsRow(
+                        db.dbInstanceIdentifier(),
+                        db.engine(),
+                        db.dbInstanceStatus(),
+                        db.dbInstanceClass(),
+                        endpoint));
+            }
+            return new OpsDtos.AwsRdsResponse(true, null, properties.region(), rows);
+        } catch (SdkException ex) {
+            log.warn("RDS DescribeDBInstances failed: {}", ex.getMessage());
+            return new OpsDtos.AwsRdsResponse(false, errorMap(awsErrorCode(ex), awsErrorMessage(ex)),
+                    properties.region(), List.of());
+        }
+    }
+
+    public OpsDtos.AwsElastiCacheResponse listElastiCache() {
+        if (!properties.enabled()) {
+            return new OpsDtos.AwsElastiCacheResponse(false,
+                    errorMap("Disabled", "AWS ops is disabled"), properties.region(), List.of());
+        }
+        try (software.amazon.awssdk.services.elasticache.ElastiCacheClient client =
+                     software.amazon.awssdk.services.elasticache.ElastiCacheClient.builder()
+                             .region(Region.of(properties.region()))
+                             .credentialsProvider(DefaultCredentialsProvider.create())
+                             .build()) {
+            List<OpsDtos.AwsCacheRow> rows = new ArrayList<>();
+            var page = client.describeCacheClusters(b -> b.showCacheNodeInfo(true));
+            for (var cluster : page.cacheClusters()) {
+                rows.add(new OpsDtos.AwsCacheRow(
+                        cluster.cacheClusterId(),
+                        cluster.engine(),
+                        cluster.cacheClusterStatus(),
+                        cluster.cacheNodeType()));
+            }
+            return new OpsDtos.AwsElastiCacheResponse(true, null, properties.region(), rows);
+        } catch (SdkException ex) {
+            log.warn("ElastiCache DescribeCacheClusters failed: {}", ex.getMessage());
+            return new OpsDtos.AwsElastiCacheResponse(false,
+                    errorMap(awsErrorCode(ex), awsErrorMessage(ex)), properties.region(), List.of());
+        }
+    }
+
+    public OpsDtos.AwsEcrResponse listEcr() {
+        if (!properties.enabled()) {
+            return new OpsDtos.AwsEcrResponse(false,
+                    errorMap("Disabled", "AWS ops is disabled"), properties.region(), List.of());
+        }
+        List<String> repos = properties.ecrRepositories() == null ? List.of() : properties.ecrRepositories();
+        try (software.amazon.awssdk.services.ecr.EcrClient ecr = software.amazon.awssdk.services.ecr.EcrClient.builder()
+                .region(Region.of(properties.region()))
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .build()) {
+            List<OpsDtos.AwsEcrTag> images = new ArrayList<>();
+            for (String repo : repos) {
+                if (repo == null || repo.isBlank()) {
+                    continue;
+                }
+                try {
+                    var response = ecr.describeImages(b -> b.repositoryName(repo.trim())
+                            .filter(f -> f.tagStatus(software.amazon.awssdk.services.ecr.model.TagStatus.TAGGED))
+                            .maxResults(5));
+                    for (var detail : response.imageDetails()) {
+                        String tag = detail.imageTags() == null || detail.imageTags().isEmpty()
+                                ? null
+                                : detail.imageTags().get(0);
+                        images.add(new OpsDtos.AwsEcrTag(
+                                repo.trim(),
+                                tag,
+                                detail.imagePushedAt(),
+                                detail.imageDigest()));
+                    }
+                } catch (SdkException ex) {
+                    log.warn("ECR describeImages {} failed: {}", repo, ex.getMessage());
+                    images.add(new OpsDtos.AwsEcrTag(repo.trim(), null, null, ex.getMessage()));
+                }
+            }
+            return new OpsDtos.AwsEcrResponse(true, null, properties.region(), images);
+        } catch (SdkException ex) {
+            log.warn("ECR client failed: {}", ex.getMessage());
+            return new OpsDtos.AwsEcrResponse(false, errorMap(awsErrorCode(ex), awsErrorMessage(ex)),
+                    properties.region(), List.of());
+        }
     }
 
     private Double cpuAverage1h(CloudWatchClient cw, String instanceId) {

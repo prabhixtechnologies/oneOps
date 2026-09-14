@@ -48,6 +48,7 @@ class MailboxAdminTest {
     @Mock private MailRoutingRuleRepository routingRuleRepository;
     @Mock private OrganizationMembershipRepository membershipRepository;
     @Mock private TeamRepository teamRepository;
+    @Mock private com.prabhix.platform.mail.repository.MailDomainRepository mailDomainRepository;
     @Mock private EntitlementGate entitlements;
     @Mock private MailboxCredentialsCipher credentialsCipher;
 
@@ -61,8 +62,8 @@ class MailboxAdminTest {
     @BeforeEach
     void setUp() {
         service = new MailboxService(mailboxRepository, memberRepository, routingRuleRepository,
-                membershipRepository, teamRepository, TestProperties.defaults(), entitlements,
-                credentialsCipher);
+                membershipRepository, teamRepository, mailDomainRepository,
+                TestProperties.defaults(), entitlements, credentialsCipher);
         when(mailboxRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(mailboxId, orgId))
                 .thenReturn(Optional.of(mailbox()));
         when(memberRepository.save(any())).thenAnswer(inv -> {

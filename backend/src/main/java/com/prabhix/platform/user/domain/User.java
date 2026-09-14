@@ -15,6 +15,14 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * This platform's copy of a person identity knows.
+ *
+ * <p>Keyed by identity's id, so the token's {@code sub} is the primary key here and nothing has to be
+ * translated. Carries no credential: passwords, lockout and sign-in history live at identity, and the
+ * columns that once held them here are gone or unmapped. What this row owns is what identity has no
+ * concept of — the default organization, notification preferences, and platform staff authority.
+ */
 @Getter
 @Setter
 @Entity
@@ -26,18 +34,6 @@ public class User extends AuditableEntity {
 
     @Column(name = "email_verified_at")
     private Instant emailVerifiedAt;
-
-    @Column(name = "phone", length = 32)
-    private String phone;
-
-    @Column(name = "phone_verified_at")
-    private Instant phoneVerifiedAt;
-
-    @Column(name = "password_hash", length = 120)
-    private String passwordHash;
-
-    @Column(name = "password_changed_at")
-    private Instant passwordChangedAt;
 
     @Column(name = "full_name", nullable = false, length = 160)
     private String fullName;
@@ -64,15 +60,6 @@ public class User extends AuditableEntity {
     @Column(name = "platform_admin", nullable = false)
     private boolean platformAdmin;
 
-    @Column(name = "failed_login_attempts", nullable = false)
-    private int failedLoginAttempts;
-
-    @Column(name = "locked_until")
-    private Instant lockedUntil;
-
-    @Column(name = "last_login_at")
-    private Instant lastLoginAt;
-
     @Column(name = "last_active_at")
     private Instant lastActiveAt;
 
@@ -90,15 +77,12 @@ public class User extends AuditableEntity {
         return deletedAt != null;
     }
 
-    public boolean isLockedNow() {
-        return lockedUntil != null && lockedUntil.isAfter(Instant.now());
-    }
-
     public String effectiveDisplayName() {
         return displayName != null && !displayName.isBlank() ? displayName : fullName;
     }
 
+    /** No LOCKED: lockout is identity's decision now, and a locked account cannot obtain a token. */
     public enum UserStatus {
-        ACTIVE, INVITED, DISABLED, LOCKED
+        ACTIVE, INVITED, DISABLED
     }
 }

@@ -1,6 +1,11 @@
 package com.prabhix.platform.security.jwt;
 
-import tools.jackson.databind.ObjectMapper;
+import com.prabhix.identity.client.BearerTokens;
+import com.prabhix.identity.client.IdentityClientException;
+import com.prabhix.identity.client.IdentityToken;
+import com.prabhix.identity.client.IdentityTokenException;
+import com.prabhix.identity.client.IdentityTokenVerifier;
+import com.prabhix.identity.client.IdentityUserMirror;
 import com.prabhix.platform.common.error.ApiError;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
@@ -16,7 +21,6 @@ import com.prabhix.platform.security.tenant.ImpersonationAuditor;
 import com.prabhix.platform.security.tenant.TenantContext;
 import com.prabhix.platform.user.domain.User;
 import com.prabhix.platform.user.repository.UserRepository;
-import com.prabhix.platform.user.service.IdentityUserMirror;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,6 +32,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -38,9 +43,14 @@ import java.util.UUID;
  * Authenticates the caller from the {@code Authorization: Bearer} header and establishes the
  * tenant for the request.
  *
- * <p>Also honours {@code X-Prabhix-Org}: the console can ask to act in a different
- * organization than the token's default, but only one the token actually grants. Anything
- * else is a cross-tenant attempt and is rejected, not silently downgraded.
+ * <p>The only tokens accepted are those Prabhix Identity issued, verified RS256 against its
+ * published keys. There is no other path: nothing here holds a secret that could verify — and
+ * therefore mint — a token, which is the property the split into an identity service exists for.
+ *
+ * <p>An identity token says who the caller is and nothing about what they may do. The organization
+ * comes from {@code X-Prabhix-Org} or the caller's default, the permissions from this database for
+ * that pairing, and staff authority from the local user row. Anything the header names that the
+ * caller has no claim to is a cross-tenant attempt and is rejected, not silently downgraded.
  */
 @Slf4j
 @Component
@@ -48,10 +58,8 @@ import java.util.UUID;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String ORG_HEADER = "X-Prabhix-Org";
-    private static final String AUTH_HEADER = "Authorization";
-    private static final String BEARER = "Bearer ";
 
-    private final JwtService jwtService;
+    private final IdentityTokenVerifier verifier;
     private final TokenDenyList denyList;
     private final ObjectMapper objectMapper;
     private final StructuredEventLogger eventLogger;
@@ -67,7 +75,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
-        String token = bearerToken(request);
+        String token = BearerTokens.from(request);
         if (token == null) {
             // No credentials is not an error here. Public endpoints proceed; protected ones
             // are rejected later by the authorization rules.
@@ -76,17 +84,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            JwtService.ParsedToken parsed = jwtService.parseDetailed(token);
-            PrabhixPrincipal principal = parsed.principal();
+            IdentityToken identity = verify(token);
 
-            if (denyList.isRevoked(principal.userId(), principal.sessionId(), parsed.issuedAt())) {
+            if (denyList.isRevoked(identity)) {
                 throw ApiException.of(ErrorCode.TOKEN_REVOKED,
                         "This session was signed out. Sign in again.");
             }
 
-            PrabhixPrincipal effective = parsed.source() == JwtService.TokenSource.IDENTITY
-                    ? authorizeIdentityToken(principal, request)
-                    : applyRequestedOrganization(principal, request);
+            PrabhixPrincipal effective = authorizeIdentityToken(identity, request);
 
             var authentication = new UsernamePasswordAuthenticationToken(
                     effective, null, effective.authorities());
@@ -100,9 +105,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Deliberately after both contexts are established, so the event is attributed to the
             // organization being viewed and carries the admin as its actor. Recording it earlier
             // would file it against the admin's own organization, where nobody would look for it.
+            // The token itself names no organization, so the "from" side is always empty.
             if (effective.platformAdmin()) {
                 impersonationAuditor.recordAccess(effective.userId(), effective.sessionId(),
-                        principal.organizationId(), effective.organizationId());
+                        null, effective.organizationId());
             }
 
             chain.doFilter(request, response);
@@ -114,6 +120,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Must run even on the error path — these threads are pooled and reused.
             SecurityContextHolder.clearContext();
             TenantContext.clear();
+        }
+    }
+
+    /**
+     * Turns the starter's refusal into this API's error vocabulary.
+     *
+     * <p>Expiry is the one reason worth telling apart, because a client answers it by refreshing
+     * rather than by signing in again. Everything else — bad signature, unknown key, wrong issuer,
+     * an HS256 token somebody minted with material they should not have — is one undifferentiated
+     * "not valid", so a probe learns nothing about which check it failed.
+     */
+    private IdentityToken verify(String token) {
+        try {
+            return verifier.verify(token);
+        } catch (IdentityTokenException ex) {
+            throw switch (ex.reason()) {
+                case EXPIRED -> ApiException.of(ErrorCode.TOKEN_EXPIRED, "Your session has expired");
+                case INVALID -> ApiException.of(ErrorCode.TOKEN_INVALID, "That token is not valid");
+                case UNTRUSTED -> ApiException.of(ErrorCode.UNAUTHENTICATED,
+                        "This deployment does not trust an identity issuer");
+            };
         }
     }
 
@@ -132,17 +159,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * organization list have to work before anyone has chosen. Tenant-scoped rules refuse it anyway,
      * since the permission set for a null organization holds only platform-level grants.
      */
-    private PrabhixPrincipal authorizeIdentityToken(PrabhixPrincipal principal,
-                                                    HttpServletRequest request) {
+    private PrabhixPrincipal authorizeIdentityToken(IdentityToken token, HttpServletRequest request) {
+        UUID userId = token.subject();
+
         // The mirror row. Absent means identity knows this person and this database has not been told
         // yet — the ordinary case for anyone who signed up after the bulk import — so it is fetched
         // once here rather than treated as a credential failure. Users who arrive through an invite
         // already have a row and never reach this.
-        User user = userRepository.findById(principal.userId())
+        User user = userRepository.findById(userId)
                 .filter(candidate -> !candidate.isDeleted())
                 .orElseGet(() -> {
-                    identityUserMirror.pull(principal.userId());
-                    return userRepository.findById(principal.userId())
+                    mirror(userId);
+                    return userRepository.findById(userId)
                             .filter(candidate -> !candidate.isDeleted())
                             .orElseThrow(() -> ApiException.of(ErrorCode.UNAUTHENTICATED,
                                     "This account is not provisioned on the platform"));
@@ -157,30 +185,57 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // header on any later request. The header still wins whenever it is sent, so switching
         // organizations and staff impersonation are unaffected; this only answers the first question.
         if (requestedOrg == null) {
-            requestedOrg = activeOrganizations.resolve(principal.userId(), user.getDefaultOrganizationId());
+            requestedOrg = activeOrganizations.resolve(userId, user.getDefaultOrganizationId());
         }
 
         if (requestedOrg != null
-                && !membershipRepository.existsActiveMembership(requestedOrg, principal.userId())) {
+                && !membershipRepository.existsActiveMembership(requestedOrg, userId)) {
             if (!platformAdmin) {
                 log.warn("Cross-tenant attempt: user {} is not an active member of org {}",
-                        principal.userId(), requestedOrg);
+                        userId, requestedOrg);
                 throw ApiException.of(ErrorCode.CROSS_TENANT_ACCESS,
                         "You are not a member of that organization.");
             }
             // Staff reaching into a tenant they do not belong to. Allowed, but only for the roles whose
             // job involves tenant content: a billing hire has no reason to read a customer's mail.
-            platformStaff.requireAny(principal.userId(), StaffRole.TENANT_ACCESS);
+            platformStaff.requireAny(userId, StaffRole.TENANT_ACCESS);
         }
 
+        // Email and name from the local row rather than the token: the token has what identity knew
+        // at issue, the row is refreshed whenever the mirror is, and a rename should not wait on expiry.
         return new PrabhixPrincipal(
-                principal.userId(),
-                principal.email(),
-                principal.displayName(),
+                userId,
+                user.getEmail(),
+                user.effectiveDisplayName(),
                 requestedOrg,
-                permissionResolver.resolve(principal.userId(), requestedOrg),
-                principal.sessionId(),
+                permissionResolver.resolve(userId, requestedOrg),
+                token.sessionId(),
                 platformAdmin);
+    }
+
+    /**
+     * Asks identity about a subject this database has never seen.
+     *
+     * <p>A deployment with no service token cannot ask, and an unknown subject is then refused,
+     * because there is nobody to authorize. A subject identity signed a token for but will not
+     * describe was deleted between issue and this request, and is refused the same way. Identity
+     * being unreachable is not a credential failure and is reported as such.
+     */
+    private void mirror(UUID userId) {
+        try {
+            identityUserMirror.pull(userId);
+        } catch (IdentityClientException ex) {
+            throw switch (ex.kind()) {
+                case NOT_FOUND -> ApiException.of(ErrorCode.UNAUTHENTICATED, "That account no longer exists");
+                case DISABLED -> ApiException.of(ErrorCode.UNAUTHENTICATED,
+                        "This account is not provisioned on the platform");
+                case UNAVAILABLE, REJECTED -> {
+                    log.error("Could not reach identity to mirror user {}: {}", userId, ex.getMessage());
+                    yield ApiException.of(ErrorCode.DEPENDENCY_UNAVAILABLE,
+                            "Could not verify your account right now. Try again.");
+                }
+            };
+        }
     }
 
     private UUID requestedOrganization(HttpServletRequest request) {
@@ -193,60 +248,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (IllegalArgumentException ex) {
             throw ApiException.of(ErrorCode.MALFORMED_REQUEST, ORG_HEADER + " is not a valid id");
         }
-    }
-
-    /**
-     * Lets a multi-organization user act in a specific organization for this request.
-     *
-     * <p>For an ordinary user the header can only ever narrow to what the token already carries.
-     * Honouring an arbitrary organization id would be a complete tenancy bypass, so a mismatch is a
-     * hard failure and the header is never trusted as a source of permissions.
-     */
-    private PrabhixPrincipal applyRequestedOrganization(PrabhixPrincipal principal,
-                                                        HttpServletRequest request) {
-        String requested = request.getHeader(ORG_HEADER);
-        if (requested == null || requested.isBlank()) {
-            return principal;
-        }
-
-        UUID requestedOrg;
-        try {
-            requestedOrg = UUID.fromString(requested.trim());
-        } catch (IllegalArgumentException ex) {
-            throw ApiException.of(ErrorCode.MALFORMED_REQUEST, ORG_HEADER + " is not a valid id");
-        }
-
-        if (principal.platformAdmin()) {
-            // Staff may name any organization, membership or not, because support work requires it —
-            // but only the staff whose job involves tenant content. The role lookup is a query per
-            // request, which is why it sits behind this branch: it runs only when someone with the
-            // staff flag names an organization, not on ordinary traffic.
-            platformStaff.requireAny(principal.userId(), StaffRole.TENANT_ACCESS);
-
-            // The permission set is deliberately left as the token's own: this grants a view into
-            // another tenant's data, never the roles that tenant's own members hold. The access is
-            // recorded by ImpersonationAuditor once the tenant context is in place.
-            return new PrabhixPrincipal(principal.userId(), principal.email(), principal.displayName(),
-                    requestedOrg, principal.permissions(), principal.sessionId(), true);
-        }
-
-        if (!requestedOrg.equals(principal.organizationId())) {
-            log.warn("Cross-tenant attempt: user {} holds org {} but requested {}",
-                    principal.userId(), principal.organizationId(), requestedOrg);
-            throw ApiException.of(ErrorCode.CROSS_TENANT_ACCESS,
-                    "Your session is not active for that organization. Switch organization and retry.");
-        }
-
-        return principal;
-    }
-
-    private String bearerToken(HttpServletRequest request) {
-        String header = request.getHeader(AUTH_HEADER);
-        if (header == null || !header.startsWith(BEARER)) {
-            return null;
-        }
-        String token = header.substring(BEARER.length()).trim();
-        return token.isEmpty() ? null : token;
     }
 
     private void writeError(HttpServletRequest request,

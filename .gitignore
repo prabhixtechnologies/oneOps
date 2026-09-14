@@ -92,6 +92,10 @@ Thumbs.db
 # --- Test / coverage ---
 coverage/
 .nyc_output/
+web/test-results/
+web/playwright-report/
+web/blob-report/
+web/playwright/.cache/
 
 # Python bytecode from the deploy preflight scripts
 __pycache__/

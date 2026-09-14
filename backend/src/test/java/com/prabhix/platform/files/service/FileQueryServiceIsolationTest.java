@@ -28,7 +28,7 @@ class FileQueryServiceIsolationTest {
     @BeforeEach
     void setUp() {
         PrabhixProperties props = new PrabhixProperties(
-                null, null, null, null, null, null,
+                null, null, null, null, null,
                 new PrabhixProperties.Storage("", "ap-south-1", "bucket", "", "", true, null),
                 new PrabhixProperties.Limits(100, 100, 1024, 25, 200));
         service = new FileQueryService(repository, props);

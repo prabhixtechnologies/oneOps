@@ -5,6 +5,7 @@ import com.prabhix.platform.commerce.repository.CommerceOrderRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Permission;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +33,7 @@ class CommerceOrderIsolationTest {
     @Mock private com.prabhix.platform.commerce.repository.ProductRepository productRepository;
     @Mock private StockService stockService;
     @Mock private ApplicationEventPublisher events;
+    @Mock private StructuredEventLogger eventLogger;
 
     private CommerceOrderService orderService;
 
@@ -42,7 +44,7 @@ class CommerceOrderIsolationTest {
         orderService = new CommerceOrderService(
                 orderRepository, orderItemRepository, addressRepository, eventRepository,
                 customerRepository, downloadRepository, shipmentRepository, productRepository,
-                stockService, events);
+                stockService, events, eventLogger);
     }
 
     @Test

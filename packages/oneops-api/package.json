@@ -1,0 +1,30 @@
+{
+  "name": "@prabhix/oneops-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generated TypeScript types for the oneOps / Prabhix Platform API, plus shared commerce Zod schemas and money helpers.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "pregenerate": "node ./scripts/merge-overlay.mjs",
+    "generate": "openapi-typescript ../../backend/apidocs.json -o src/schema.ts",
+    "sync:vendor": "node ./scripts/sync-vendor.mjs",
+    "check:openapi": "npm run generate && git diff --exit-code --ignore-cr-at-eol -- src/schema.ts ../../backend/apidocs.json"
+  },
+  "peerDependencies": {
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.10.1",
+    "typescript": "5.8.3",
+    "zod": "3.25.51"
+  }
+}

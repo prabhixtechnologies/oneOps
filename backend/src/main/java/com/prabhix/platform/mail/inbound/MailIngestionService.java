@@ -7,6 +7,8 @@ import com.prabhix.platform.mail.event.MailMessageReceivedEvent;
 import com.prabhix.platform.mail.event.MailStreamEvent;
 import com.prabhix.platform.mail.helpdesk.SlaService;
 import com.prabhix.platform.mail.outbound.SuppressionService;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.mail.repository.*;
 import com.prabhix.platform.common.util.Json;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,7 @@ public class MailIngestionService {
     private final SlaService slaService;
     private final SuppressionService suppressionService;
     private final ApplicationEventPublisher events;
+    private final StructuredEventLogger eventLogger;
 
     @Scheduled(fixedDelayString = "${prabhix.mail.inbound.poll-interval}")
     @Transactional
@@ -137,6 +140,10 @@ public class MailIngestionService {
                 raw.getOrganizationId(), raw.getMailboxId(), thread.getId(), message.getId()));
         events.publishEvent(new MailStreamEvent("new-message", raw.getOrganizationId(),
                 Map.of("threadId", thread.getId(), "messageId", message.getId())));
+        eventLogger.log(LogEventCode.MAIL_INBOUND_RECEIVED, Map.of(
+                "messageId", message.getId(),
+                "threadId", thread.getId(),
+                "organizationId", raw.getOrganizationId()));
     }
 
     private byte[] loadRawBytes(MailInboundRaw raw) {

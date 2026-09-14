@@ -1,6 +1,5 @@
 package com.prabhix.platform.org.service;
 
-import com.prabhix.platform.auth.repository.DeviceSessionRepository;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;
 import com.prabhix.platform.billing.service.EntitlementService;
 import com.prabhix.platform.common.error.ApiException;
@@ -38,7 +37,6 @@ class OrganizationDeletionServiceTest {
     @Mock RoleRepository roleRepository;
     @Mock BillingSubscriptionRepository subscriptionRepository;
     @Mock EntitlementService entitlementService;
-    @Mock DeviceSessionRepository deviceSessionRepository;
     @Mock TokenDenyList tokenDenyList;
     @Mock PermissionResolver permissionResolver;
     @Mock ApplicationEventPublisher events;
@@ -53,7 +51,7 @@ class OrganizationDeletionServiceTest {
     void setUp() {
         service = new OrganizationDeletionService(
                 organizationRepository, membershipRepository, roleRepository,
-                subscriptionRepository, entitlementService, deviceSessionRepository,
+                subscriptionRepository, entitlementService,
                 tokenDenyList, permissionResolver, events);
     }
 

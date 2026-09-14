@@ -163,9 +163,6 @@ public class InvitationService {
                             ? request.fullName().trim()
                             : invitation.getEmail();
                     User created = userService.createPasswordlessUser(invitation.getEmail(), name);
-                    if (request.password() != null && !request.password().isBlank()) {
-                        userService.setPassword(created.getId(), request.password());
-                    }
                     return created;
                 });
 

@@ -68,7 +68,7 @@ public class MailDomainService {
                     + "\n-----END PUBLIC KEY-----");
             String privatePem = Base64.getEncoder().encodeToString(pair.getPrivate().getEncoded());
             domain.setDkimPrivateKeyEnc(DkimKeyCipher.encrypt(
-                    properties.security().jwt().secret(), privatePem));
+                    properties.security().internalSigningSecret(), privatePem));
         } catch (Exception ex) {
             throw ApiException.of(com.prabhix.platform.common.error.ErrorCode.INTERNAL_ERROR,
                     "Could not generate DKIM keys", ex);

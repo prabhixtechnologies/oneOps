@@ -19,6 +19,10 @@ public record OpsGithubProperties(
                 "prabhixtechnologies/oneOps",
                 "prabhixtechnologies/MobiStack",
                 "prabhixtechnologies/Identity",
-                "prabhixtechnologies/Mailroom"
-        }) List<String> repos) {
+                "prabhixtechnologies/Mailroom",
+                "prabhixtechnologies/Infra"
+        }) List<String> repos,
+        @DefaultValue("prabhixtechnologies/Infra") String deployRepo,
+        @DefaultValue("deploy.yml") String deployWorkflow,
+        @DefaultValue("main") String deployRef) {
 }

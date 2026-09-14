@@ -1,5 +1,8 @@
 package com.prabhix.platform.security.jwt;
 
+import com.prabhix.identity.client.IdentityToken;
+import com.prabhix.identity.client.IdentityTokenVerifier;
+import com.prabhix.identity.client.IdentityUserMirror;
 import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
 import com.prabhix.platform.org.service.ActiveOrganizationResolver;
@@ -14,7 +17,6 @@ import com.prabhix.platform.security.tenant.ImpersonationAuditor;
 import com.prabhix.platform.security.tenant.TenantContext;
 import com.prabhix.platform.user.domain.User;
 import com.prabhix.platform.user.repository.UserRepository;
-import com.prabhix.platform.user.service.IdentityUserMirror;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -47,8 +51,7 @@ import static org.mockito.Mockito.when;
  * Who a request is acting as, when the token itself says nothing about it.
  *
  * <p>An identity token carries a subject and nothing else — no organization, no permissions, no staff
- * flag ({@link JwtServiceIdentityTest} pins that it cannot, even if identity were compromised into
- * minting the claims). Everything about authority is therefore decided here, per request, from this
+ * flag. Everything about authority is therefore decided here, per request, from this
  * database. Once sign-in moves behind the hosted login page this is the only tenancy gate the
  * platform has, so the decisions are pinned rather than left to a reading of the filter.
  *
@@ -61,7 +64,7 @@ import static org.mockito.Mockito.when;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class IdentityTokenTenancyTest {
 
-    @Mock private JwtService jwtService;
+    @Mock private IdentityTokenVerifier verifier;
     @Mock private TokenDenyList denyList;
     @Mock private StructuredEventLogger eventLogger;
     @Mock private ImpersonationAuditor impersonationAuditor;
@@ -93,16 +96,22 @@ class IdentityTokenTenancyTest {
 
     @BeforeEach
     void setUp() {
-        filter = new JwtAuthenticationFilter(jwtService, denyList, new ObjectMapper(), eventLogger,
+        filter = new JwtAuthenticationFilter(verifier, denyList, new ObjectMapper(), eventLogger,
                 impersonationAuditor, permissionResolver, activeOrganizations, memberships, users,
                 mirror, platformStaff);
 
-        when(denyList.isRevoked(any(), any(), any())).thenReturn(false);
-        when(jwtService.parseDetailed(any())).thenReturn(new JwtService.ParsedToken(
-                // Exactly what identity gives us: a subject, and no authority of any kind.
-                new PrabhixPrincipal(userId, "someone@example.com", "Someone", null, Set.of(), sessionId, false),
+        when(denyList.isRevoked(any(IdentityToken.class))).thenReturn(false);
+        when(verifier.verify(any())).thenReturn(new IdentityToken(
+                userId,
+                "someone@example.com",
+                "Someone",
+                true,
+                sessionId,
+                "jti",
                 Instant.now(),
-                JwtService.TokenSource.IDENTITY));
+                Instant.now().plusSeconds(900),
+                List.of("pwd"),
+                Map.of()));
         when(permissionResolver.resolve(any(), any())).thenReturn(Set.of(Permission.MAIL_READ));
     }
 

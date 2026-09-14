@@ -75,7 +75,12 @@ public final class OpsDtos {
             long pendingCount,
             long failedCount,
             String currency,
-            Instant asOf) {
+            Instant asOf,
+            BigDecimal mrr,
+            BigDecimal churnRate,
+            long activeSubscriptions,
+            long cancelledLast30Days,
+            List<ProductRevenue> products) {
     }
 
     // --- Infra / AWS ops (consolidated from Infra/ops-tool) ---
@@ -192,6 +197,85 @@ public final class OpsDtos {
             Double contribution,
             String note,
             Map<String, String> error) {
+    }
+
+    public record AwsRdsRow(String id, String engine, String status, String clazz, String endpoint) {
+    }
+
+    public record AwsRdsResponse(Boolean ok, Map<String, String> error, String region, List<AwsRdsRow> instances) {
+    }
+
+    public record AwsCacheRow(String id, String engine, String status, String nodeType) {
+    }
+
+    public record AwsElastiCacheResponse(Boolean ok, Map<String, String> error, String region,
+                                         List<AwsCacheRow> clusters) {
+    }
+
+    public record AwsEcrTag(String repository, String tag, Instant pushedAt, String digest) {
+    }
+
+    public record AwsEcrResponse(Boolean ok, Map<String, String> error, String region, List<AwsEcrTag> images) {
+    }
+
+    public record GithubPullRow(String repo, Integer number, String title, String user, String htmlUrl,
+                                String state) {
+    }
+
+    public record GithubPullsResponse(Boolean ok, String note, Instant checkedAt, List<GithubPullRow> pulls) {
+    }
+
+    public record GithubDeployRow(Long id, String name, String status, String conclusion, String htmlUrl,
+                                  String headSha, Instant createdAt) {
+    }
+
+    public record GithubDeploysResponse(Boolean ok, String note, Instant checkedAt, List<GithubDeployRow> runs) {
+    }
+
+    public record PromoteRequest(String service, String tag) {
+    }
+
+    public record PromoteResponse(Boolean ok, String message, String htmlUrl) {
+    }
+
+    /** Cross-tenant SaaS payments plus subscription health — major currency units (rupees). */
+    public record ProductRevenue(
+            String product,
+            BigDecimal capturedTotal,
+            BigDecimal pendingTotal,
+            long capturedCount,
+            BigDecimal mrr,
+            long activeSubscriptions,
+            BigDecimal churnRate,
+            long cancelledLast30Days,
+            String note) {
+    }
+
+    public record MailHealthSes(
+            Boolean ok,
+            String note,
+            Double max24HourSend,
+            Double maxSendRate,
+            Double sentLast24Hours,
+            Boolean productionAccess) {
+    }
+
+    public record MailHealthOutbox(long inFlight, long failed) {
+    }
+
+    public record MailHealthDomains(long total, long verified, long pending) {
+    }
+
+    public record MailHealthSuppressions(long bounces, long complaints) {
+    }
+
+    public record MailHealthResponse(
+            MailHealthSes ses,
+            MailHealthOutbox outbox,
+            MailHealthDomains domains,
+            long mailboxes,
+            MailHealthSuppressions suppressions,
+            Instant asOf) {
     }
 
     private OpsDtos() {

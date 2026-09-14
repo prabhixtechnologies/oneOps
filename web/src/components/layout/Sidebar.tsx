@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Inbox, LogOut, Mail, Moon, Search, Sun } from "lucide-react";
+import { LogOut, Mail, Moon, Search, Sun } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,10 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { IS_ADMIN_APP } from "@/lib/app-mode";
+import { hasAnyPermission } from "@/lib/permissions";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { navGroups, type NavItem } from "./nav-config";
+import { useStaffRoles } from "@/features/ops/api";
 
 /**
  * Prabhix Mailroom, for a person's own mail as opposed to the shared inbox this console owns.
@@ -28,7 +30,8 @@ interface SidebarProps {
 
 export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
-  const { me } = useAuth();
+  const { me, permissions } = useAuth();
+  const staff = useStaffRoles();
   const groups = navGroups;
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -41,7 +44,7 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
     <NavLink
       key={item.to}
       to={item.to}
-      end={item.to === "/"}
+      end={item.end ?? item.to === "/"}
       className={linkClass}
       onClick={onNavigate}
     >
@@ -52,6 +55,12 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
 
   const renderItem = (item: NavItem) => {
     if (item.platformAdminOnly && !me?.platformAdmin) return null;
+    if (item.staffRoles && staff.isSuccess) {
+      const roles = staff.data.roles ?? [];
+      const allowed = roles.includes("OWNER") || item.staffRoles.some((role) => roles.includes(role));
+      if (!allowed) return null;
+    }
+    if (item.anyPermission && !hasAnyPermission(permissions, item.anyPermission)) return null;
     const link = navLink(item);
     if (!item.permission) return link;
     return (
@@ -85,10 +94,15 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
           if (items.length === 0) return null;
           return (
             <div key={group.heading} className="mb-3 space-y-1 last:mb-0">
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+              <p className={cn(
+                "px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted",
+                group.nested && "mt-1 pl-4",
+              )}>
                 {group.heading}
               </p>
-              {items}
+              <div className={group.nested ? "pl-2" : undefined}>
+                {items}
+              </div>
             </div>
           );
         })}
@@ -111,20 +125,12 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
           <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
         </Button>
         {MAILROOM_URL && (
-          <>
-            <Button variant="ghost" size="sm" className="w-full justify-start gap-3" asChild>
-              <a href={MAILROOM_URL} target="_blank" rel="noopener noreferrer">
-                <Mail className="h-4 w-4" aria-hidden="true" />
-                <span>My mail</span>
-              </a>
-            </Button>
-            <Button variant="ghost" size="sm" className="w-full justify-start gap-3" asChild>
-              <a href={`${MAILROOM_URL}/queue`} target="_blank" rel="noopener noreferrer">
-                <Inbox className="h-4 w-4" aria-hidden="true" />
-                <span>Shared inbox</span>
-              </a>
-            </Button>
-          </>
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-3" asChild>
+            <a href={MAILROOM_URL} target="_blank" rel="noopener noreferrer">
+              <Mail className="h-4 w-4" aria-hidden="true" />
+              <span>My mail</span>
+            </a>
+          </Button>
         )}
         <Separator className="my-1" />
         <Button

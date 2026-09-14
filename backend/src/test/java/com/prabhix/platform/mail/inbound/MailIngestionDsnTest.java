@@ -5,6 +5,7 @@ import com.prabhix.platform.mail.domain.MailInboundRaw;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.helpdesk.SlaService;
 import com.prabhix.platform.mail.outbound.SuppressionService;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.mail.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ class MailIngestionDsnTest {
     @Mock SlaService slaService;
     @Mock SuppressionService suppressionService;
     @Mock ApplicationEventPublisher events;
+    @Mock StructuredEventLogger eventLogger;
 
     MailIngestionService ingestionService;
 
@@ -47,7 +49,7 @@ class MailIngestionDsnTest {
                 inboundRawRepository, messageRepository, attachmentRepository, threadRepository,
                 eventRepository, mailboxRepository, tagRepository, threadTagRepository,
                 fileStorageService, new MimeParser(), threadResolver, folderService, flagRepository,
-                routingRuleEngine, slaService, suppressionService, events);
+                routingRuleEngine, slaService, suppressionService, events, eventLogger);
     }
 
     @Test

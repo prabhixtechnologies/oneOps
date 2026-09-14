@@ -17,5 +17,16 @@ public record AwsOpsProperties(
         @DefaultValue("ap-south-1") String region,
         /** Cost Explorer is account-global and must be called via the us-east-1 endpoint. */
         @DefaultValue("us-east-1") String ceRegion,
-        @DefaultValue("1800") int costCacheTtlSeconds) {
+        @DefaultValue("1800") int costCacheTtlSeconds,
+        @DefaultValue({
+                "prabhix/backend",
+                "prabhix/web",
+                "prabhix/admin",
+                "prabhix/identity",
+                "prabhix/mailroom",
+                "prabhix/marketing",
+                "prabhix/mobistack-backend",
+                "prabhix/mobistack-web",
+                "prabhix/app-store"
+        }) java.util.List<String> ecrRepositories) {
 }

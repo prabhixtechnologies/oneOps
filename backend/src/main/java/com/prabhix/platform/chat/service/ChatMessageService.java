@@ -2,6 +2,8 @@ package com.prabhix.platform.chat.service;
 
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.event.AuditRequested;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.common.mail.MailRequest;
 import com.prabhix.platform.common.spi.EntitlementGate;
@@ -50,6 +52,7 @@ public class ChatMessageService {
     private final ApplicationEventPublisher events;
     private final MailClient mail;
     private final ChatMessageIdempotencyService idempotencyService;
+    private final StructuredEventLogger eventLogger;
 
     @Transactional
     public ChatDtos.MessageView sendVisitor(String orgSlug, UUID conversationId, String token,
@@ -156,6 +159,9 @@ public class ChatMessageService {
                 Map.of("messageId", message.getId(), "senderType", senderType.name())));
         events.publishEvent(AuditRequested.of(conversation.getOrganizationId(), senderUserId,
                 "chat.message.sent", "chat_message", message.getId()));
+        eventLogger.log(
+                fromVisitor ? LogEventCode.CHAT_MESSAGE_RECEIVED : LogEventCode.CHAT_MESSAGE_SENT,
+                Map.of("messageId", message.getId(), "conversationId", conversation.getId()));
 
         if (fromVisitor && conversation.getAssignedAgentId() == null) {
             assignmentRouter.assignIfNeeded(conversation);

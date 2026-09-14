@@ -1,6 +1,5 @@
 package com.prabhix.platform.ops.service;
 
-import com.prabhix.platform.auth.repository.DeviceSessionRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.web.CursorPage;
@@ -39,7 +38,6 @@ class PlatformOverviewServiceTest {
     @Mock private OrganizationRepository organizationRepository;
     @Mock private UserRepository userRepository;
     @Mock private MailQueueMetrics mailQueue;
-    @Mock private DeviceSessionRepository deviceSessionRepository;
     @Mock private EventLogRepository eventLogRepository;
 
     private PlatformOverviewService service;
@@ -48,7 +46,7 @@ class PlatformOverviewServiceTest {
     void setUp() {
         service = new PlatformOverviewService(
                 organizationRepository, userRepository, mailQueue,
-                deviceSessionRepository, eventLogRepository, TestProperties.defaults());
+                eventLogRepository, TestProperties.defaults());
     }
 
     @Test
@@ -59,13 +57,11 @@ class PlatformOverviewServiceTest {
                 .thenReturn(2L);
         when(userRepository.countByDeletedAtIsNull()).thenReturn(40L);
         when(userRepository.countByStatusAndDeletedAtIsNull(any())).thenReturn(10L);
-        when(userRepository.countByLockedUntilAfterAndDeletedAtIsNull(any())).thenReturn(1L);
         when(userRepository.countByPlatformAdminTrueAndDeletedAtIsNull()).thenReturn(2L);
         when(userRepository.countByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any())).thenReturn(5L);
         // Distinct values. The previous stub answered both counts with 7, so the two could have been
         // reported in the wrong order and the assertions below would still have passed.
         when(mailQueue.outboxDepth()).thenReturn(new MailQueueMetrics.OutboxDepth(7L, 2L));
-        when(deviceSessionRepository.countByRevokedAtIsNull()).thenReturn(19L);
         when(eventLogRepository.countErrorsSince(any())).thenReturn(4L);
         when(eventLogRepository.countSecurityEventsSince(any())).thenReturn(6L);
 
@@ -74,11 +70,11 @@ class PlatformOverviewServiceTest {
         assertEquals(12L, overview.tenants().total());
         assertEquals(2L, overview.tenants().createdLast30Days());
         assertEquals(40L, overview.accounts().total());
-        assertEquals(1L, overview.accounts().lockedOut());
+        assertEquals(0L, overview.accounts().lockedOut());
         assertEquals(2L, overview.accounts().platformAdmins());
         assertEquals(7L, overview.queues().mailPending());
         assertEquals(2L, overview.queues().mailFailed());
-        assertEquals(19L, overview.queues().activeSessions());
+        assertEquals(0L, overview.queues().activeSessions());
         assertEquals(4L, overview.activity().errorsLast24h());
         assertEquals(6L, overview.activity().securityEventsLast24h());
     }

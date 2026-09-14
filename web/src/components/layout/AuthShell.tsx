@@ -47,7 +47,8 @@ export function AuthShell() {
             <span className="auth-headline-accent block">Work everywhere.</span>
           </h1>
           <p className="mt-5 max-w-md text-base leading-relaxed text-text-muted lg:text-lg">
-            Operator console for inbox, chat, and day-to-day operations — secured by Prabhix Identity.
+            OneOps is the operations console for a small online business: website visitors and live
+            chat, a shared helpdesk inbox, storefront and orders, team and billing.
           </p>
           <p className="mt-8 hidden text-sm text-text-muted lg:block">
             One Prabhix Identity across OneOps, Mailroom, MobiStack, and more.

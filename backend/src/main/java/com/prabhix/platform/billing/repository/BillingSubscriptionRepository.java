@@ -39,6 +39,17 @@ public interface BillingSubscriptionRepository extends JpaRepository<BillingSubs
 
     Optional<BillingSubscription> findByRazorpaySubscriptionId(String razorpaySubscriptionId);
 
+    long countByStatusIn(List<BillingEnums.SubscriptionStatus> statuses);
+
+    long countByCancelledAtGreaterThanEqual(Instant since);
+
+    @Query("""
+            SELECT coalesce(sum(s.lockedAmountPaise + s.seats * s.lockedPerSeatPaise), 0)
+            FROM BillingSubscription s
+            WHERE s.status IN :statuses
+            """)
+    Number sumLockedPaiseByStatusIn(@Param("statuses") List<BillingEnums.SubscriptionStatus> statuses);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM BillingSubscription s WHERE s.id = :id")
     Optional<BillingSubscription> lockById(@Param("id") UUID id);

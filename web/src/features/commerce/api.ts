@@ -1,13 +1,13 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, apiUpload } from "@/lib/api-client";
 import {
-  categoryViewSchema,
+  categoryListSchema,
   customerDetailSchema,
   customerListPageSchema,
   dashboardViewSchema,
   discountListSchema,
   discountViewSchema,
-  downloadViewSchema,
+  downloadListSchema,
   orderDetailSchema,
   orderListPageSchema,
   productDetailSchema,
@@ -16,7 +16,6 @@ import {
   settingsViewSchema,
   variantViewSchema,
 } from "@/lib/schemas/commerce";
-import { arraySchema } from "@/lib/schemas/common";
 import { fileUploadSchema, type FilePurpose } from "@/lib/schemas/files";
 import { z } from "zod";
 
@@ -111,7 +110,7 @@ export function useCommerceCategories() {
   return useQuery({
     queryKey: ["commerce-categories"],
     queryFn: () =>
-      apiRequest("/commerce/products/categories", arraySchema(categoryViewSchema)),
+      apiRequest("/commerce/products/categories", categoryListSchema),
   });
 }
 
@@ -189,7 +188,7 @@ export function useOrderDownloads(orderId: string | undefined) {
   return useQuery({
     queryKey: ["commerce-order-downloads", orderId],
     queryFn: () =>
-      apiRequest(`/commerce/orders/${orderId}/downloads`, arraySchema(downloadViewSchema)),
+      apiRequest(`/commerce/orders/${orderId}/downloads`, downloadListSchema),
     enabled: !!orderId,
   });
 }

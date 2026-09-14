@@ -10,6 +10,7 @@ import com.prabhix.platform.billing.repository.BillingPaymentRepository;
 import com.prabhix.platform.billing.repository.BillingPlanRepository;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +52,8 @@ class BillingServiceTest {
     private PaymentCompletionService paymentCompletionService;
     @Mock
     private BillingPaymentInstrumentService paymentInstrumentService;
+    @Mock
+    private StructuredEventLogger eventLogger;
 
     private BillingService billingService;
 
@@ -65,7 +69,8 @@ class BillingServiceTest {
                 orgReader,
                 events,
                 paymentCompletionService,
-                paymentInstrumentService);
+                paymentInstrumentService,
+                eventLogger);
     }
 
     @Test
@@ -87,10 +92,20 @@ class BillingServiceTest {
                 "INR",
                 new PrabhixProperties.Billing.Invoice("PBX", 18),
                 14));
+        Map<String, Object> address = new HashMap<>();
+        address.put("state", "Karnataka");
+        address.put("gstin", "29AAAAA0000A1Z5");
         when(orgReader.find(any())).thenReturn(Optional.of(
-                new BillingOrgReader.BillingOrgSnapshot("Acme", null, null, null, Map.of("state", "Karnataka"))));
+                new BillingOrgReader.BillingOrgSnapshot(
+                        "Acme", "Acme Pvt Ltd", "29AAAAA0000A1Z5", "billing@acme.test", address)));
         when(orgReader.placeOfSupply()).thenReturn("Karnataka");
-        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(orderRepository.save(any())).thenAnswer(inv -> {
+            BillingOrder order = inv.getArgument(0);
+            if (order.getId() == null) {
+                order.setId(UUID.randomUUID());
+            }
+            return order;
+        });
 
         UUID orgId = UUID.randomUUID();
         var result = billingService.createOrder(orgId, UUID.randomUUID(), new com.prabhix.platform.billing.dto.BillingDtos.CreateOrderRequest("growth-monthly", 15));

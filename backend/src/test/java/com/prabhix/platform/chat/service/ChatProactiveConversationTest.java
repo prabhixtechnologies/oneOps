@@ -3,6 +3,7 @@ package com.prabhix.platform.chat.service;
 import com.prabhix.platform.chat.dto.ChatDtos;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.mail.MailClient;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.common.spi.EntitlementGate;
 import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.org.repository.OrganizationRepository;
@@ -46,6 +47,7 @@ class ChatProactiveConversationTest {
     @Mock private EntitlementGate entitlements;
     @Mock private ApplicationEventPublisher events;
     @Mock private MailClient mail;
+    @Mock private StructuredEventLogger eventLogger;
 
     private ChatConversationService conversationService;
 
@@ -55,12 +57,12 @@ class ChatProactiveConversationTest {
     @BeforeEach
     void setUp() {
         PrabhixProperties properties = new PrabhixProperties(
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 new PrabhixProperties.Limits(100000, 200, 26214400L, 25, 200));
         conversationService = new ChatConversationService(
                 organizationRepository, conversationRepository, messageRepository,
                 settingsRepository, visitorStitchService, presenceService, visitorRepository,
-                messageServiceProvider, tokenService, entitlements, properties, events, mail);
+                messageServiceProvider, tokenService, entitlements, properties, events, mail, eventLogger);
     }
 
     @Test

@@ -20,4 +20,6 @@ public interface MailSuppressionRepository extends JpaRepository<MailSuppression
     Optional<MailSuppression> findActive(String address, UUID orgId, Instant now);
 
     java.util.List<MailSuppression> findByOrganizationIdOrOrganizationIdIsNullOrderByAddress(UUID organizationId);
+
+    long countByReason(com.prabhix.platform.mail.domain.MailEnums.SuppressionReason reason);
 }

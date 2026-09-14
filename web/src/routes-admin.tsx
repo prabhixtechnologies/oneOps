@@ -12,9 +12,9 @@ import {
  * The private admin console, served from admin.prabhixtechnologies.com.
  *
  * <p>A control tower, not a copy of the product. It mounts the platform surfaces and nothing else:
- * the tenant directory, the marketing pipeline, and platform-wide event logs. There is no inbox, no
- * chat, no shop and no settings here, because every one of those acts on a single organization and
- * this console's subject is the platform.
+ * the tenant directory, identity, revenue, infra, mail, staff, MobiStack ops, commons review, and
+ * platform-wide event logs. There is no inbox, no chat, no shop and no settings here, because every
+ * one of those acts on a single organization and this console's subject is the platform.
  *
  * <h2>Where the tenant pages went</h2>
  *
@@ -32,8 +32,14 @@ import {
 /** Declared here rather than in the shared module so the OneOps bundle does not carry them. */
 const OpsHubPage = lazy(() => import("@/features/ops/OpsHubPage"));
 const LogsPage = lazy(() => import("@/features/logs/LogsPage"));
-const CommercePage = lazy(() => import("@/features/ops/CommercePage"));
+const TenantsPage = lazy(() => import("@/features/ops/TenantsPage"));
+const IdentityPage = lazy(() => import("@/features/ops/IdentityPage"));
+const RevenuePage = lazy(() => import("@/features/ops/RevenuePage"));
 const InfraPage = lazy(() => import("@/features/ops/InfraPage"));
+const MailHealthPage = lazy(() => import("@/features/ops/MailHealthPage"));
+const StaffPage = lazy(() => import("@/features/ops/StaffPage"));
+const MobiStackOpsPage = lazy(() => import("@/features/ops/MobiStackOpsPage"));
+const CommonsReviewPage = lazy(() => import("@/features/ops/CommonsReviewPage"));
 
 const platformRoutes: RouteObject[] = [
   {
@@ -42,8 +48,15 @@ const platformRoutes: RouteObject[] = [
       { index: true, element: <SuspenseWrap><OpsHubPage /></SuspenseWrap> },
       { path: "ops", element: <Navigate to="/" replace /> },
       { path: "site", element: <Navigate to="/" replace /> },
-      { path: "commerce", element: <SuspenseWrap><CommercePage /></SuspenseWrap> },
+      { path: "tenants", element: <SuspenseWrap><TenantsPage /></SuspenseWrap> },
+      { path: "identity", element: <SuspenseWrap><IdentityPage /></SuspenseWrap> },
+      { path: "revenue", element: <SuspenseWrap><RevenuePage /></SuspenseWrap> },
+      { path: "commerce", element: <Navigate to="/revenue" replace /> },
       { path: "infra", element: <SuspenseWrap><InfraPage /></SuspenseWrap> },
+      { path: "mail", element: <SuspenseWrap><MailHealthPage /></SuspenseWrap> },
+      { path: "staff", element: <SuspenseWrap><StaffPage /></SuspenseWrap> },
+      { path: "mobistack", element: <SuspenseWrap><MobiStackOpsPage /></SuspenseWrap> },
+      { path: "commons", element: <SuspenseWrap><CommonsReviewPage /></SuspenseWrap> },
       { path: "logs", element: <SuspenseWrap><LogsPage /></SuspenseWrap> },
     ],
   },

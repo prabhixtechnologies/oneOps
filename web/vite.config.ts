@@ -48,7 +48,12 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
+      "@prabhix/oneops-api": path.resolve(import.meta.dirname, "../packages/oneops-api/src/index.ts"),
     },
+    dedupe: ["react", "react-dom", "zod"],
+  },
+  optimizeDeps: {
+    include: ["@prabhix/ui", "@prabhix/oidc-client"],
   },
   build: {
     rolldownOptions: {
@@ -112,6 +117,9 @@ export default defineConfig({
     // Distinct ports so both consoles can run at once, which is the only way to check locally that
     // one sign-in covers both. Both are in the backend's CORS allowlist.
     port: APP === "admin" ? 5174 : 5173,
+    fs: {
+      allow: [path.resolve(import.meta.dirname, "..")],
+    },
     proxy: {
       "/api": {
         target: "http://localhost:8080",

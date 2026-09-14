@@ -25,7 +25,7 @@ import {
   useUpdateDiscount,
 } from "@/features/commerce/api";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { rupeesToPaise, paiseToRupeesString } from "@/lib/commerce-money";
+import { rupeesToPaise, paiseToRupeesString } from "@prabhix/oneops-api";
 import { PERMISSIONS } from "@/lib/permissions";
 import type { DiscountView } from "@/lib/schemas/commerce";
 

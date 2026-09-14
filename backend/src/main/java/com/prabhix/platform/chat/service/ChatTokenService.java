@@ -18,6 +18,14 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * The token a website visitor holds for one chat conversation.
+ *
+ * <p>Not a bearer token for a person: it names an organization, a conversation and an anonymous
+ * visitor, and it is only ever accepted by the public chat endpoints. It is the one JWT this service
+ * still signs itself, with the internal signing secret — identity has no concept of an anonymous
+ * visitor, and a visitor has no account for identity to describe.
+ */
 @Service
 public class ChatTokenService {
 
@@ -26,14 +34,19 @@ public class ChatTokenService {
     private static final String CLAIM_VISITOR = "vis";
     private static final String TYPE_CHAT = "chat-visitor";
 
+    /**
+     * Fixed rather than configured. It was the platform's bearer-token issuer, which no longer exists
+     * as a setting, and keeping the value means conversations opened before that change still verify.
+     */
+    static final String ISSUER = "prabhix-platform";
+
     private final SecretKey signingKey;
-    private final String issuer;
+    private final String issuer = ISSUER;
     private final ChatProperties chatProperties;
 
     public ChatTokenService(PrabhixProperties properties, ChatProperties chatProperties) {
         this.signingKey = Keys.hmacShaKeyFor(
-                properties.security().jwt().secret().getBytes(StandardCharsets.UTF_8));
-        this.issuer = properties.security().jwt().issuer();
+                properties.security().internalSigningSecret().getBytes(StandardCharsets.UTF_8));
         this.chatProperties = chatProperties;
     }
 

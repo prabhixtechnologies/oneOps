@@ -24,7 +24,7 @@ export function SignupPage() {
   if (!isOidcEnabled()) return <MissingIssuer />;
 
   return (
-    <div className="space-y-3 text-center">
+    <div className="space-y-3 text-center" data-testid="signup-redirect">
       <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Taking you to sign up</h1>
       <p className="text-sm text-text-muted">One Prabhix account for every product.</p>
     </div>

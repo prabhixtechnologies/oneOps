@@ -12,6 +12,7 @@ import com.prabhix.platform.billing.repository.BillingPlanRepository;
 import com.prabhix.platform.billing.repository.BillingSubscriptionRepository;
 import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +54,8 @@ class PaymentCompletionServiceTest {
     private MailClient mail;
     @Mock
     private PrabhixProperties properties;
+    @Mock
+    private StructuredEventLogger eventLogger;
 
     private PaymentCompletionService paymentCompletionService;
 
@@ -68,7 +71,8 @@ class PaymentCompletionServiceTest {
                 entitlementService,
                 orgReader,
                 mail,
-                properties);
+                properties,
+                eventLogger);
     }
 
     @Test

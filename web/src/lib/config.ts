@@ -19,3 +19,10 @@ export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID ?? "";
 
 export const GOOGLE_SSO_ENABLED =
   import.meta.env.VITE_GOOGLE_SSO_ENABLED === "true";
+
+export const IDENTITY_ISSUER = (import.meta.env.VITE_IDENTITY_ISSUER ?? "").replace(/\/+$/, "");
+
+/** Identity's hosted account page: password, passkeys, sessions, connected accounts. */
+export const ACCOUNT_URL = IDENTITY_ISSUER
+  ? `${IDENTITY_ISSUER}/account?return_to=${encodeURIComponent(window.location.origin)}`
+  : "";

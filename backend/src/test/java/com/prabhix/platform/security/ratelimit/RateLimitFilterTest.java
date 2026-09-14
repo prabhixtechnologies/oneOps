@@ -54,11 +54,9 @@ class RateLimitFilterTest {
         lenient().when(redis.opsForValue()).thenReturn(valueOps);
         PrabhixProperties properties = TestProperties.withSecurity(
                 new PrabhixProperties.Security(
-                        TestProperties.security(java.time.Duration.ofMinutes(15)).jwt(),
-                        TestProperties.identityDisabled(),
-                        new PrabhixProperties.Security.RateLimit(true, AUTH_LIMIT, API_LIMIT),
-                        null,
-                        TestProperties.sessionCookie()));
+                        TestProperties.security().internalSigningSecret(),
+                        java.time.Duration.ofMinutes(15),
+                        new PrabhixProperties.Security.RateLimit(true, AUTH_LIMIT, API_LIMIT)));
         filter = new RateLimitFilter(redis, objectMapper, properties);
     }
 

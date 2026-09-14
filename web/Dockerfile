@@ -1,14 +1,26 @@
+# syntax=docker/dockerfile:1
 # Base images come from AWS's public gallery rather than Docker Hub. These are the same
 # Docker Official Images, mirrored by AWS, and the move takes Docker Hub's anonymous pull
 # limit off the build path: a rate-limited base image fails the build for a reason that has
 # nothing to do with the change being built.
 
+# Build context is the oneOps repository root so the console can file:-depend on
+# packages/oneops-api. CI and Infra compose pass context: <oneOps> and this Dockerfile.
+
 # Build stage
 FROM public.ecr.aws/docker/library/node:22-alpine AS build
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci || npm install
-COPY . .
+# Vendor web-kit under /app so Vite resolves UI peers from /app/node_modules.
+# Keep oneops-api at /packages/oneops-api — web/package.json and source imports use file:../packages/oneops-api.
+COPY --from=webkit packages ./vendor/web-kit/packages
+COPY packages/oneops-api /packages/oneops-api
+COPY web/package.json ./
+# Host lockfiles are npm 8 / lockfileVersion 2. node:22-alpine ships npm 10, which
+# rejects those on `npm ci` and crashes on `npm install` if the old lock is present.
+RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const m={'@prabhix/brand':'file:./vendor/web-kit/packages/brand','@prabhix/ui':'file:./vendor/web-kit/packages/ui','@prabhix/oidc-client':'file:./vendor/web-kit/packages/oidc-client'};for (const [k,v] of Object.entries(m)){if(p.dependencies?.[k]?.startsWith('file:'))p.dependencies[k]=v;}fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+RUN npm install --no-audit --no-fund
+COPY web/ ./
+RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const m={'@prabhix/brand':'file:./vendor/web-kit/packages/brand','@prabhix/ui':'file:./vendor/web-kit/packages/ui','@prabhix/oidc-client':'file:./vendor/web-kit/packages/oidc-client'};for (const [k,v] of Object.entries(m)){if(p.dependencies?.[k]?.startsWith('file:'))p.dependencies[k]=v;}fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 # Selects which of the two consoles to build: "oneops" (the product) or "admin" (private). One
 # source tree, two images — see the entry plugin in vite.config.ts.
 ARG APP=oneops
@@ -42,7 +54,7 @@ RUN node scripts/generate-security-headers.mjs dist security-headers.conf.templa
 
 # Production stage
 FROM public.ecr.aws/docker/library/nginx:1.27-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/security-headers.generated.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80

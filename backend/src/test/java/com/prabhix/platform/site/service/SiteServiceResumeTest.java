@@ -60,7 +60,7 @@ class SiteServiceResumeTest {
                 new PrabhixProperties(
                         new PrabhixProperties.Urls("http://localhost:3000", "http://localhost:5173",
                                 "http://localhost:8080"),
-                        null, null, null, null, null, null, null));
+                        null, null, null, null, null, null));
     }
 
     @Test

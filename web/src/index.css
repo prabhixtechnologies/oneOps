@@ -1,29 +1,16 @@
 @import "tailwindcss";
+@import "@prabhix/brand/prabhix-tokens.css";
+@source "../node_modules/@prabhix/ui/src";
 
 /*
-  Prabhix design tokens (adapted from Infra/design/prabhix-tokens.css).
+  Product aliases on top of @prabhix/brand tokens.
   Teal/cyan accent · Fraunces display · Source Sans 3 body.
 */
 
 :root,
 [data-theme="light"] {
-  --px-bg: #f3f6fb;
-  --px-bg-accent: #dce9f7;
-  --px-surface: #ffffff;
-  --px-ink: #0c1524;
-  --px-muted: #5b6b7c;
-  --px-border: #d5dee8;
-  --px-accent: #0e7490;
-  --px-accent-ink: #f0fdfa;
   --px-accent-strong: #0f766e;
-  --px-danger: #b42318;
-  --px-success: #067647;
-  --px-focus: #0891b2;
-  --px-shadow: 0 18px 50px rgba(12, 21, 36, 0.08);
-  --px-font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
-  --px-font-body: "Source Sans 3", "Source Sans Pro", "Segoe UI", sans-serif;
   --px-radius: 0.75rem;
-  --px-motion: 180ms cubic-bezier(0.22, 1, 0.36, 1);
 
   --ink: var(--px-ink);
   --primary: var(--px-accent);
@@ -292,4 +279,10 @@ html[data-app="admin"][data-theme="dark"] {
   .auth-pulse-bar {
     animation: none !important;
   }
+}
+
+/* Skip layout for off-screen inbox rows. Paging already caps how many exist. */
+.scan-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 72px;
 }

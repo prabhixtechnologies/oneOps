@@ -252,7 +252,7 @@ export default function BillingPage() {
         <h2 className="mb-4 text-lg font-medium">Plans</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {plansQuery.data?.items.map((plan) => (
-            <div key={plan.id} className="rounded-lg border border-border p-4">
+            <div key={plan.id} className="rounded-lg border border-border p-4" data-testid="billing-plan">
               <h3 className="font-semibold">{plan.name}</h3>
               <p className="text-sm text-text-muted">{plan.description}</p>
               <p className="mt-2 text-2xl font-bold">
@@ -270,6 +270,8 @@ export default function BillingPage() {
                 className="mt-4 w-full"
                 variant={sub.planId === plan.id ? "secondary" : "default"}
                 disabled={sub.planId === plan.id || upgrading}
+                data-testid="plan-upgrade"
+                data-plan-id={plan.id}
                 onClick={() => void upgrade(plan.id)}
               >
                 {sub.planId === plan.id ? "Current plan" : "Upgrade"}

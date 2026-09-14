@@ -6,6 +6,8 @@ import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.repository.MailDeliveryEventRepository;
 import com.prabhix.platform.mail.repository.MailOutboxRepository;
 import com.prabhix.platform.mail.util.MailTrackingToken;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -33,6 +36,7 @@ public class TrackingController {
     private final PrabhixProperties properties;
     private final MailDeliveryEventRepository deliveryEventRepository;
     private final MailOutboxRepository outboxRepository;
+    private final StructuredEventLogger eventLogger;
 
     @GetMapping("/o/{token}")
     public ResponseEntity<byte[]> trackOpen(@PathVariable String token) {
@@ -82,6 +86,11 @@ public class TrackingController {
         event.setClickedUrl(clickedUrl);
         event.setOccurredAt(Instant.now());
         deliveryEventRepository.save(event);
+        eventLogger.log(
+                type == MailEnums.DeliveryEventType.OPENED
+                        ? LogEventCode.MAIL_TRACKING_OPENED
+                        : LogEventCode.MAIL_TRACKING_CLICKED,
+                Map.of("outboxId", outboxId));
         return clickedUrl;
     }
 }

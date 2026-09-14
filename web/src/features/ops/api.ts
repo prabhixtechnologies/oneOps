@@ -1,5 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchStaffMe } from "@/features/ops/control-plane-api";
 import { apiRequest } from "@/lib/api-client";
+import { IS_ADMIN_APP } from "@/lib/app-mode";
 import {
   applicationDetailSchema,
   applicationPageSchema,
@@ -19,6 +21,7 @@ import {
  */
 
 const PAGE_SIZE = 50;
+const skipOrg = { skipOrg: true as const };
 
 function pageParams(cursor?: string | null, status?: string) {
   const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
@@ -27,10 +30,19 @@ function pageParams(cursor?: string | null, status?: string) {
   return params;
 }
 
+export function useStaffRoles() {
+  return useQuery({
+    queryKey: ["platform-staff-me"],
+    queryFn: fetchStaffMe,
+    enabled: IS_ADMIN_APP,
+    staleTime: 60_000,
+  });
+}
+
 export function usePlatformOverview() {
   return useQuery({
     queryKey: ["platform-overview"],
-    queryFn: () => apiRequest("/admin/platform/overview", platformOverviewSchema),
+    queryFn: () => apiRequest("/admin/platform/overview", platformOverviewSchema, skipOrg),
     // Operators leave this screen open; a minute-old backlog reading is misleading.
     refetchInterval: 30_000,
   });
@@ -40,7 +52,7 @@ export function useTenants(status?: string) {
   return useInfiniteQuery({
     queryKey: ["platform-tenants", status],
     queryFn: ({ pageParam }) =>
-      apiRequest(`/admin/platform/tenants?${pageParams(pageParam, status)}`, tenantPageSchema),
+      apiRequest(`/admin/platform/tenants?${pageParams(pageParam, status)}`, tenantPageSchema, skipOrg),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
   });
@@ -50,7 +62,7 @@ export function useLeads(status?: string) {
   return useInfiniteQuery({
     queryKey: ["site-leads", status],
     queryFn: ({ pageParam }) =>
-      apiRequest(`/admin/site/leads?${pageParams(pageParam, status)}`, leadPageSchema),
+      apiRequest(`/admin/site/leads?${pageParams(pageParam, status)}`, leadPageSchema, skipOrg),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
   });
@@ -59,7 +71,7 @@ export function useLeads(status?: string) {
 export function useLead(id: string | undefined) {
   return useQuery({
     queryKey: ["site-lead", id],
-    queryFn: () => apiRequest(`/admin/site/leads/${id}`, leadDetailSchema),
+    queryFn: () => apiRequest(`/admin/site/leads/${id}`, leadDetailSchema, skipOrg),
     enabled: !!id,
   });
 }
@@ -71,6 +83,7 @@ export function useUpdateLead() {
       apiRequest(`/admin/site/leads/${id}`, leadDetailSchema, {
         method: "PATCH",
         body: { status, internalNotes },
+        ...skipOrg,
       }),
     onSuccess: (updated) => {
       void queryClient.invalidateQueries({ queryKey: ["site-leads"] });
@@ -83,7 +96,7 @@ export function useSubscribers(status?: string) {
   return useInfiniteQuery({
     queryKey: ["site-subscribers", status],
     queryFn: ({ pageParam }) =>
-      apiRequest(`/admin/site/subscribers?${pageParams(pageParam, status)}`, subscriberPageSchema),
+      apiRequest(`/admin/site/subscribers?${pageParams(pageParam, status)}`, subscriberPageSchema, skipOrg),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
   });
@@ -93,7 +106,7 @@ export function useApplications(status?: string) {
   return useInfiniteQuery({
     queryKey: ["site-applications", status],
     queryFn: ({ pageParam }) =>
-      apiRequest(`/admin/site/applications?${pageParams(pageParam, status)}`, applicationPageSchema),
+      apiRequest(`/admin/site/applications?${pageParams(pageParam, status)}`, applicationPageSchema, skipOrg),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
   });
@@ -102,7 +115,7 @@ export function useApplications(status?: string) {
 export function useApplication(id: string | undefined) {
   return useQuery({
     queryKey: ["site-application", id],
-    queryFn: () => apiRequest(`/admin/site/applications/${id}`, applicationDetailSchema),
+    queryFn: () => apiRequest(`/admin/site/applications/${id}`, applicationDetailSchema, skipOrg),
     enabled: !!id,
   });
 }
@@ -114,6 +127,7 @@ export function useUpdateApplication() {
       apiRequest(`/admin/site/applications/${id}`, applicationDetailSchema, {
         method: "PATCH",
         body: { status, internalNotes },
+        ...skipOrg,
       }),
     onSuccess: (updated) => {
       void queryClient.invalidateQueries({ queryKey: ["site-applications"] });

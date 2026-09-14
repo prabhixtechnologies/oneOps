@@ -12,7 +12,7 @@ import {
   useUpdateCommerceSettings,
 } from "@/features/commerce/api";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { paiseToRupeesString, rupeesToPaise } from "@/lib/commerce-money";
+import { paiseToRupeesString, rupeesToPaise } from "@prabhix/oneops-api";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export default function CommerceSettingsPage() {

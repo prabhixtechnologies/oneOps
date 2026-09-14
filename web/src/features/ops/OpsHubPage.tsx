@@ -137,8 +137,11 @@ function OverviewTab() {
             Commerce & infra
           </h2>
           <div className="flex gap-2 text-xs">
-            <Link className="text-accent underline-offset-2 hover:underline" to="/commerce">
-              Commerce
+            <Link className="text-accent underline-offset-2 hover:underline" to="/tenants">
+              Tenants
+            </Link>
+            <Link className="text-accent underline-offset-2 hover:underline" to="/revenue">
+              Revenue
             </Link>
             <Link className="text-accent underline-offset-2 hover:underline" to="/infra">
               Infra
@@ -149,7 +152,7 @@ function OverviewTab() {
           <StatCard
             label="MobiStack received"
             value={mobi.isError ? "—" : inr.format(mobi.data?.capturedTotal ?? 0)}
-            sub={mobi.isError ? "system_admin / API" : `${mobi.data?.capturedCount ?? 0} captured`}
+            sub={mobi.isError ? "BILLING role / BFF" : `${mobi.data?.capturedCount ?? 0} captured`}
             icon={Users}
           />
           <StatCard
@@ -161,7 +164,7 @@ function OverviewTab() {
           <StatCard
             label="AWS MTD"
             value={aws.isError ? "—" : `$${(aws.data?.costs?.mtdUsd ?? 0).toFixed(2)}`}
-            sub="Cost Explorer via Ops Tool"
+            sub="Cost Explorer via oneOps"
             icon={ShieldAlert}
           />
           <StatCard
@@ -263,7 +266,7 @@ function StatCard({
   alert,
 }: {
   label: string;
-  value: number;
+  value: React.ReactNode;
   sub?: string;
   icon: React.ComponentType<{ className?: string }>;
   alert?: boolean;
@@ -283,7 +286,7 @@ function StatCard({
         />
       </div>
       <div className={cn("mt-2 text-2xl font-semibold", alert && "text-destructive")}>
-        {value.toLocaleString()}
+        {typeof value === "number" ? value.toLocaleString() : value}
       </div>
       {sub && <p className="mt-1 text-xs text-text-muted">{sub}</p>}
     </div>

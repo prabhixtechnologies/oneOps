@@ -1,6 +1,5 @@
 package com.prabhix.platform.user.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
@@ -37,22 +36,7 @@ public final class UserDtos {
             @Size(max = 16) String locale) {
     }
 
-    public record ChangePasswordRequest(
-            @NotBlank String currentPassword,
-            @NotBlank @Size(min = 10, max = 128) String newPassword) {
-    }
-
     public record NotificationPrefsRequest(
             Map<String, Object> preferences) {
-    }
-
-    public record DeviceSessionView(
-            UUID id,
-            String deviceName,
-            String deviceType,
-            String ipAddress,
-            Instant lastSeenAt,
-            Instant createdAt,
-            boolean current) {
     }
 }

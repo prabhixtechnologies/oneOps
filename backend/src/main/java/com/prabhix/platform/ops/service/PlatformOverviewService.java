@@ -1,6 +1,5 @@
 package com.prabhix.platform.ops.service;
 
-import com.prabhix.platform.auth.repository.DeviceSessionRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.common.web.Cursor;
@@ -40,7 +39,6 @@ public class PlatformOverviewService {
     private final OrganizationRepository organizationRepository;
     private final UserRepository userRepository;
     private final MailQueueMetrics mailQueue;
-    private final DeviceSessionRepository deviceSessionRepository;
     private final EventLogRepository eventLogRepository;
     private final PrabhixProperties properties;
 
@@ -63,15 +61,16 @@ public class PlatformOverviewService {
                 userRepository.countByStatusAndDeletedAtIsNull(UserStatus.ACTIVE),
                 userRepository.countByStatusAndDeletedAtIsNull(UserStatus.INVITED),
                 userRepository.countByStatusAndDeletedAtIsNull(UserStatus.DISABLED),
-                userRepository.countByLockedUntilAfterAndDeletedAtIsNull(now),
+                0L, // lockout lives in Identity; this row has no lockedUntil column now
                 userRepository.countByPlatformAdminTrueAndDeletedAtIsNull(),
                 userRepository.countByCreatedAtGreaterThanEqualAndDeletedAtIsNull(recentSince));
 
         MailQueueMetrics.OutboxDepth mail = mailQueue.outboxDepth();
+        // Live session count lives in Identity now; the local device-session table is gone.
         OpsDtos.QueueDepths queues = new OpsDtos.QueueDepths(
                 mail.inFlight(),
                 mail.failed(),
-                deviceSessionRepository.countByRevokedAtIsNull());
+                0L);
 
         OpsDtos.ActivityCounts activity = new OpsDtos.ActivityCounts(
                 eventLogRepository.countErrorsSince(activitySince),

@@ -276,12 +276,12 @@ WHERE s.organization_id = o.id
 -- has a check that sets it; writing VERIFIED here would only mean the app stops looking and starts
 -- trusting a claim nobody made. Run the domain verification from the console once MX, SPF, DKIM and
 -- DMARC are published.
-INSERT INTO mail_domains (organization_id, domain, status, mode, verification_token, is_default)
+INSERT INTO mail.mail_domains (organization_id, domain, status, mode, verification_token, is_default)
 SELECT o.id, :'mail_domain', 'PENDING', 'SELF_HOSTED',
        encode(gen_random_bytes(24), 'hex'), true
 FROM organizations o
 WHERE o.slug = 'prabhix-platform'
-  AND NOT EXISTS (SELECT 1 FROM mail_domains WHERE domain = :'mail_domain');
+  AND NOT EXISTS (SELECT 1 FROM mail.mail_domains WHERE domain = :'mail_domain');
 
 -- ---------------------------------------------------------------------------------------------
 -- Shared mailboxes
@@ -293,11 +293,11 @@ WHERE o.slug = 'prabhix-platform'
 -- text implicitly but text only casts to citext on assignment, so `citext_column = text_value`
 -- resolves to the text operator and compares case-sensitively — the opposite of what the column
 -- type was chosen for. Literals are fine untyped; anything built with || is text.
-INSERT INTO mail_mailboxes (organization_id, mail_domain_id, address, name, description, kind,
+INSERT INTO mail.mail_mailboxes (organization_id, mail_domain_id, address, name, description, kind,
                             status, timezone)
 SELECT o.id, d.id, box.address::citext, box.name, box.description, 'SHARED', 'ACTIVE', 'Asia/Kolkata'
 FROM organizations o
-JOIN mail_domains d ON d.domain = :'mail_domain'
+JOIN mail.mail_domains d ON d.domain = :'mail_domain'
 CROSS JOIN (VALUES
     ('support@'  || :'mail_domain', 'Support',  'Customer questions and incident reports'),
     ('billing@'  || :'mail_domain', 'Billing',  'Invoices, payment failures and plan changes'),
@@ -305,20 +305,20 @@ CROSS JOIN (VALUES
     ('careers@'  || :'mail_domain', 'Careers',  'Applications and referrals')
   ) AS box(address, name, description)
 WHERE o.slug = 'prabhix-platform'
-  AND NOT EXISTS (SELECT 1 FROM mail_mailboxes m WHERE m.address = box.address::citext);
+  AND NOT EXISTS (SELECT 1 FROM mail.mail_mailboxes m WHERE m.address = box.address::citext);
 
 -- no-reply is a mailbox rather than a bare From address so that a reply to an automated mail lands
 -- somewhere a person eventually looks, instead of bouncing.
-INSERT INTO mail_mailboxes (organization_id, mail_domain_id, address, name, description, kind,
+INSERT INTO mail.mail_mailboxes (organization_id, mail_domain_id, address, name, description, kind,
                             status, timezone)
 SELECT o.id, d.id, ('no-reply@' || :'mail_domain')::citext, 'No reply',
        'From address for automated mail. Replies land here rather than bouncing.',
        'SYSTEM', 'ACTIVE', 'Asia/Kolkata'
 FROM organizations o
-JOIN mail_domains d ON d.domain = :'mail_domain'
+JOIN mail.mail_domains d ON d.domain = :'mail_domain'
 WHERE o.slug = 'prabhix-platform'
   AND NOT EXISTS (
-    SELECT 1 FROM mail_mailboxes m WHERE m.address = ('no-reply@' || :'mail_domain')::citext
+    SELECT 1 FROM mail.mail_mailboxes m WHERE m.address = ('no-reply@' || :'mail_domain')::citext
   );
 
 -- ---------------------------------------------------------------------------------------------
@@ -332,16 +332,16 @@ WHERE o.slug = 'prabhix-platform'
 -- authentication. It is not the same secret as the account password above, and it is separate on
 -- purpose — a mail client holds it forever and hands it over on every connection. Set to the same
 -- value at seed time only so there is one thing to remember on day one; change it from the console.
-INSERT INTO mail_mailboxes (organization_id, mail_domain_id, address, name, kind, status,
+INSERT INTO mail.mail_mailboxes (organization_id, mail_domain_id, address, name, kind, status,
                             timezone, owner_user_id, password_hash, password_updated_at)
 SELECT o.id, d.id, u.email, u.full_name, 'PERSONAL', 'ACTIVE', 'Asia/Kolkata', u.id,
        crypt(:'owner_password', gen_salt('bf', 12)), now()
 FROM organizations o
-JOIN mail_domains d ON d.domain = :'mail_domain'
+JOIN mail.mail_domains d ON d.domain = :'mail_domain'
 JOIN users u ON u.email = :'owner_email'
 WHERE o.slug = 'prabhix-platform'
   AND lower(u.email::text) LIKE '%@' || lower(:'mail_domain')
-  AND NOT EXISTS (SELECT 1 FROM mail_mailboxes m WHERE m.address = u.email);
+  AND NOT EXISTS (SELECT 1 FROM mail.mail_mailboxes m WHERE m.address = u.email);
 
 -- ---------------------------------------------------------------------------------------------
 -- Aliases
@@ -351,7 +351,7 @@ WHERE o.slug = 'prabhix-platform'
 -- less inbox for someone to forget to read.
 -- The VALUES list comes before the mailbox join, not after: a table reference can only see what is
 -- to its left, so joining on a.target ahead of declaring a does not parse.
-INSERT INTO mail_aliases (organization_id, mailbox_id, address)
+INSERT INTO mail.mail_aliases (organization_id, mailbox_id, address)
 SELECT o.id, m.id, a.address::citext
 FROM organizations o
 CROSS JOIN (VALUES
@@ -369,9 +369,9 @@ CROSS JOIN (VALUES
     ('postmaster@' || :'mail_domain', 'support@'  || :'mail_domain'),
     ('hostmaster@' || :'mail_domain', 'security@' || :'mail_domain')
   ) AS a(address, target)
-JOIN mail_mailboxes m ON m.address = a.target::citext
+JOIN mail.mail_mailboxes m ON m.address = a.target::citext
 WHERE o.slug = 'prabhix-platform'
-  AND NOT EXISTS (SELECT 1 FROM mail_aliases x WHERE x.address = a.address::citext);
+  AND NOT EXISTS (SELECT 1 FROM mail.mail_aliases x WHERE x.address = a.address::citext);
 
 -- ---------------------------------------------------------------------------------------------
 -- Mailbox access
@@ -379,14 +379,14 @@ WHERE o.slug = 'prabhix-platform'
 
 -- The owner leads every shared queue, so day one is not "the mail arrived and nobody can open it".
 -- LEAD rather than MEMBER: assignment and SLA settings are gated on it.
-INSERT INTO mail_mailbox_members (organization_id, mailbox_id, user_id, access_level, notify)
+INSERT INTO mail.mail_mailbox_members (organization_id, mailbox_id, user_id, access_level, notify)
 SELECT m.organization_id, m.id, u.id, 'LEAD', true
-FROM mail_mailboxes m
+FROM mail.mail_mailboxes m
 JOIN users u ON u.email = :'owner_email'
-WHERE m.kind = 'SHARED'
+WHERE m.kind IN ('SHARED', 'PERSONAL')
   AND m.deleted_at IS NULL
   AND NOT EXISTS (
-    SELECT 1 FROM mail_mailbox_members x
+    SELECT 1 FROM mail.mail_mailbox_members x
     WHERE x.mailbox_id = m.id AND x.user_id = u.id
   );
 
@@ -402,9 +402,9 @@ SELECT
   (SELECT count(*) FROM users)                                              AS users,
   (SELECT count(*) FROM organization_memberships WHERE status = 'ACTIVE')   AS memberships,
   (SELECT count(*) FROM platform_staff_roles WHERE revoked_at IS NULL)      AS staff_roles,
-  (SELECT count(*) FROM mail_domains)                                       AS mail_domains,
-  (SELECT count(*) FROM mail_mailboxes WHERE deleted_at IS NULL)            AS mailboxes,
-  (SELECT count(*) FROM mail_aliases)                                       AS aliases;
+  (SELECT count(*) FROM mail.mail_domains)                                       AS mail_domains,
+  (SELECT count(*) FROM mail.mail_mailboxes WHERE deleted_at IS NULL)            AS mailboxes,
+  (SELECT count(*) FROM mail.mail_aliases)                                       AS aliases;
 
 \echo ''
 \echo 'Sign in with the owner_email and owner_password given above, then:'

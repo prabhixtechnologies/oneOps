@@ -11,6 +11,7 @@ import com.prabhix.platform.commerce.repository.OrderEventRepository;
 import com.prabhix.platform.commerce.repository.OrderItemRepository;
 import com.prabhix.platform.common.mail.MailClient;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.org.repository.OrganizationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,7 @@ class CommerceWebhookIdempotencyTest {
     @Mock private MailClient mail;
     @Mock private OrderDownloadRepository downloadRepository;
     @Mock private OrderItemRepository orderItemRepository;
+    @Mock private StructuredEventLogger eventLogger;
 
     private CommercePaymentCompletionService completionService;
 
@@ -53,7 +55,7 @@ class CommerceWebhookIdempotencyTest {
     @BeforeEach
     void setUp() {
         PrabhixProperties properties = new PrabhixProperties(
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 new PrabhixProperties.Limits(100000, 200, 26214400L, 25, 200));
         completionService = new CommercePaymentCompletionService(
                 orderRepository,
@@ -70,7 +72,8 @@ class CommerceWebhookIdempotencyTest {
                 mail,
                 properties,
                 downloadRepository,
-                orderItemRepository);
+                orderItemRepository,
+                eventLogger);
     }
 
     @Test

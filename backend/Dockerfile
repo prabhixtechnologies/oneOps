@@ -11,6 +11,10 @@
 FROM public.ecr.aws/docker/library/maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /build
 
+# Local Identity starter — GitHub Packages is not available during a laptop build.
+COPY --from=identity-client / /identity-client
+RUN mvn -B -f /identity-client/pom.xml -DskipTests install
+
 # Resolve dependencies first so code-only changes reuse this layer.
 COPY pom.xml .
 RUN mvn -B dependency:go-offline

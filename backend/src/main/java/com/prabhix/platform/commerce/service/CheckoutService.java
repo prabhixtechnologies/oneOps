@@ -33,6 +33,8 @@ import com.prabhix.platform.commerce.repository.ProductVariantRepository;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.observability.service.StructuredEventLogger;
+import com.prabhix.platform.observability.taxonomy.LogEventCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +69,7 @@ public class CheckoutService {
     private final RazorpayClient razorpayClient;
     private final PrabhixProperties properties;
     private final CommerceProperties commerceProperties;
+    private final StructuredEventLogger eventLogger;
 
     @Transactional
     public CommerceDtos.CheckoutResponse startCheckout(
@@ -163,6 +166,11 @@ public class CheckoutService {
             discountService.recordRedemption(
                     organizationId, discount, order.getId(), cart.getId(), customer.getId(), cart.getDiscountMinor());
         }
+
+        eventLogger.log(LogEventCode.COMMERCE_CHECKOUT_STARTED, Map.of(
+                "orderId", order.getId(), "orderNumber", order.getOrderNumber()));
+        eventLogger.log(LogEventCode.COMMERCE_ORDER_CREATED, Map.of(
+                "orderId", order.getId(), "orderNumber", order.getOrderNumber()));
 
         return new CommerceDtos.CheckoutResponse(
                 order.getId(),
