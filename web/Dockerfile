@@ -53,7 +53,7 @@ RUN npm run build
 RUN node scripts/generate-security-headers.mjs dist security-headers.conf.template security-headers.generated.conf
 
 # Production stage
-FROM public.ecr.aws/docker/library/nginx:1.27-alpine
+FROM public.ecr.aws/docker/library/nginx:1.31-alpine
 COPY web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/security-headers.generated.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html
