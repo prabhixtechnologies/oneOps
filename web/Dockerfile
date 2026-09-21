@@ -8,7 +8,7 @@
 # packages/oneops-api. CI and Infra compose pass context: <oneOps> and this Dockerfile.
 
 # Build stage
-FROM public.ecr.aws/docker/library/node:22-alpine AS build
+FROM public.ecr.aws/docker/library/node:26-alpine AS build
 WORKDIR /app
 # Vendor web-kit under /app so Vite resolves UI peers from /app/node_modules.
 # Keep oneops-api at /packages/oneops-api — web/package.json and source imports use file:../packages/oneops-api.
