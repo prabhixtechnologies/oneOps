@@ -16,12 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout Identity client
+        uses: actions/checkout@v4
+        with:
+          repository: prabhixtechnologies/Identity
+          path: identity-client
+          sparse-checkout: client
+          sparse-checkout-cone-mode: true
+
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "25"
           cache: maven
+          server-id: github
+
+      - name: Install Identity starter
+        run: mvn -B -f "$GITHUB_WORKSPACE/identity-client/client/pom.xml" -DskipTests install
 
       # -Pintegration, which clears the excludedGroups that otherwise skips the two @Tag("integration")
       # tests. They were not running here, and they are the only tests that start the Spring context
@@ -113,6 +125,9 @@ jobs:
             -placeholderReplacement=false \
             -connectRetries=10 \
             migrate
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Schema and seed data arrived
         env:
@@ -295,7 +310,9 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          git clone --depth 1 https://github.com/prabhixtechnologies/web-kit.git "$GITHUB_WORKSPACE/../web-kit"
+          npm ci
 
       - name: Typecheck
         run: npx tsc --noEmit
@@ -547,6 +564,8 @@ jobs:
         with:
           context: ./backend
           file: ./backend/Dockerfile
+          build-contexts: |
+            identity-client=https://github.com/prabhixtechnologies/Identity.git#main:client
           push: true
           tags: |
             ${{ steps.meta.outputs.base }}/backend:latest
@@ -559,6 +578,8 @@ jobs:
         with:
           context: .
           file: ./web/Dockerfile
+          build-contexts: |
+            webkit=https://github.com/prabhixtechnologies/web-kit.git#main
           push: true
           # Vite inlines these at build time; each must also be declared as an ARG in web/Dockerfile
           # or it is silently discarded.
@@ -581,6 +602,8 @@ jobs:
         with:
           context: .
           file: ./web/Dockerfile
+          build-contexts: |
+            webkit=https://github.com/prabhixtechnologies/web-kit.git#main
           push: true
           build-args: |
             APP=admin
