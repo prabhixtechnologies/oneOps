@@ -156,7 +156,7 @@ export default function CommerceProductsPage() {
           <MobileCard key={p.id}>
             <p className="font-medium">{p.name}</p>
             <MobileCardRow label="Type" value={<Badge variant="secondary">{p.productType}</Badge>} />
-            <MobileCardRow label="From" value={<Money amount={p.fromPriceMinor} />} />
+            <MobileCardRow label="From" value={<Money amount={p.fromPricePaise} />} />
             <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
               <Link to={`/commerce/products/${p.id}`}>Edit</Link>
             </Button>
@@ -192,7 +192,7 @@ export default function CommerceProductsPage() {
                   <Badge variant="secondary">{p.productType}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Money amount={p.fromPriceMinor} />
+                  <Money amount={p.fromPricePaise} />
                 </TableCell>
                 <TableCell className="font-mono text-xs">{p.slug}</TableCell>
                 <TableCell>

@@ -59,23 +59,23 @@ public class CommerceInvoice extends TenantScopedEntity {
     @Column(name = "line_items", nullable = false, columnDefinition = "jsonb")
     private List<Map<String, Object>> lineItems = List.of();
 
-    @Column(name = "subtotal_minor", nullable = false)
-    private long subtotalMinor;
+    @Column(name = "subtotal_paise", nullable = false)
+    private long subtotalPaise;
 
-    @Column(name = "discount_minor", nullable = false)
-    private long discountMinor;
+    @Column(name = "discount_paise", nullable = false)
+    private long discountPaise;
 
-    @Column(name = "cgst_minor", nullable = false)
-    private long cgstMinor;
+    @Column(name = "cgst_paise", nullable = false)
+    private long cgstPaise;
 
-    @Column(name = "sgst_minor", nullable = false)
-    private long sgstMinor;
+    @Column(name = "sgst_paise", nullable = false)
+    private long sgstPaise;
 
-    @Column(name = "igst_minor", nullable = false)
-    private long igstMinor;
+    @Column(name = "igst_paise", nullable = false)
+    private long igstPaise;
 
-    @Column(name = "total_minor", nullable = false)
-    private long totalMinor;
+    @Column(name = "total_paise", nullable = false)
+    private long totalPaise;
 
     @Column(name = "currency", nullable = false, length = 3)
     private String currency = "INR";

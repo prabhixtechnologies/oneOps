@@ -97,7 +97,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     @Query(value = """
             SELECT p.* FROM commerce_products p
             LEFT JOIN LATERAL (
-                SELECT MIN(v.price_minor) AS min_price
+                SELECT MIN(v.price_paise) AS min_price
                 FROM commerce_product_variants v
                 WHERE v.product_id = p.id AND v.deleted_at IS NULL AND v.active = true
             ) prices ON true
@@ -120,7 +120,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     @Query(value = """
             SELECT p.* FROM commerce_products p
             LEFT JOIN LATERAL (
-                SELECT MIN(v.price_minor) AS min_price
+                SELECT MIN(v.price_paise) AS min_price
                 FROM commerce_product_variants v
                 WHERE v.product_id = p.id AND v.deleted_at IS NULL AND v.active = true
             ) prices ON true

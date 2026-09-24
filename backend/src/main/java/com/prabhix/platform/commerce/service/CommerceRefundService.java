@@ -38,17 +38,17 @@ public class CommerceRefundService {
         if (payment.getStatus() != PaymentStatus.CAPTURED && payment.getStatus() != PaymentStatus.REFUNDED) {
             throw ApiException.invalidState("Only captured payments can be refunded");
         }
-        long refundMinor = request.amountMinor() == null || request.amountMinor() <= 0
-                ? payment.getAmountMinor() - payment.getRefundedMinor()
-                : request.amountMinor();
-        if (refundMinor <= 0 || payment.getRefundedMinor() + refundMinor > payment.getAmountMinor()) {
+        long refundPaise = request.amountPaise() == null || request.amountPaise() <= 0
+                ? payment.getAmountPaise() - payment.getRefundedPaise()
+                : request.amountPaise();
+        if (refundPaise <= 0 || payment.getRefundedPaise() + refundPaise > payment.getAmountPaise()) {
             throw ApiException.of(ErrorCode.VALIDATION_FAILED, "Refund amount is invalid");
         }
         if (payment.getRazorpayPaymentId() != null) {
-            razorpayClient.refundPayment(payment.getRazorpayPaymentId(), refundMinor);
+            razorpayClient.refundPayment(payment.getRazorpayPaymentId(), refundPaise);
         }
-        payment.setRefundedMinor(payment.getRefundedMinor() + refundMinor);
-        if (payment.getRefundedMinor() >= payment.getAmountMinor()) {
+        payment.setRefundedPaise(payment.getRefundedPaise() + refundPaise);
+        if (payment.getRefundedPaise() >= payment.getAmountPaise()) {
             payment.setStatus(PaymentStatus.REFUNDED);
             order.setStatus(OrderStatus.REFUNDED);
             orderRepository.save(order);
@@ -57,6 +57,6 @@ public class CommerceRefundService {
         events.publishEvent(AuditRequested.of(orgId, principal.userId(),
                 "commerce.payment.refunded", "commerce_payment", payment.getId()));
         return new CommerceDtos.RefundView(
-                payment.getId(), refundMinor, payment.getRefundedMinor(), payment.getStatus().name());
+                payment.getId(), refundPaise, payment.getRefundedPaise(), payment.getStatus().name());
     }
 }

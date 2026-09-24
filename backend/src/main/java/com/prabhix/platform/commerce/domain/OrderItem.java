@@ -42,11 +42,11 @@ public class OrderItem extends TenantScopedEntity {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
-    @Column(name = "unit_price_minor", nullable = false)
-    private long unitPriceMinor;
+    @Column(name = "unit_price_paise", nullable = false)
+    private long unitPricePaise;
 
-    @Column(name = "line_subtotal_minor", nullable = false)
-    private long lineSubtotalMinor;
+    @Column(name = "line_subtotal_paise", nullable = false)
+    private long lineSubtotalPaise;
 
     @Column(name = "hsn_code", length = 20)
     private String hsnCode;

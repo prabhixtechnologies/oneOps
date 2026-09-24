@@ -81,7 +81,7 @@ public class CommerceSubscriptionRenewalService {
         String orderNumber = BillingAmountCalculator.formatInvoiceNumber(
                 settings.getOrderNumberPrefix(), fy, sequence);
 
-        long subtotal = subscription.getLockedPriceMinor();
+        long subtotal = subscription.getLockedPricePaise();
         var totals = CommerceAmountCalculator.computeOrderTotals(
                 subtotal, 0, 0, settings.getGstPercent(),
                 null, settings.getSellerState());
@@ -95,13 +95,13 @@ public class CommerceSubscriptionRenewalService {
         order.setCustomerId(customer.getId());
         order.setAccessToken(CommerceTokens.opaqueToken());
         order.setCurrency(subscription.getCurrency());
-        order.setSubtotalMinor(totals.subtotalMinor());
-        order.setDiscountMinor(0);
-        order.setCgstMinor(totals.cgstMinor());
-        order.setSgstMinor(totals.sgstMinor());
-        order.setIgstMinor(totals.igstMinor());
-        order.setShippingMinor(0);
-        order.setTotalMinor(totals.totalMinor());
+        order.setSubtotalPaise(totals.subtotalPaise());
+        order.setDiscountPaise(0);
+        order.setCgstPaise(totals.cgstPaise());
+        order.setSgstPaise(totals.sgstPaise());
+        order.setIgstPaise(totals.igstPaise());
+        order.setShippingPaise(0);
+        order.setTotalPaise(totals.totalPaise());
         order.setSellerState(settings.getSellerState());
         order.setGstPercent(settings.getGstPercent());
         order.setSubscriptionCheckout(true);
@@ -112,13 +112,13 @@ public class CommerceSubscriptionRenewalService {
         payment.setOrganizationId(subscription.getOrganizationId());
         payment.setOrderId(order.getId());
         payment.setStatus(CommerceEnums.PaymentStatus.INITIATED);
-        payment.setAmountMinor(order.getTotalMinor());
+        payment.setAmountPaise(order.getTotalPaise());
         payment.setCurrency(order.getCurrency());
         paymentRepository.save(payment);
 
         if (properties.billing().razorpay().configured()) {
             JsonNode gatewayOrder = razorpayClient.createOrder(
-                    order.getTotalMinor(),
+                    order.getTotalPaise(),
                     order.getCurrency(),
                     order.getOrderNumber(),
                     Map.of(
@@ -147,7 +147,7 @@ public class CommerceSubscriptionRenewalService {
             JsonNode payment = razorpayClient.createRecurringPayment(
                     customer.getEmail(),
                     customer.getPhone(),
-                    order.getTotalMinor(),
+                    order.getTotalPaise(),
                     order.getCurrency(),
                     order.getRazorpayOrderId(),
                     null,
@@ -156,7 +156,7 @@ public class CommerceSubscriptionRenewalService {
             if ("captured".equals(status) || "authorized".equals(status)) {
                 paymentCompletionService.completeCapture(order, new CommercePaymentCompletionService.CaptureDetails(
                         payment.path("id").asText(),
-                        order.getTotalMinor(),
+                        order.getTotalPaise(),
                         order.getCurrency(),
                         payment.path("method").asText(null),
                         false));

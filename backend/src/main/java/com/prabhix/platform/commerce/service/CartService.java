@@ -84,8 +84,8 @@ public class CartService {
                     return created;
                 });
         item.setQuantity(item.getQuantity() + request.quantity());
-        item.setUnitPriceMinor(variant.getPriceMinor());
-        item.setLineTotalMinor(CommerceAmountCalculator.lineTotal(variant.getPriceMinor(), item.getQuantity()));
+        item.setUnitPricePaise(variant.getPricePaise());
+        item.setLineTotalPaise(CommerceAmountCalculator.lineTotal(variant.getPricePaise(), item.getQuantity()));
         cartItemRepository.save(item);
         cart.setExpiresAt(Instant.now().plus(properties.cartTtl()));
         recalculate(cart);
@@ -102,8 +102,8 @@ public class CartService {
         ProductVariant variant = variantRepository.findById(item.getVariantId())
                 .orElseThrow(() -> ApiException.of(ErrorCode.VARIANT_NOT_FOUND, "That product variant was not found"));
         item.setQuantity(request.quantity());
-        item.setUnitPriceMinor(variant.getPriceMinor());
-        item.setLineTotalMinor(CommerceAmountCalculator.lineTotal(variant.getPriceMinor(), item.getQuantity()));
+        item.setUnitPricePaise(variant.getPricePaise());
+        item.setLineTotalPaise(CommerceAmountCalculator.lineTotal(variant.getPricePaise(), item.getQuantity()));
         cartItemRepository.save(item);
         recalculate(cart);
         return toView(cart);
@@ -156,12 +156,12 @@ public class CartService {
         for (CartItem item : items) {
             ProductVariant variant = variants.get(item.getVariantId());
             if (variant != null) {
-                item.setUnitPriceMinor(variant.getPriceMinor());
-                item.setLineTotalMinor(CommerceAmountCalculator.lineTotal(variant.getPriceMinor(), item.getQuantity()));
+                item.setUnitPricePaise(variant.getPricePaise());
+                item.setLineTotalPaise(CommerceAmountCalculator.lineTotal(variant.getPricePaise(), item.getQuantity()));
                 priced.add(item);
                 productIds.add(variant.getProductId());
             }
-            subtotal += item.getLineTotalMinor();
+            subtotal += item.getLineTotalPaise();
         }
         if (!priced.isEmpty()) {
             cartItemRepository.saveAll(priced);
@@ -171,7 +171,7 @@ public class CartService {
             DiscountCode discountCode = discountCodeRepository.findById(cart.getDiscountCodeId()).orElse(null);
             if (discountCode != null) {
                 try {
-                    discount = discountService.computeDiscountMinor(
+                    discount = discountService.computeDiscountPaise(
                             cart.getOrganizationId(), discountCode, subtotal, productIds, null);
                 } catch (ApiException ex) {
                     cart.setDiscountCodeId(null);
@@ -180,16 +180,16 @@ public class CartService {
             }
         }
         CommerceSettings settings = settingsService.resolve(cart.getOrganizationId());
-        long shipping = CommerceAmountCalculator.computeShippingMinor(
-                subtotal - discount, settings.getFlatShippingMinor(), settings.getFreeShippingAboveMinor());
+        long shipping = CommerceAmountCalculator.computeShippingPaise(
+                subtotal - discount, settings.getFlatShippingPaise(), settings.getFreeShippingAbovePaise());
         var totals = CommerceAmountCalculator.computeOrderTotals(
                 subtotal, discount, shipping, settings.getGstPercent(),
                 settings.getSellerState(), settings.getSellerState());
-        cart.setSubtotalMinor(subtotal);
-        cart.setDiscountMinor(discount);
-        cart.setTaxMinor(totals.cgstMinor() + totals.sgstMinor() + totals.igstMinor());
-        cart.setShippingMinor(shipping);
-        cart.setTotalMinor(totals.totalMinor());
+        cart.setSubtotalPaise(subtotal);
+        cart.setDiscountPaise(discount);
+        cart.setTaxPaise(totals.cgstPaise() + totals.sgstPaise() + totals.igstPaise());
+        cart.setShippingPaise(shipping);
+        cart.setTotalPaise(totals.totalPaise());
         cartRepository.save(cart);
     }
 
@@ -216,18 +216,18 @@ public class CartService {
                     variant == null ? "" : variant.getName(),
                     variant == null ? "" : variant.getSku(),
                     item.getQuantity(),
-                    item.getUnitPriceMinor(),
-                    item.getLineTotalMinor());
+                    item.getUnitPricePaise(),
+                    item.getLineTotalPaise());
         }).toList();
         return new CommerceDtos.CartView(
                 cart.getCartToken(),
                 cart.getCurrency(),
                 itemViews,
-                cart.getSubtotalMinor(),
-                cart.getDiscountMinor(),
-                cart.getTaxMinor(),
-                cart.getShippingMinor(),
-                cart.getTotalMinor(),
+                cart.getSubtotalPaise(),
+                cart.getDiscountPaise(),
+                cart.getTaxPaise(),
+                cart.getShippingPaise(),
+                cart.getTotalPaise(),
                 discountCode,
                 cart.getExpiresAt());
     }

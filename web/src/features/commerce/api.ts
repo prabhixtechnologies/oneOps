@@ -177,7 +177,7 @@ export function useAnnotateOrder(id: string) {
 export function useRefundOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { orderId: string; amountMinor?: number }) =>
+    mutationFn: (body: { orderId: string; amountPaise?: number }) =>
       apiRequest("/commerce/orders/refunds", refundViewSchema, { method: "POST", body }),
     onSuccess: (_data, vars) =>
       void qc.invalidateQueries({ queryKey: ["commerce-order", vars.orderId] }),

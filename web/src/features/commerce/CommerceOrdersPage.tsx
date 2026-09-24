@@ -82,7 +82,7 @@ export default function CommerceOrdersPage() {
               <Badge variant="secondary">{o.status.replace(/_/g, " ")}</Badge>
             </div>
             <MobileCardRow label="Customer" value={o.customerEmail ?? "—"} />
-            <MobileCardRow label="Total" value={<Money amount={o.totalMinor} />} />
+            <MobileCardRow label="Total" value={<Money amount={o.totalPaise} />} />
             <MobileCardRow label="Created" value={<RelativeTime date={o.createdAt} />} />
             <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
               <Link to={`/commerce/orders/${o.id}`} data-testid="commerce-order-open">View</Link>
@@ -110,7 +110,7 @@ export default function CommerceOrdersPage() {
                 </TableCell>
                 <TableCell>{o.customerEmail ?? "—"}</TableCell>
                 <TableCell>
-                  <Money amount={o.totalMinor} />
+                  <Money amount={o.totalPaise} />
                 </TableCell>
                 <TableCell>
                   <RelativeTime date={o.createdAt} />

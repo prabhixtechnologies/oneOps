@@ -49,7 +49,7 @@ public interface CommerceOrderRepository extends JpaRepository<CommerceOrder, UU
     List<CommerceOrder> findExpiredStockHolds(Instant now);
 
     @Query(value = """
-            SELECT COALESCE(SUM(total_minor), 0) FROM commerce_orders
+            SELECT COALESCE(SUM(total_paise), 0) FROM commerce_orders
             WHERE organization_id = :orgId AND status IN ('PAID', 'FULFILLED')
               AND paid_at >= :since
             """, nativeQuery = true)

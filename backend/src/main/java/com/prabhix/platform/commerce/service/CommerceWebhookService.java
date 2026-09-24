@@ -98,7 +98,7 @@ public class CommerceWebhookService {
         event.setOrderId(order.getId());
         paymentCompletionService.completeCapture(order, new CommercePaymentCompletionService.CaptureDetails(
                 payment.path("id").asText(),
-                payment.path("amount").asLong(order.getTotalMinor()),
+                payment.path("amount").asLong(order.getTotalPaise()),
                 payment.path("currency").asText(order.getCurrency()),
                 payment.path("method").asText(null),
                 true));

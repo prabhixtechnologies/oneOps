@@ -62,13 +62,13 @@ class CartTotalRecalculationTest {
         CartItem item = new CartItem();
         item.setVariantId(variantId);
         item.setQuantity(2);
-        item.setUnitPriceMinor(999);
-        item.setLineTotalMinor(1998);
+        item.setUnitPricePaise(999);
+        item.setLineTotalPaise(1998);
 
         ProductVariant variant = new ProductVariant();
         variant.setId(variantId);
         variant.setProductId(productId);
-        variant.setPriceMinor(2_500);
+        variant.setPricePaise(2_500);
         variant.setActive(true);
 
         var settings = new com.prabhix.platform.commerce.domain.CommerceSettings();
@@ -83,8 +83,8 @@ class CartTotalRecalculationTest {
 
         cartService.recalculate(cart);
 
-        assertEquals(5_000, cart.getSubtotalMinor());
-        assertEquals(2_500, item.getUnitPriceMinor());
-        assertEquals(5_000, item.getLineTotalMinor());
+        assertEquals(5_000, cart.getSubtotalPaise());
+        assertEquals(2_500, item.getUnitPricePaise());
+        assertEquals(5_000, item.getLineTotalPaise());
     }
 }

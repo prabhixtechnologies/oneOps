@@ -34,24 +34,24 @@ public class DiscountService {
     }
 
     @Transactional(readOnly = true)
-    public long computeDiscountMinor(
+    public long computeDiscountPaise(
             UUID organizationId,
             DiscountCode discount,
-            long subtotalMinor,
+            long subtotalPaise,
             List<UUID> variantProductIds,
             UUID customerId) {
-        validateRedemption(organizationId, discount, subtotalMinor, variantProductIds, customerId);
+        validateRedemption(organizationId, discount, subtotalPaise, variantProductIds, customerId);
         return CommerceAmountCalculator.computeDiscountAmount(
                 discount.getDiscountType(),
                 discount.getPercentage(),
-                discount.getAmountMinor(),
-                subtotalMinor);
+                discount.getAmountPaise(),
+                subtotalPaise);
     }
 
     void validateRedemption(
             UUID organizationId,
             DiscountCode discount,
-            long subtotalMinor,
+            long subtotalPaise,
             List<UUID> productIds,
             UUID customerId) {
         Instant now = Instant.now();
@@ -61,10 +61,10 @@ public class DiscountService {
         if (discount.getValidUntil() != null && now.isAfter(discount.getValidUntil())) {
             throw ApiException.of(ErrorCode.DISCOUNT_INVALID, "That discount code has expired");
         }
-        if (subtotalMinor < discount.getMinOrderMinor()) {
+        if (subtotalPaise < discount.getMinOrderPaise()) {
             throw ApiException.of(ErrorCode.DISCOUNT_INVALID,
                     "Order total must be at least "
-                            + CommerceAmountCalculator.formatMoneyInr(discount.getMinOrderMinor()));
+                            + CommerceAmountCalculator.formatMoneyInr(discount.getMinOrderPaise()));
         }
         if (discount.getMaxUsesTotal() != null && discount.getUsesCount() >= discount.getMaxUsesTotal()) {
             throw ApiException.of(ErrorCode.DISCOUNT_INVALID, "That discount code has reached its usage limit");
@@ -97,7 +97,7 @@ public class DiscountService {
 
     @Transactional
     public void recordRedemption(UUID organizationId, DiscountCode discount, UUID orderId,
-                                 UUID cartId, UUID customerId, long amountMinor) {
+                                 UUID cartId, UUID customerId, long amountPaise) {
         discount.setUsesCount(discount.getUsesCount() + 1);
         discountCodeRepository.save(discount);
         var redemption = new com.prabhix.platform.commerce.domain.DiscountRedemption();
@@ -106,7 +106,7 @@ public class DiscountService {
         redemption.setOrderId(orderId);
         redemption.setCartId(cartId);
         redemption.setCustomerId(customerId);
-        redemption.setAmountMinor(amountMinor);
+        redemption.setAmountPaise(amountPaise);
         redemptionRepository.save(redemption);
     }
 }

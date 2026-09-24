@@ -28,7 +28,7 @@ public final class CommerceDtos {
             boolean featured,
             UUID heroImageFileId,
             String heroImageUrl,
-            long fromPriceMinor,
+            long fromPricePaise,
             String currency) {
     }
 
@@ -36,8 +36,8 @@ public final class CommerceDtos {
             UUID id,
             String name,
             String sku,
-            long priceMinor,
-            Long compareAtPriceMinor,
+            long pricePaise,
+            Long compareAtPricePaise,
             String currency,
             boolean trackInventory,
             Integer stockAvailable,
@@ -101,8 +101,8 @@ public final class CommerceDtos {
     public record CreateVariantRequest(
             @NotBlank @Size(max = 200) String name,
             @NotBlank @Size(max = 80) String sku,
-            @Min(0) long priceMinor,
-            Long compareAtPriceMinor,
+            @Min(0) long pricePaise,
+            Long compareAtPricePaise,
             Boolean trackInventory,
             Integer stockOnHand,
             CommerceEnums.BillingInterval billingInterval,
@@ -115,8 +115,8 @@ public final class CommerceDtos {
     public record UpdateVariantRequest(
             @Size(max = 200) String name,
             @Size(max = 80) String sku,
-            @Min(0) Long priceMinor,
-            Long compareAtPriceMinor,
+            @Min(0) Long pricePaise,
+            Long compareAtPricePaise,
             Boolean trackInventory,
             Integer stockOnHand,
             CommerceEnums.BillingInterval billingInterval,
@@ -146,19 +146,19 @@ public final class CommerceDtos {
             String variantName,
             String sku,
             int quantity,
-            long unitPriceMinor,
-            long lineTotalMinor) {
+            long unitPricePaise,
+            long lineTotalPaise) {
     }
 
     public record CartView(
             String cartToken,
             String currency,
             List<CartItemView> items,
-            long subtotalMinor,
-            long discountMinor,
-            long taxMinor,
-            long shippingMinor,
-            long totalMinor,
+            long subtotalPaise,
+            long discountPaise,
+            long taxPaise,
+            long shippingPaise,
+            long totalPaise,
             String discountCode,
             Instant expiresAt) {
     }
@@ -201,7 +201,7 @@ public final class CommerceDtos {
             UUID orderId,
             String orderNumber,
             String accessToken,
-            long totalMinor,
+            long totalPaise,
             String currency,
             String razorpayOrderId,
             String razorpayKeyId,
@@ -224,7 +224,7 @@ public final class CommerceDtos {
             UUID id,
             String orderNumber,
             CommerceEnums.OrderStatus status,
-            long totalMinor,
+            long totalPaise,
             String currency,
             String customerEmail,
             Instant createdAt,
@@ -238,8 +238,8 @@ public final class CommerceDtos {
             String sku,
             CommerceEnums.ProductType productType,
             int quantity,
-            long unitPriceMinor,
-            long lineSubtotalMinor) {
+            long unitPricePaise,
+            long lineSubtotalPaise) {
     }
 
     public record OrderAddressView(
@@ -261,13 +261,13 @@ public final class CommerceDtos {
             String orderNumber,
             CommerceEnums.OrderStatus status,
             String accessToken,
-            long subtotalMinor,
-            long discountMinor,
-            long cgstMinor,
-            long sgstMinor,
-            long igstMinor,
-            long shippingMinor,
-            long totalMinor,
+            long subtotalPaise,
+            long discountPaise,
+            long cgstPaise,
+            long sgstPaise,
+            long igstPaise,
+            long shippingPaise,
+            long totalPaise,
             String currency,
             String customerEmail,
             String customerName,
@@ -297,10 +297,10 @@ public final class CommerceDtos {
             Instant shippedAt) {
     }
 
-    public record RefundRequest(UUID orderId, Long amountMinor) {
+    public record RefundRequest(UUID orderId, Long amountPaise) {
     }
 
-    public record RefundView(UUID paymentId, long refundedMinor, long totalRefundedMinor, String status) {
+    public record RefundView(UUID paymentId, long refundedPaise, long totalRefundedPaise, String status) {
     }
 
     // --- Downloads ---
@@ -347,8 +347,8 @@ public final class CommerceDtos {
             String description,
             CommerceEnums.DiscountType discountType,
             Integer percentage,
-            Long amountMinor,
-            long minOrderMinor,
+            Long amountPaise,
+            long minOrderPaise,
             Integer maxUsesTotal,
             Integer maxUsesPerCustomer,
             int usesCount,
@@ -364,8 +364,8 @@ public final class CommerceDtos {
             @Size(max = 300) String description,
             @NotNull CommerceEnums.DiscountType discountType,
             Integer percentage,
-            Long amountMinor,
-            @Min(0) Long minOrderMinor,
+            Long amountPaise,
+            @Min(0) Long minOrderPaise,
             Integer maxUsesTotal,
             Integer maxUsesPerCustomer,
             Instant validFrom,
@@ -391,8 +391,8 @@ public final class CommerceDtos {
             String sellerAddress,
             String orderNumberPrefix,
             int gstPercent,
-            long flatShippingMinor,
-            Long freeShippingAboveMinor) {
+            long flatShippingPaise,
+            Long freeShippingAbovePaise) {
     }
 
     public record UpdateSettingsRequest(
@@ -402,12 +402,12 @@ public final class CommerceDtos {
             String sellerAddress,
             String orderNumberPrefix,
             Integer gstPercent,
-            Long flatShippingMinor,
-            Long freeShippingAboveMinor) {
+            Long flatShippingPaise,
+            Long freeShippingAbovePaise) {
     }
 
     public record DashboardView(
-            long revenueMinor30d,
+            long revenuePaise30d,
             long orderCount30d,
             List<TopProductView> topProducts,
             double conversionRate) {

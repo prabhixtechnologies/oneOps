@@ -11,27 +11,27 @@ class CommerceAmountCalculatorTest {
     void intraStateGstSplitsCgstAndSgst() {
         var totals = CommerceAmountCalculator.computeOrderTotals(
                 10_000, 0, 0, 18, "Karnataka", "Karnataka");
-        assertEquals(900, totals.cgstMinor());
-        assertEquals(900, totals.sgstMinor());
-        assertEquals(0, totals.igstMinor());
-        assertEquals(11_800, totals.totalMinor());
+        assertEquals(900, totals.cgstPaise());
+        assertEquals(900, totals.sgstPaise());
+        assertEquals(0, totals.igstPaise());
+        assertEquals(11_800, totals.totalPaise());
     }
 
     @Test
     void interStateGstUsesIgstOnly() {
         var totals = CommerceAmountCalculator.computeOrderTotals(
                 10_000, 0, 0, 18, "Maharashtra", "Karnataka");
-        assertEquals(0, totals.cgstMinor());
-        assertEquals(0, totals.sgstMinor());
-        assertEquals(1_800, totals.igstMinor());
-        assertEquals(11_800, totals.totalMinor());
+        assertEquals(0, totals.cgstPaise());
+        assertEquals(0, totals.sgstPaise());
+        assertEquals(1_800, totals.igstPaise());
+        assertEquals(11_800, totals.totalPaise());
     }
 
     @Test
     void discountReducesTaxableBase() {
         var totals = CommerceAmountCalculator.computeOrderTotals(
                 10_000, 2_000, 0, 18, "Karnataka", "Karnataka");
-        assertEquals(9_440, totals.totalMinor());
+        assertEquals(9_440, totals.totalPaise());
     }
 
     @Test

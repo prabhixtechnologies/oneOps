@@ -275,7 +275,7 @@
           "featured": { "type": "boolean" },
           "heroImageFileId": { "type": "string", "format": "uuid" },
           "heroImageUrl": { "type": "string" },
-          "fromPriceMinor": { "type": "integer", "format": "int64" },
+          "fromPricePaise": { "type": "integer", "format": "int64" },
           "currency": { "type": "string" }
         }
       },
@@ -285,8 +285,8 @@
           "id": { "type": "string", "format": "uuid" },
           "name": { "type": "string" },
           "sku": { "type": "string" },
-          "priceMinor": { "type": "integer", "format": "int64" },
-          "compareAtPriceMinor": { "type": "integer", "format": "int64" },
+          "pricePaise": { "type": "integer", "format": "int64" },
+          "compareAtPricePaise": { "type": "integer", "format": "int64" },
           "currency": { "type": "string" },
           "trackInventory": { "type": "boolean" },
           "stockAvailable": { "type": "integer" },
@@ -330,8 +330,8 @@
           "variantName": { "type": "string" },
           "sku": { "type": "string" },
           "quantity": { "type": "integer" },
-          "unitPriceMinor": { "type": "integer", "format": "int64" },
-          "lineTotalMinor": { "type": "integer", "format": "int64" }
+          "unitPricePaise": { "type": "integer", "format": "int64" },
+          "lineTotalPaise": { "type": "integer", "format": "int64" }
         }
       },
       "CartView": {
@@ -340,11 +340,11 @@
           "cartToken": { "type": "string" },
           "currency": { "type": "string" },
           "items": { "type": "array", "items": { "$ref": "#/components/schemas/CartItemView" } },
-          "subtotalMinor": { "type": "integer", "format": "int64" },
-          "discountMinor": { "type": "integer", "format": "int64" },
-          "taxMinor": { "type": "integer", "format": "int64" },
-          "shippingMinor": { "type": "integer", "format": "int64" },
-          "totalMinor": { "type": "integer", "format": "int64" },
+          "subtotalPaise": { "type": "integer", "format": "int64" },
+          "discountPaise": { "type": "integer", "format": "int64" },
+          "taxPaise": { "type": "integer", "format": "int64" },
+          "shippingPaise": { "type": "integer", "format": "int64" },
+          "totalPaise": { "type": "integer", "format": "int64" },
           "discountCode": { "type": "string" },
           "expiresAt": { "type": "string", "format": "date-time" }
         }
@@ -380,7 +380,7 @@
           "orderId": { "type": "string", "format": "uuid" },
           "orderNumber": { "type": "string" },
           "accessToken": { "type": "string" },
-          "totalMinor": { "type": "integer", "format": "int64" },
+          "totalPaise": { "type": "integer", "format": "int64" },
           "currency": { "type": "string" },
           "razorpayOrderId": { "type": "string" },
           "razorpayKeyId": { "type": "string" },
@@ -402,7 +402,7 @@
           "id": { "type": "string", "format": "uuid" },
           "orderNumber": { "type": "string" },
           "status": { "type": "string" },
-          "totalMinor": { "type": "integer", "format": "int64" },
+          "totalPaise": { "type": "integer", "format": "int64" },
           "currency": { "type": "string" },
           "customerEmail": { "type": "string" },
           "createdAt": { "type": "string", "format": "date-time" },
@@ -418,8 +418,8 @@
           "sku": { "type": "string" },
           "productType": { "$ref": "#/components/schemas/ProductType" },
           "quantity": { "type": "integer" },
-          "unitPriceMinor": { "type": "integer", "format": "int64" },
-          "lineSubtotalMinor": { "type": "integer", "format": "int64" }
+          "unitPricePaise": { "type": "integer", "format": "int64" },
+          "lineSubtotalPaise": { "type": "integer", "format": "int64" }
         }
       },
       "OrderAddressView": {
@@ -450,13 +450,13 @@
           "orderNumber": { "type": "string" },
           "status": { "type": "string" },
           "accessToken": { "type": "string" },
-          "subtotalMinor": { "type": "integer", "format": "int64" },
-          "discountMinor": { "type": "integer", "format": "int64" },
-          "cgstMinor": { "type": "integer", "format": "int64" },
-          "sgstMinor": { "type": "integer", "format": "int64" },
-          "igstMinor": { "type": "integer", "format": "int64" },
-          "shippingMinor": { "type": "integer", "format": "int64" },
-          "totalMinor": { "type": "integer", "format": "int64" },
+          "subtotalPaise": { "type": "integer", "format": "int64" },
+          "discountPaise": { "type": "integer", "format": "int64" },
+          "cgstPaise": { "type": "integer", "format": "int64" },
+          "sgstPaise": { "type": "integer", "format": "int64" },
+          "igstPaise": { "type": "integer", "format": "int64" },
+          "shippingPaise": { "type": "integer", "format": "int64" },
+          "totalPaise": { "type": "integer", "format": "int64" },
           "currency": { "type": "string" },
           "customerEmail": { "type": "string" },
           "customerName": { "type": "string" },
@@ -488,8 +488,8 @@
           "description": { "type": "string" },
           "discountType": { "$ref": "#/components/schemas/DiscountType" },
           "percentage": { "type": "integer" },
-          "amountMinor": { "type": "integer", "format": "int64" },
-          "minOrderMinor": { "type": "integer", "format": "int64" },
+          "amountPaise": { "type": "integer", "format": "int64" },
+          "minOrderPaise": { "type": "integer", "format": "int64" },
           "maxUsesTotal": { "type": "integer" },
           "maxUsesPerCustomer": { "type": "integer" },
           "usesCount": { "type": "integer" },
@@ -509,14 +509,14 @@
           "sellerAddress": { "type": "string" },
           "orderNumberPrefix": { "type": "string" },
           "gstPercent": { "type": "integer" },
-          "flatShippingMinor": { "type": "integer", "format": "int64" },
-          "freeShippingAboveMinor": { "type": "integer", "format": "int64" }
+          "flatShippingPaise": { "type": "integer", "format": "int64" },
+          "freeShippingAbovePaise": { "type": "integer", "format": "int64" }
         }
       },
       "CommerceDashboardView": {
         "type": "object",
         "properties": {
-          "revenueMinor30d": { "type": "integer", "format": "int64" },
+          "revenuePaise30d": { "type": "integer", "format": "int64" },
           "orderCount30d": { "type": "integer", "format": "int64" },
           "topProducts": {
             "type": "array",

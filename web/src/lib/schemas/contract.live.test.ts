@@ -88,14 +88,14 @@ describe("mocked commerce schemas", () => {
     const parsed = cartViewSchema.parse({
       currency: "INR",
       items: [],
-      subtotalMinor: 0,
-      discountMinor: 0,
-      taxMinor: 0,
-      shippingMinor: 0,
-      totalMinor: 0,
+      subtotalPaise: 0,
+      discountPaise: 0,
+      taxPaise: 0,
+      shippingPaise: 0,
+      totalPaise: 0,
       expiresAt: "2026-12-31T00:00:00Z",
     });
-    expect(parsed.totalMinor).toBe(0);
+    expect(parsed.totalPaise).toBe(0);
     expect(parsed.currency).toBe("INR");
   });
 
@@ -108,7 +108,7 @@ describe("mocked commerce schemas", () => {
           name: "OneOps",
           productType: "SUBSCRIPTION",
           featured: true,
-          fromPriceMinor: 9900,
+          fromPricePaise: 9900,
           currency: "INR",
         },
       ],

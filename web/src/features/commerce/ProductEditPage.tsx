@@ -113,11 +113,11 @@ export default function ProductEditPage() {
       const body: Record<string, unknown> = {
         name: variantName.trim(),
         sku: variantSku.trim(),
-        priceMinor: rupeesToPaise(variantPrice),
+        pricePaise: rupeesToPaise(variantPrice),
         trackInventory,
       };
       if (variantCompare.trim()) {
-        body.compareAtPriceMinor = rupeesToPaise(variantCompare);
+        body.compareAtPricePaise = rupeesToPaise(variantCompare);
       }
       if (trackInventory && stockOnHand.trim()) {
         body.stockOnHand = Number(stockOnHand);
@@ -369,10 +369,10 @@ function VariantsList({ product }: { product: ProductDetail }) {
             <p className="font-mono text-xs text-text-muted">{v.sku}</p>
           </div>
           <div className="text-right">
-            <Money amount={v.priceMinor} />
-            {v.compareAtPriceMinor != null && (
+            <Money amount={v.pricePaise} />
+            {v.compareAtPricePaise != null && (
               <p className="text-xs text-text-muted line-through">
-                ₹{paiseToRupeesString(v.compareAtPriceMinor)}
+                ₹{paiseToRupeesString(v.compareAtPricePaise)}
               </p>
             )}
             {v.trackInventory && (

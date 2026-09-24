@@ -48,12 +48,12 @@ export default function CommerceDiscountsPage() {
         code: code.trim().toUpperCase(),
         description: description.trim() || undefined,
         discountType,
-        minOrderMinor: minOrder.trim() ? rupeesToPaise(minOrder) : 0,
+        minOrderPaise: minOrder.trim() ? rupeesToPaise(minOrder) : 0,
       };
       if (discountType === "PERCENTAGE") {
         body.percentage = Number(percentage);
       } else {
-        body.amountMinor = rupeesToPaise(amount);
+        body.amountPaise = rupeesToPaise(amount);
       }
       if (maxUsesTotal.trim()) body.maxUsesTotal = Number(maxUsesTotal);
       if (maxUsesPerCustomer.trim()) body.maxUsesPerCustomer = Number(maxUsesPerCustomer);
@@ -169,8 +169,8 @@ function DiscountRow({ discount }: { discount: DiscountView }) {
       <TableCell>
         {discount.discountType === "PERCENTAGE"
           ? `${discount.percentage}%`
-          : discount.amountMinor != null
-            ? `₹${paiseToRupeesString(discount.amountMinor)}`
+          : discount.amountPaise != null
+            ? `₹${paiseToRupeesString(discount.amountPaise)}`
             : "—"}
       </TableCell>
       <TableCell>
@@ -207,8 +207,8 @@ function DiscountMobileCard({ discount }: { discount: DiscountView }) {
         value={
           discount.discountType === "PERCENTAGE"
             ? `${discount.percentage}%`
-            : discount.amountMinor != null
-              ? <Money amount={discount.amountMinor} />
+            : discount.amountPaise != null
+              ? <Money amount={discount.amountPaise} />
               : "—"
         }
       />

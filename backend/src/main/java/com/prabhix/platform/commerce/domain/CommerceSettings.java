@@ -31,9 +31,9 @@ public class CommerceSettings extends TenantScopedEntity {
     @Column(name = "gst_percent", nullable = false)
     private int gstPercent = 18;
 
-    @Column(name = "flat_shipping_minor", nullable = false)
-    private long flatShippingMinor;
+    @Column(name = "flat_shipping_paise", nullable = false)
+    private long flatShippingPaise;
 
-    @Column(name = "free_shipping_above_minor")
-    private Long freeShippingAboveMinor;
+    @Column(name = "free_shipping_above_paise")
+    private Long freeShippingAbovePaise;
 }

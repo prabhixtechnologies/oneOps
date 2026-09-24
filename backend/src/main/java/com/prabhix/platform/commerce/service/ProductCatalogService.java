@@ -214,11 +214,11 @@ public class ProductCatalogService {
         if (request.name() != null) {
             variant.setName(request.name());
         }
-        if (request.priceMinor() != null) {
-            variant.setPriceMinor(request.priceMinor());
+        if (request.pricePaise() != null) {
+            variant.setPricePaise(request.pricePaise());
         }
-        if (request.compareAtPriceMinor() != null) {
-            variant.setCompareAtPriceMinor(request.compareAtPriceMinor());
+        if (request.compareAtPricePaise() != null) {
+            variant.setCompareAtPricePaise(request.compareAtPricePaise());
         }
         if (request.trackInventory() != null) {
             variant.setTrackInventory(request.trackInventory());
@@ -299,8 +299,8 @@ public class ProductCatalogService {
     private void applyVariantFields(ProductVariant variant, CommerceDtos.CreateVariantRequest request) {
         variant.setName(request.name());
         variant.setSku(request.sku());
-        variant.setPriceMinor(request.priceMinor());
-        variant.setCompareAtPriceMinor(request.compareAtPriceMinor());
+        variant.setPricePaise(request.pricePaise());
+        variant.setCompareAtPricePaise(request.compareAtPricePaise());
         if (request.trackInventory() != null) {
             variant.setTrackInventory(request.trackInventory());
         }
@@ -319,7 +319,7 @@ public class ProductCatalogService {
                 .findByProductIdAndOrganizationIdAndDeletedAtIsNullOrderBySortOrderAsc(
                         product.getId(), organizationId).stream()
                 .filter(ProductVariant::isActive)
-                .map(ProductVariant::getPriceMinor)
+                .map(ProductVariant::getPricePaise)
                 .min(Comparator.naturalOrder())
                 .orElse(0L);
         return new CommerceDtos.ProductSummary(
@@ -389,12 +389,12 @@ public class ProductCatalogService {
             case "price-asc" -> {
                 PublicPriceCursor c = PublicPriceCursor.decode(cursor);
                 yield productRepository.listActivePublicByPriceAsc(
-                        organizationId, search, type, categoryId, c.priceMinor(), c.id(), limit);
+                        organizationId, search, type, categoryId, c.pricePaise(), c.id(), limit);
             }
             case "price-desc" -> {
                 PublicPriceCursor c = PublicPriceCursor.decode(cursor);
                 yield productRepository.listActivePublicByPriceDesc(
-                        organizationId, search, type, categoryId, c.priceMinor(), c.id(), limit);
+                        organizationId, search, type, categoryId, c.pricePaise(), c.id(), limit);
             }
             default -> {
                 Cursor c = cursor != null ? Cursor.decode(cursor) : Cursor.beginning();
@@ -412,7 +412,7 @@ public class ProductCatalogService {
                         .findByProductIdAndOrganizationIdAndDeletedAtIsNullOrderBySortOrderAsc(
                                 product.getId(), product.getOrganizationId()).stream()
                         .filter(ProductVariant::isActive)
-                        .map(ProductVariant::getPriceMinor)
+                        .map(ProductVariant::getPricePaise)
                         .min(Comparator.naturalOrder())
                         .orElse(0L);
                 yield PublicPriceCursor.of(price, product.getId()).encode();
@@ -460,7 +460,7 @@ public class ProductCatalogService {
         }
     }
 
-    private record PublicPriceCursor(long priceMinor, UUID id) {
+    private record PublicPriceCursor(long pricePaise, UUID id) {
         static PublicPriceCursor beginning() {
             return new PublicPriceCursor(Long.MAX_VALUE, new UUID(-1L, -1L));
         }
@@ -478,12 +478,12 @@ public class ProductCatalogService {
             return beginning();
         }
 
-        static PublicPriceCursor of(long priceMinor, UUID id) {
-            return new PublicPriceCursor(priceMinor, id);
+        static PublicPriceCursor of(long pricePaise, UUID id) {
+            return new PublicPriceCursor(pricePaise, id);
         }
 
         String encode() {
-            return "p:" + priceMinor + ":" + id;
+            return "p:" + pricePaise + ":" + id;
         }
     }
 
@@ -494,8 +494,8 @@ public class ProductCatalogService {
                 variant.getId(),
                 variant.getName(),
                 variant.getSku(),
-                variant.getPriceMinor(),
-                variant.getCompareAtPriceMinor(),
+                variant.getPricePaise(),
+                variant.getCompareAtPricePaise(),
                 variant.getCurrency(),
                 variant.isTrackInventory(),
                 available,

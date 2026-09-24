@@ -128,7 +128,7 @@ class CommerceOrderProvisioningServiceTest {
         item.setProductId(UUID.randomUUID());
         item.setVariantId(variantId);
         item.setProductType(type);
-        item.setUnitPriceMinor(1000);
+        item.setUnitPricePaise(1000);
         item.setQuantity(1);
         return item;
     }

@@ -50,8 +50,8 @@ public class CommerceSubscription extends TenantScopedEntity {
     @Column(name = "next_billing_at")
     private Instant nextBillingAt;
 
-    @Column(name = "locked_price_minor", nullable = false)
-    private long lockedPriceMinor;
+    @Column(name = "locked_price_paise", nullable = false)
+    private long lockedPricePaise;
 
     @Column(name = "currency", nullable = false, length = 3)
     private String currency = "INR";

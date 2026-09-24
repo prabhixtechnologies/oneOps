@@ -31,11 +31,11 @@ public class CommercePayment extends TenantScopedEntity {
     @Column(name = "status", nullable = false, length = 16)
     private CommerceEnums.PaymentStatus status = CommerceEnums.PaymentStatus.INITIATED;
 
-    @Column(name = "amount_minor", nullable = false)
-    private long amountMinor;
+    @Column(name = "amount_paise", nullable = false)
+    private long amountPaise;
 
-    @Column(name = "refunded_minor", nullable = false)
-    private long refundedMinor;
+    @Column(name = "refunded_paise", nullable = false)
+    private long refundedPaise;
 
     @Column(name = "currency", nullable = false, length = 3)
     private String currency = "INR";

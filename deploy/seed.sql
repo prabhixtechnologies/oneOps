@@ -21,19 +21,16 @@
 --   docker compose exec -T postgres psql -U oneops -d oneops -v ON_ERROR_STOP=1 \
 --     -v owner_password='dev-password' -f - < deploy/seed.sql
 --
--- The password is hashed here by pgcrypto, with the same algorithm and cost the application uses:
--- bcrypt at strength 12, which produces a $2a$12$ hash that Spring's BCryptPasswordEncoder accepts.
--- Checked rather than assumed, in both directions.
+-- owner_password is the mailbox password, hashed here by pgcrypto at bcrypt cost 12 for
+-- mail.mail_mailboxes.password_hash, which is what Dovecot checks. It is not an account password.
+-- Identity/deploy/seed.sql is what stores the sign-in secret, with the same owner_email and
+-- owner_password. This database only mirrors the account, matched on the uuid in the token's
+-- `sub` — so both rows must carry the same id. That is why owner_id below is a constant rather
+-- than a gen_random_uuid(): two scripts against two databases cannot agree on a generated value,
+-- and the pair has to agree.
 --
--- It does appear in this session's psql history and in the server log if log_statement is on. For a
--- first-owner password that is about to be changed that is an acceptable trade; for anything else,
--- generate the hash elsewhere and pass owner_password_hash instead.
---
--- Run Identity/deploy/seed.sql as well, with the same owner_email and owner_password. Once auth is
--- routed to Identity it issues the token and this database only mirrors the account, matched on the
--- uuid in the token's `sub` — so both rows must carry the same id. That is why owner_id below is a
--- constant rather than a gen_random_uuid(): two scripts against two databases cannot agree on a
--- generated value, and the pair has to agree.
+-- The password does appear in this session's psql history and in the server log if log_statement
+-- is on. For a first mailbox password that is about to be changed that is an acceptable trade.
 
 \set ON_ERROR_STOP on
 
@@ -140,20 +137,15 @@ SELECT
 -- to lower() it here. email_verified_at is set: this address was typed by whoever ran the script,
 -- and leaving it null would send a verification mail to a mail system that is not up yet.
 --
--- password_hash is written even though Identity is what checks passwords once auth is routed there.
--- It is what makes the account usable before that point, and it is the way back in if Identity is
--- down: point AUTH_UPSTREAM at the backend and the local login path still works.
---
--- platform_admin is normally written only by PlatformStaffService, which derives it from staff roles.
--- Set directly here because there is no application running yet to grant the first role through, and
--- kept honest by the platform_staff_roles insert below — the flag and the role agree.
-INSERT INTO users (id, email, full_name, password_hash, password_changed_at, email_verified_at,
+-- No password column. Identity checks the password. This row is the mirror the foreign keys point
+-- at, plus platform_admin, which is normally written only by PlatformStaffService. Set directly
+-- here because there is no application running yet to grant the first role through, and kept
+-- honest by the platform_staff_roles insert below — the flag and the role agree.
+INSERT INTO users (id, email, full_name, email_verified_at,
                    status, platform_admin, default_organization_id)
 SELECT :'owner_id',
        :'owner_email',
        :'owner_name',
-       crypt(:'owner_password', gen_salt('bf', 12)),
-       now(),
        now(),
        'ACTIVE',
        true,
@@ -329,9 +321,8 @@ WHERE o.slug = 'prabhix-platform'
 -- mailbox, which is correct: there is nothing to deliver to.
 --
 -- password_hash here is the mailbox credential, which is what Dovecot checks for IMAP and SMTP
--- authentication. It is not the same secret as the account password above, and it is separate on
--- purpose — a mail client holds it forever and hands it over on every connection. Set to the same
--- value at seed time only so there is one thing to remember on day one; change it from the console.
+-- authentication. It is not the account password. Identity holds that. A mail client holds this
+-- one forever and hands it over on every connection, so change it from the console after day one.
 INSERT INTO mail.mail_mailboxes (organization_id, mail_domain_id, address, name, kind, status,
                             timezone, owner_user_id, password_hash, password_updated_at)
 SELECT o.id, d.id, u.email, u.full_name, 'PERSONAL', 'ACTIVE', 'Asia/Kolkata', u.id,
@@ -407,8 +398,9 @@ SELECT
   (SELECT count(*) FROM mail.mail_aliases)                                       AS aliases;
 
 \echo ''
-\echo 'Sign in with the owner_email and owner_password given above, then:'
-\echo '  - change the mailbox password from the console, it is not the account password'
+\echo 'Sign in through Identity with the owner_email and the password given to Identity/deploy/seed.sql.'
+\echo 'owner_password above is the mailbox password, not the account password. Then:'
+\echo '  - change the mailbox password from the console'
 \echo '  - publish MX, SPF, DKIM and DMARC, then run domain verification'
 \echo '  - grant the rest of the team their staff roles from the admin console'
 \echo ''

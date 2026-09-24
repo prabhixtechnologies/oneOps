@@ -82,7 +82,7 @@ class CommerceWebhookIdempotencyTest {
         order.setId(orderId);
         order.setOrganizationId(UUID.randomUUID());
         order.setStatus(OrderStatus.PAID);
-        order.setTotalMinor(1000);
+        order.setTotalPaise(1000);
         order.setCurrency("INR");
 
         when(orderRepository.lockById(orderId)).thenReturn(Optional.of(order));

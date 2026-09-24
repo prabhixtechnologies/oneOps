@@ -3357,7 +3357,7 @@ export interface components {
             heroImageFileId?: string;
             heroImageUrl?: string;
             /** Format: int64 */
-            fromPriceMinor?: number;
+            fromPricePaise?: number;
             currency?: string;
         };
         VariantView: {
@@ -3366,9 +3366,9 @@ export interface components {
             name?: string;
             sku?: string;
             /** Format: int64 */
-            priceMinor?: number;
+            pricePaise?: number;
             /** Format: int64 */
-            compareAtPriceMinor?: number;
+            compareAtPricePaise?: number;
             currency?: string;
             trackInventory?: boolean;
             stockAvailable?: number;
@@ -3415,24 +3415,24 @@ export interface components {
             sku?: string;
             quantity?: number;
             /** Format: int64 */
-            unitPriceMinor?: number;
+            unitPricePaise?: number;
             /** Format: int64 */
-            lineTotalMinor?: number;
+            lineTotalPaise?: number;
         };
         CartView: {
             cartToken?: string;
             currency?: string;
             items?: components["schemas"]["CartItemView"][];
             /** Format: int64 */
-            subtotalMinor?: number;
+            subtotalPaise?: number;
             /** Format: int64 */
-            discountMinor?: number;
+            discountPaise?: number;
             /** Format: int64 */
-            taxMinor?: number;
+            taxPaise?: number;
             /** Format: int64 */
-            shippingMinor?: number;
+            shippingPaise?: number;
             /** Format: int64 */
-            totalMinor?: number;
+            totalPaise?: number;
             discountCode?: string;
             /** Format: date-time */
             expiresAt?: string;
@@ -3460,7 +3460,7 @@ export interface components {
             orderNumber?: string;
             accessToken?: string;
             /** Format: int64 */
-            totalMinor?: number;
+            totalPaise?: number;
             currency?: string;
             razorpayOrderId?: string;
             razorpayKeyId?: string;
@@ -3481,7 +3481,7 @@ export interface components {
             orderNumber?: string;
             status?: string;
             /** Format: int64 */
-            totalMinor?: number;
+            totalPaise?: number;
             currency?: string;
             customerEmail?: string;
             /** Format: date-time */
@@ -3498,9 +3498,9 @@ export interface components {
             productType?: components["schemas"]["ProductType"];
             quantity?: number;
             /** Format: int64 */
-            unitPriceMinor?: number;
+            unitPricePaise?: number;
             /** Format: int64 */
-            lineSubtotalMinor?: number;
+            lineSubtotalPaise?: number;
         };
         OrderAddressView: {
             addressType?: string;
@@ -3525,19 +3525,19 @@ export interface components {
             status?: string;
             accessToken?: string;
             /** Format: int64 */
-            subtotalMinor?: number;
+            subtotalPaise?: number;
             /** Format: int64 */
-            discountMinor?: number;
+            discountPaise?: number;
             /** Format: int64 */
-            cgstMinor?: number;
+            cgstPaise?: number;
             /** Format: int64 */
-            sgstMinor?: number;
+            sgstPaise?: number;
             /** Format: int64 */
-            igstMinor?: number;
+            igstPaise?: number;
             /** Format: int64 */
-            shippingMinor?: number;
+            shippingPaise?: number;
             /** Format: int64 */
-            totalMinor?: number;
+            totalPaise?: number;
             currency?: string;
             customerEmail?: string;
             customerName?: string;
@@ -3570,9 +3570,9 @@ export interface components {
             discountType?: components["schemas"]["DiscountType"];
             percentage?: number;
             /** Format: int64 */
-            amountMinor?: number;
+            amountPaise?: number;
             /** Format: int64 */
-            minOrderMinor?: number;
+            minOrderPaise?: number;
             maxUsesTotal?: number;
             maxUsesPerCustomer?: number;
             usesCount?: number;
@@ -3592,13 +3592,13 @@ export interface components {
             orderNumberPrefix?: string;
             gstPercent?: number;
             /** Format: int64 */
-            flatShippingMinor?: number;
+            flatShippingPaise?: number;
             /** Format: int64 */
-            freeShippingAboveMinor?: number;
+            freeShippingAbovePaise?: number;
         };
         CommerceDashboardView: {
             /** Format: int64 */
-            revenueMinor30d?: number;
+            revenuePaise30d?: number;
             /** Format: int64 */
             orderCount30d?: number;
             topProducts?: {

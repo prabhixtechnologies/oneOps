@@ -82,7 +82,7 @@ export default function CommerceCustomerDetailPage() {
             mobile={orders.map((o) => (
               <MobileCard key={o.id}>
                 <p className="font-mono font-medium">{o.orderNumber}</p>
-                <MobileCardRow label="Total" value={<Money amount={o.totalMinor} />} />
+                <MobileCardRow label="Total" value={<Money amount={o.totalPaise} />} />
                 <MobileCardRow label="Status" value={o.status} />
                 <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
                   <Link to={`/commerce/orders/${o.id}`}>View order</Link>
@@ -106,7 +106,7 @@ export default function CommerceCustomerDetailPage() {
                     <TableCell className="font-mono text-sm">{o.orderNumber}</TableCell>
                     <TableCell>{o.status}</TableCell>
                     <TableCell>
-                      <Money amount={o.totalMinor} />
+                      <Money amount={o.totalPaise} />
                     </TableCell>
                     <TableCell>
                       <RelativeTime date={o.createdAt} />

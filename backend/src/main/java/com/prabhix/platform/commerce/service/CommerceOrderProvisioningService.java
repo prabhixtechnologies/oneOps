@@ -160,7 +160,7 @@ public class CommerceOrderProvisioningService {
         subscription.setCurrentPeriodStart(periodStart);
         subscription.setCurrentPeriodEnd(periodEnd);
         subscription.setNextBillingAt(periodEnd);
-        subscription.setLockedPriceMinor(item.getUnitPriceMinor());
+        subscription.setLockedPricePaise(item.getUnitPricePaise());
         subscription.setCurrency(order.getCurrency());
         subscription.setStatus(CommerceEnums.SubscriptionStatus.ACTIVE);
         subscriptionRepository.save(subscription);

@@ -34,14 +34,14 @@ public class DiscountCode extends TenantScopedEntity {
     @Column(name = "percentage")
     private Integer percentage;
 
-    @Column(name = "amount_minor")
-    private Long amountMinor;
+    @Column(name = "amount_paise")
+    private Long amountPaise;
 
     @Column(name = "currency", nullable = false, length = 3)
     private String currency = "INR";
 
-    @Column(name = "min_order_minor", nullable = false)
-    private long minOrderMinor;
+    @Column(name = "min_order_paise", nullable = false)
+    private long minOrderPaise;
 
     @Column(name = "max_uses_total")
     private Integer maxUsesTotal;

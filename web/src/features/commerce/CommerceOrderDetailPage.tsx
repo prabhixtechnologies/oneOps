@@ -39,7 +39,7 @@ export default function CommerceOrderDetailPage() {
   const [refundAmount, setRefundAmount] = useState("");
 
   const order = orderQuery.data;
-  const taxTotal = order ? order.cgstMinor + order.sgstMinor + order.igstMinor : 0;
+  const taxTotal = order ? order.cgstPaise + order.sgstPaise + order.igstPaise : 0;
 
   useEffect(() => {
     if (order?.internalNote) setNote(order.internalNote);
@@ -93,7 +93,7 @@ export default function CommerceOrderDetailPage() {
                   <p className="text-text-muted">{item.variantName} × {item.quantity}</p>
                   <Badge variant="outline" className="mt-1">{item.productType}</Badge>
                 </div>
-                <Money amount={item.lineSubtotalMinor} />
+                <Money amount={item.lineSubtotalPaise} />
               </li>
             ))}
           </ul>
@@ -104,12 +104,12 @@ export default function CommerceOrderDetailPage() {
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between">
               <dt className="text-text-muted">Subtotal</dt>
-              <dd><Money amount={order.subtotalMinor} /></dd>
+              <dd><Money amount={order.subtotalPaise} /></dd>
             </div>
-            {order.discountMinor > 0 && (
+            {order.discountPaise > 0 && (
               <div className="flex justify-between">
                 <dt>Discount</dt>
-                <dd>−<Money amount={order.discountMinor} /></dd>
+                <dd>−<Money amount={order.discountPaise} /></dd>
               </div>
             )}
             <div className="flex justify-between">
@@ -118,11 +118,11 @@ export default function CommerceOrderDetailPage() {
             </div>
             <div className="flex justify-between">
               <dt className="text-text-muted">Shipping</dt>
-              <dd><Money amount={order.shippingMinor} /></dd>
+              <dd><Money amount={order.shippingPaise} /></dd>
             </div>
             <div className="flex justify-between border-t border-border pt-2 font-semibold">
               <dt>Total</dt>
-              <dd><Money amount={order.totalMinor} /></dd>
+              <dd><Money amount={order.totalPaise} /></dd>
             </div>
           </dl>
         </section>
@@ -249,7 +249,7 @@ export default function CommerceOrderDetailPage() {
           <section className="rounded-lg border border-border p-4">
             <h2 className="font-medium">Refund</h2>
             <p className="mt-1 text-sm text-text-muted">
-              Order total: ₹{paiseToRupeesString(order.totalMinor)}. Leave amount empty for full refund.
+              Order total: ₹{paiseToRupeesString(order.totalPaise)}. Leave amount empty for full refund.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Input
@@ -263,9 +263,9 @@ export default function CommerceOrderDetailPage() {
                 variant="destructive"
                 disabled={refund.isPending}
                 onClick={() => {
-                  const body: { orderId: string; amountMinor?: number } = { orderId: order.id };
+                  const body: { orderId: string; amountPaise?: number } = { orderId: order.id };
                   if (refundAmount.trim()) {
-                    body.amountMinor = rupeesToPaise(refundAmount);
+                    body.amountPaise = rupeesToPaise(refundAmount);
                   }
                   void refund
                     .mutateAsync(body)

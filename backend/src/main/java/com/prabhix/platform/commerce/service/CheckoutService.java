@@ -88,9 +88,9 @@ public class CheckoutService {
 
         String buyerState = request.billingAddress().state();
         var totals = CommerceAmountCalculator.computeOrderTotals(
-                cart.getSubtotalMinor(),
-                cart.getDiscountMinor(),
-                cart.getShippingMinor(),
+                cart.getSubtotalPaise(),
+                cart.getDiscountPaise(),
+                cart.getShippingPaise(),
                 settings.getGstPercent(),
                 buyerState,
                 settings.getSellerState());
@@ -111,13 +111,13 @@ public class CheckoutService {
         order.setCartId(cart.getId());
         order.setAccessToken(CommerceTokens.opaqueToken());
         order.setCurrency(cart.getCurrency());
-        order.setSubtotalMinor(totals.subtotalMinor());
-        order.setDiscountMinor(totals.discountMinor());
-        order.setCgstMinor(totals.cgstMinor());
-        order.setSgstMinor(totals.sgstMinor());
-        order.setIgstMinor(totals.igstMinor());
-        order.setShippingMinor(totals.shippingMinor());
-        order.setTotalMinor(totals.totalMinor());
+        order.setSubtotalPaise(totals.subtotalPaise());
+        order.setDiscountPaise(totals.discountPaise());
+        order.setCgstPaise(totals.cgstPaise());
+        order.setSgstPaise(totals.sgstPaise());
+        order.setIgstPaise(totals.igstPaise());
+        order.setShippingPaise(totals.shippingPaise());
+        order.setTotalPaise(totals.totalPaise());
         order.setDiscountCodeId(cart.getDiscountCodeId());
         order.setBuyerState(buyerState);
         order.setSellerState(settings.getSellerState());
@@ -140,12 +140,12 @@ public class CheckoutService {
         payment.setOrganizationId(organizationId);
         payment.setOrderId(order.getId());
         payment.setStatus(PaymentStatus.INITIATED);
-        payment.setAmountMinor(order.getTotalMinor());
+        payment.setAmountPaise(order.getTotalPaise());
         payment.setCurrency(order.getCurrency());
         paymentRepository.save(payment);
 
         JsonNode razorpayOrder = razorpayClient.createOrder(
-                order.getTotalMinor(),
+                order.getTotalPaise(),
                 order.getCurrency(),
                 order.getOrderNumber(),
                 subscriptionCheckout
@@ -164,7 +164,7 @@ public class CheckoutService {
         if (cart.getDiscountCodeId() != null) {
             DiscountCode discount = discountCodeRepository.findById(cart.getDiscountCodeId()).orElseThrow();
             discountService.recordRedemption(
-                    organizationId, discount, order.getId(), cart.getId(), customer.getId(), cart.getDiscountMinor());
+                    organizationId, discount, order.getId(), cart.getId(), customer.getId(), cart.getDiscountPaise());
         }
 
         eventLogger.log(LogEventCode.COMMERCE_CHECKOUT_STARTED, Map.of(
@@ -176,7 +176,7 @@ public class CheckoutService {
                 order.getId(),
                 order.getOrderNumber(),
                 order.getAccessToken(),
-                order.getTotalMinor(),
+                order.getTotalPaise(),
                 order.getCurrency(),
                 order.getRazorpayOrderId(),
                 properties.billing().razorpay().keyId(),
@@ -238,9 +238,9 @@ public class CheckoutService {
             item.setSku(variant.getSku());
             item.setProductType(product.getProductType());
             item.setQuantity(cartItem.getQuantity());
-            item.setUnitPriceMinor(variant.getPriceMinor());
-            item.setLineSubtotalMinor(CommerceAmountCalculator.lineTotal(
-                    variant.getPriceMinor(), cartItem.getQuantity()));
+            item.setUnitPricePaise(variant.getPricePaise());
+            item.setLineSubtotalPaise(CommerceAmountCalculator.lineTotal(
+                    variant.getPricePaise(), cartItem.getQuantity()));
             item.setHsnCode(product.getHsnCode());
             items.add(item);
         }

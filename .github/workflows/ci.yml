@@ -145,8 +145,10 @@ jobs:
             fi
             printf '%-18s %s\n' "$1" "$actual"
           }
+          # Mail lives in schema mail (V4). V7 drops the unused credential tables. The floor is
+          # the public tables that remain, not the old count from when mail was still in public.
           check tables \
-            "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'" 100
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'" 75
           # Without these two the schema loads and every user silently has no permissions at all.
           check permissions "SELECT count(*) FROM permissions" 60
           check role_permissions "SELECT count(*) FROM role_permissions" 130
@@ -213,16 +215,17 @@ jobs:
             printf '%-34s %s\n' "$1" "$actual"
           }
 
-          # pgcrypto's crypt() against its own stored hash is the same comparison BCryptPasswordEncoder
-          # makes, so this is the real credential check and not a proxy for it.
-          expect "password verifies" \
-            "SELECT crypt('ci-seed-password', password_hash) = password_hash FROM users WHERE email = 'ci@prabhixtechnologies.com'" t
-          expect "a wrong password does not" \
-            "SELECT crypt('wrong', password_hash) = password_hash FROM users WHERE email = 'ci@prabhixtechnologies.com'" f
-          # Strength matters: a hash written at a lower cost still verifies, so nothing else here
-          # would notice if the seed stopped matching the application's encoder.
-          expect "bcrypt cost is 12" \
-            "SELECT left(password_hash, 7) FROM users WHERE email = 'ci@prabhixtechnologies.com'" '$2a$12$'
+          # The account password lives in Identity. What this seed still hashes is the mailbox
+          # credential Dovecot checks. crypt() against that stored hash is the real check, and the
+          # cost matters: a weaker hash still verifies, so nothing else would notice the drift.
+          expect "mailbox password verifies" \
+            "SELECT crypt('ci-seed-password', password_hash) = password_hash FROM mail.mail_mailboxes WHERE address = 'ci@prabhixtechnologies.com'" t
+          expect "a wrong mailbox password does not" \
+            "SELECT crypt('wrong', password_hash) = password_hash FROM mail.mail_mailboxes WHERE address = 'ci@prabhixtechnologies.com'" f
+          expect "mailbox bcrypt cost is 12" \
+            "SELECT left(password_hash, 7) FROM mail.mail_mailboxes WHERE address = 'ci@prabhixtechnologies.com'" '$2a$12$'
+          expect "platform user has no password column" \
+            "SELECT count(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'password_hash'" 0
           expect "platform_admin is set" \
             "SELECT platform_admin FROM users WHERE email = 'ci@prabhixtechnologies.com'" t
           expect "holds the OWNER staff role" \

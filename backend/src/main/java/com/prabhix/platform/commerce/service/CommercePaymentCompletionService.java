@@ -61,7 +61,7 @@ public class CommercePaymentCompletionService {
 
     public record CaptureDetails(
             String razorpayPaymentId,
-            long amountMinor,
+            long amountPaise,
             String currency,
             String method,
             boolean signatureVerified) {
@@ -122,7 +122,7 @@ public class CommercePaymentCompletionService {
                 .orElseThrow(() -> ApiException.of(ErrorCode.ORDER_NOT_FOUND, "That order was not found"));
         return completeCapture(order, new CaptureDetails(
                 request.razorpayPaymentId(),
-                order.getTotalMinor(),
+                order.getTotalPaise(),
                 order.getCurrency(),
                 null,
                 true));
@@ -143,7 +143,7 @@ public class CommercePaymentCompletionService {
         payment.setRazorpayPaymentId(capture.razorpayPaymentId());
         payment.setRazorpayOrderId(order.getRazorpayOrderId());
         payment.setStatus(PaymentStatus.CAPTURED);
-        payment.setAmountMinor(capture.amountMinor());
+        payment.setAmountPaise(capture.amountPaise());
         payment.setCurrency(capture.currency());
         payment.setMethod(capture.method());
         payment.setCapturedAt(Instant.now());
@@ -165,7 +165,7 @@ public class CommercePaymentCompletionService {
                     Map.of(
                             "organizationName", orgName,
                             "orderNumber", order.getOrderNumber(),
-                            "orderTotal", CommerceAmountCalculator.formatMoneyInr(order.getTotalMinor()),
+                            "orderTotal", CommerceAmountCalculator.formatMoneyInr(order.getTotalPaise()),
                             "orderUrl", orderClaimUrl(order),
                             "downloadSection", downloadSectionHtml(order)),
                     "commerce-order-" + order.getId()));

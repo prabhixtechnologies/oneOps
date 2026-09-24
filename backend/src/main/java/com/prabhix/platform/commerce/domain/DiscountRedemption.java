@@ -39,8 +39,8 @@ public class DiscountRedemption {
     @Column(name = "customer_id")
     private UUID customerId;
 
-    @Column(name = "amount_minor", nullable = false)
-    private long amountMinor;
+    @Column(name = "amount_paise", nullable = false)
+    private long amountPaise;
 
     @Column(name = "redeemed_at", nullable = false)
     private Instant redeemedAt = Instant.now();

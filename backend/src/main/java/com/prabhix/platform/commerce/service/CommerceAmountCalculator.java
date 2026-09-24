@@ -8,66 +8,66 @@ import com.prabhix.platform.commerce.domain.CommerceEnums.DiscountType;
 public final class CommerceAmountCalculator {
 
     public record OrderTotals(
-            long subtotalMinor,
-            long discountMinor,
-            long taxableMinor,
-            long cgstMinor,
-            long sgstMinor,
-            long igstMinor,
-            long shippingMinor,
-            long totalMinor) {
+            long subtotalPaise,
+            long discountPaise,
+            long taxablePaise,
+            long cgstPaise,
+            long sgstPaise,
+            long igstPaise,
+            long shippingPaise,
+            long totalPaise) {
     }
 
-    public static long lineTotal(long unitPriceMinor, int quantity) {
-        return unitPriceMinor * quantity;
+    public static long lineTotal(long unitPricePaise, int quantity) {
+        return unitPricePaise * quantity;
     }
 
     public static long computeDiscountAmount(
             DiscountType type,
             Integer percentage,
-            Long fixedMinor,
-            long subtotalMinor) {
+            Long fixedPaise,
+            long subtotalPaise) {
         if (type == DiscountType.PERCENTAGE) {
             int pct = percentage == null ? 0 : percentage;
-            return Math.round(subtotalMinor * (pct / 100.0));
+            return Math.round(subtotalPaise * (pct / 100.0));
         }
-        long fixed = fixedMinor == null ? 0 : fixedMinor;
-        return Math.min(fixed, subtotalMinor);
+        long fixed = fixedPaise == null ? 0 : fixedPaise;
+        return Math.min(fixed, subtotalPaise);
     }
 
-    public static long computeShippingMinor(
+    public static long computeShippingPaise(
             long subtotalAfterDiscount,
-            long flatShippingMinor,
-            Long freeShippingAboveMinor) {
-        if (freeShippingAboveMinor != null && subtotalAfterDiscount >= freeShippingAboveMinor) {
+            long flatShippingPaise,
+            Long freeShippingAbovePaise) {
+        if (freeShippingAbovePaise != null && subtotalAfterDiscount >= freeShippingAbovePaise) {
             return 0;
         }
-        return flatShippingMinor;
+        return flatShippingPaise;
     }
 
     public static OrderTotals computeOrderTotals(
-            long subtotalMinor,
-            long discountMinor,
-            long shippingMinor,
+            long subtotalPaise,
+            long discountPaise,
+            long shippingPaise,
             int gstPercent,
             String buyerState,
             String sellerState) {
-        long taxable = Math.max(0, subtotalMinor - discountMinor);
+        long taxable = Math.max(0, subtotalPaise - discountPaise);
         TaxBreakdown tax = BillingAmountCalculator.computeTax(
                 taxable, gstPercent, buyerState, sellerState);
-        long total = taxable + tax.totalTaxPaise() + shippingMinor;
+        long total = taxable + tax.totalTaxPaise() + shippingPaise;
         return new OrderTotals(
-                subtotalMinor,
-                discountMinor,
+                subtotalPaise,
+                discountPaise,
                 taxable,
                 tax.cgstPaise(),
                 tax.sgstPaise(),
                 tax.igstPaise(),
-                shippingMinor,
+                shippingPaise,
                 total);
     }
 
-    public static String formatMoneyInr(long minor) {
-        return "₹" + String.format("%,.2f", minor / 100.0);
+    public static String formatMoneyInr(long paise) {
+        return "₹" + String.format("%,.2f", paise / 100.0);
     }
 }

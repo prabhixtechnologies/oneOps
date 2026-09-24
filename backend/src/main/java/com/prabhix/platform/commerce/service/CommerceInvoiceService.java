@@ -96,8 +96,8 @@ public class CommerceInvoiceService {
             lineItems.add(Map.of(
                     "description", item.getProductName() + " — " + item.getVariantName(),
                     "quantity", item.getQuantity(),
-                    "unitMinor", item.getUnitPriceMinor(),
-                    "amountMinor", item.getLineSubtotalMinor(),
+                    "unitPaise", item.getUnitPricePaise(),
+                    "amountPaise", item.getLineSubtotalPaise(),
                     "hsnCode", item.getHsnCode() == null ? "" : item.getHsnCode(),
                     "gstPercent", order.getGstPercent()));
         }
@@ -126,12 +126,12 @@ public class CommerceInvoiceService {
                 "state", billing.getState(),
                 "pincode", billing.getPincode()));
         invoice.setLineItems(lineItems);
-        invoice.setSubtotalMinor(order.getSubtotalMinor());
-        invoice.setDiscountMinor(order.getDiscountMinor());
-        invoice.setCgstMinor(order.getCgstMinor());
-        invoice.setSgstMinor(order.getSgstMinor());
-        invoice.setIgstMinor(order.getIgstMinor());
-        invoice.setTotalMinor(order.getTotalMinor());
+        invoice.setSubtotalPaise(order.getSubtotalPaise());
+        invoice.setDiscountPaise(order.getDiscountPaise());
+        invoice.setCgstPaise(order.getCgstPaise());
+        invoice.setSgstPaise(order.getSgstPaise());
+        invoice.setIgstPaise(order.getIgstPaise());
+        invoice.setTotalPaise(order.getTotalPaise());
         invoice.setCurrency(order.getCurrency());
         invoice.setPlaceOfSupply(order.getBuyerState() == null ? settings.getSellerState() : order.getBuyerState());
         invoice.setPaidAt(Instant.now());
@@ -173,15 +173,15 @@ public class CommerceInvoiceService {
     }
 
     String renderXhtml(CommerceInvoice invoice, CommerceSettings settings) {
-        boolean intraState = invoice.getIgstMinor() == 0;
+        boolean intraState = invoice.getIgstPaise() == 0;
         String taxRows = intraState
                 ? """
                 <tr><td colspan="4">CGST</td><td>%s</td></tr>
                 <tr><td colspan="4">SGST</td><td>%s</td></tr>
-                """.formatted(formatRupee(invoice.getCgstMinor()), formatRupee(invoice.getSgstMinor()))
+                """.formatted(formatRupee(invoice.getCgstPaise()), formatRupee(invoice.getSgstPaise()))
                 : """
                 <tr><td colspan="4">IGST</td><td>%s</td></tr>
-                """.formatted(formatRupee(invoice.getIgstMinor()));
+                """.formatted(formatRupee(invoice.getIgstPaise()));
         return """
                 <!DOCTYPE html><html><head><meta charset="UTF-8"/></head><body>
                 <h1>Tax Invoice %s</h1>
@@ -201,10 +201,10 @@ public class CommerceInvoiceService {
                 escape(settings.getSellerGstin() == null ? "—" : settings.getSellerGstin()),
                 escape(invoice.getBillToName()),
                 lineRows(invoice),
-                formatRupee(invoice.getSubtotalMinor()),
-                formatRupee(invoice.getDiscountMinor()),
+                formatRupee(invoice.getSubtotalPaise()),
+                formatRupee(invoice.getDiscountPaise()),
                 taxRows,
-                formatRupee(invoice.getTotalMinor()));
+                formatRupee(invoice.getTotalPaise()));
     }
 
     private String lineRows(CommerceInvoice invoice) {
@@ -212,8 +212,8 @@ public class CommerceInvoiceService {
         for (Map<String, Object> line : invoice.getLineItems()) {
             sb.append("<tr><td>").append(escape(String.valueOf(line.get("description"))))
                     .append("</td><td>").append(line.get("quantity"))
-                    .append("</td><td>").append(formatRupee(((Number) line.get("unitMinor")).longValue()))
-                    .append("</td><td>").append(formatRupee(((Number) line.get("amountMinor")).longValue()))
+                    .append("</td><td>").append(formatRupee(((Number) line.get("unitPaise")).longValue()))
+                    .append("</td><td>").append(formatRupee(((Number) line.get("amountPaise")).longValue()))
                     .append("</td></tr>");
         }
         return sb.toString();

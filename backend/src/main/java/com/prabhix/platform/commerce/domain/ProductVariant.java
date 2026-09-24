@@ -27,11 +27,11 @@ public class ProductVariant extends TenantScopedEntity {
     @Column(name = "sku", nullable = false, length = 80)
     private String sku;
 
-    @Column(name = "price_minor", nullable = false)
-    private long priceMinor;
+    @Column(name = "price_paise", nullable = false)
+    private long pricePaise;
 
-    @Column(name = "compare_at_price_minor")
-    private Long compareAtPriceMinor;
+    @Column(name = "compare_at_price_paise")
+    private Long compareAtPricePaise;
 
     @Column(name = "currency", nullable = false, length = 3)
     private String currency = "INR";

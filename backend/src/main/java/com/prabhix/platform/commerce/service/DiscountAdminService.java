@@ -73,9 +73,9 @@ public class DiscountAdminService {
         discount.setDescription(request.description());
         discount.setDiscountType(request.discountType());
         discount.setPercentage(request.percentage());
-        discount.setAmountMinor(request.amountMinor());
-        if (request.minOrderMinor() != null) {
-            discount.setMinOrderMinor(request.minOrderMinor());
+        discount.setAmountPaise(request.amountPaise());
+        if (request.minOrderPaise() != null) {
+            discount.setMinOrderPaise(request.minOrderPaise());
         }
         discount.setMaxUsesTotal(request.maxUsesTotal());
         discount.setMaxUsesPerCustomer(request.maxUsesPerCustomer());
@@ -96,8 +96,8 @@ public class DiscountAdminService {
                 discount.getDescription(),
                 discount.getDiscountType(),
                 discount.getPercentage(),
-                discount.getAmountMinor(),
-                discount.getMinOrderMinor(),
+                discount.getAmountPaise(),
+                discount.getMinOrderPaise(),
                 discount.getMaxUsesTotal(),
                 discount.getMaxUsesPerCustomer(),
                 discount.getUsesCount(),

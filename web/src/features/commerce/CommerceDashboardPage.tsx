@@ -48,7 +48,7 @@ export default function CommerceDashboardPage() {
               <div className="rounded-lg border border-border p-4">
                 <p className="text-xs uppercase text-text-muted">Revenue (30d)</p>
                 <p className="text-2xl font-semibold">
-                  <Money amount={data.revenueMinor30d} />
+                  <Money amount={data.revenuePaise30d} />
                 </p>
               </div>
               <div className="rounded-lg border border-border p-4">

@@ -73,7 +73,7 @@ public class CommerceCustomerService {
                 order.getId(),
                 order.getOrderNumber(),
                 order.getStatus(),
-                order.getTotalMinor(),
+                order.getTotalPaise(),
                 order.getCurrency(),
                 customerRepository.findById(order.getCustomerId()).map(CommerceCustomer::getEmail).orElse(null),
                 order.getCreatedAt(),

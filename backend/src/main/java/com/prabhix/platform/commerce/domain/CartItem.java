@@ -24,9 +24,9 @@ public class CartItem extends TenantScopedEntity {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
-    @Column(name = "unit_price_minor", nullable = false)
-    private long unitPriceMinor;
+    @Column(name = "unit_price_paise", nullable = false)
+    private long unitPricePaise;
 
-    @Column(name = "line_total_minor", nullable = false)
-    private long lineTotalMinor;
+    @Column(name = "line_total_paise", nullable = false)
+    private long lineTotalPaise;
 }

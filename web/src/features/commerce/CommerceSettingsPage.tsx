@@ -37,10 +37,10 @@ export default function CommerceSettingsPage() {
     setSellerAddress(s.sellerAddress ?? "");
     setOrderPrefix(s.orderNumberPrefix ?? "");
     setGstPercent(String(s.gstPercent));
-    setFlatShipping(paiseToRupeesString(s.flatShippingMinor));
+    setFlatShipping(paiseToRupeesString(s.flatShippingPaise));
     setFreeShippingAbove(
-      s.freeShippingAboveMinor != null
-        ? paiseToRupeesString(s.freeShippingAboveMinor)
+      s.freeShippingAbovePaise != null
+        ? paiseToRupeesString(s.freeShippingAbovePaise)
         : "",
     );
   }, [settingsQuery.data]);
@@ -54,8 +54,8 @@ export default function CommerceSettingsPage() {
         sellerAddress: sellerAddress.trim() || undefined,
         orderNumberPrefix: orderPrefix.trim() || undefined,
         gstPercent: Number(gstPercent),
-        flatShippingMinor: rupeesToPaise(flatShipping || "0"),
-        freeShippingAboveMinor: freeShippingAbove.trim()
+        flatShippingPaise: rupeesToPaise(flatShipping || "0"),
+        freeShippingAbovePaise: freeShippingAbove.trim()
           ? rupeesToPaise(freeShippingAbove)
           : undefined,
       });

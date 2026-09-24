@@ -46,11 +46,11 @@ public class CommerceSettingsService {
         if (request.gstPercent() != null) {
             settings.setGstPercent(request.gstPercent());
         }
-        if (request.flatShippingMinor() != null) {
-            settings.setFlatShippingMinor(request.flatShippingMinor());
+        if (request.flatShippingPaise() != null) {
+            settings.setFlatShippingPaise(request.flatShippingPaise());
         }
-        if (request.freeShippingAboveMinor() != null) {
-            settings.setFreeShippingAboveMinor(request.freeShippingAboveMinor());
+        if (request.freeShippingAbovePaise() != null) {
+            settings.setFreeShippingAbovePaise(request.freeShippingAbovePaise());
         }
         settings = settingsRepository.save(settings);
         events.publishEvent(AuditRequested.of(orgId, principal.userId(),
@@ -76,7 +76,7 @@ public class CommerceSettingsService {
                 settings.getSellerAddress(),
                 settings.getOrderNumberPrefix(),
                 settings.getGstPercent(),
-                settings.getFlatShippingMinor(),
-                settings.getFreeShippingAboveMinor());
+                settings.getFlatShippingPaise(),
+                settings.getFreeShippingAbovePaise());
     }
 }

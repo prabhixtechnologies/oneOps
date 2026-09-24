@@ -43,7 +43,7 @@ export const productSummarySchema = z.object({
   featured: z.boolean(),
   heroImageFileId: z.string().uuid().nullable().optional(),
   heroImageUrl: z.string().nullable().optional(),
-  fromPriceMinor: z.number(),
+  fromPricePaise: z.number(),
   currency: z.string(),
 });
 
@@ -51,8 +51,8 @@ export const variantViewSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   sku: z.string(),
-  priceMinor: z.number(),
-  compareAtPriceMinor: z.number().nullable().optional(),
+  pricePaise: z.number(),
+  compareAtPricePaise: z.number().nullable().optional(),
   currency: z.string(),
   trackInventory: z.boolean(),
   stockAvailable: z.number().nullable().optional(),
@@ -100,8 +100,8 @@ export const cartItemSchema = z.object({
   variantName: z.string(),
   sku: z.string(),
   quantity: z.number(),
-  unitPriceMinor: z.number(),
-  lineTotalMinor: z.number(),
+  unitPricePaise: z.number(),
+  lineTotalPaise: z.number(),
 });
 
 export const cartViewSchema = z.object({
@@ -109,11 +109,11 @@ export const cartViewSchema = z.object({
   cartToken: z.string().optional(),
   currency: z.string(),
   items: z.array(cartItemSchema),
-  subtotalMinor: z.number(),
-  discountMinor: z.number(),
-  taxMinor: z.number(),
-  shippingMinor: z.number(),
-  totalMinor: z.number(),
+  subtotalPaise: z.number(),
+  discountPaise: z.number(),
+  taxPaise: z.number(),
+  shippingPaise: z.number(),
+  totalPaise: z.number(),
   discountCode: z.string().nullable().optional(),
   expiresAt: z.string(),
 });
@@ -127,7 +127,7 @@ export const checkoutResponseSchema = z.object({
   orderId: z.string().uuid(),
   orderNumber: z.string(),
   accessToken: z.string().optional(),
-  totalMinor: z.number(),
+  totalPaise: z.number(),
   currency: z.string(),
   razorpayOrderId: z.string(),
   razorpayKeyId: z.string(),
@@ -145,7 +145,7 @@ export const orderSummarySchema = z.object({
   id: z.string().uuid(),
   orderNumber: z.string(),
   status: z.string(),
-  totalMinor: z.number(),
+  totalPaise: z.number(),
   currency: z.string(),
   customerEmail: z.string().nullable().optional(),
   createdAt: z.string(),
@@ -159,8 +159,8 @@ export const orderItemSchema = z.object({
   sku: z.string(),
   productType: productTypeSchema,
   quantity: z.number(),
-  unitPriceMinor: z.number(),
-  lineSubtotalMinor: z.number(),
+  unitPricePaise: z.number(),
+  lineSubtotalPaise: z.number(),
 });
 
 export const orderDetailSchema = z.object({
@@ -168,13 +168,13 @@ export const orderDetailSchema = z.object({
   orderNumber: z.string(),
   status: z.string(),
   accessToken: z.string().optional(),
-  subtotalMinor: z.number(),
-  discountMinor: z.number(),
-  cgstMinor: z.number(),
-  sgstMinor: z.number(),
-  igstMinor: z.number(),
-  shippingMinor: z.number(),
-  totalMinor: z.number(),
+  subtotalPaise: z.number(),
+  discountPaise: z.number(),
+  cgstPaise: z.number(),
+  sgstPaise: z.number(),
+  igstPaise: z.number(),
+  shippingPaise: z.number(),
+  totalPaise: z.number(),
   currency: z.string(),
   customerEmail: z.string().nullable().optional(),
   customerName: z.string().nullable().optional(),
@@ -223,8 +223,8 @@ export const discountViewSchema = z.object({
   description: z.string().nullable().optional(),
   discountType: discountTypeSchema,
   percentage: z.number().nullable().optional(),
-  amountMinor: z.number().nullable().optional(),
-  minOrderMinor: z.number(),
+  amountPaise: z.number().nullable().optional(),
+  minOrderPaise: z.number(),
   maxUsesTotal: z.number().nullable().optional(),
   maxUsesPerCustomer: z.number().nullable().optional(),
   usesCount: z.number(),
@@ -242,12 +242,12 @@ export const settingsViewSchema = z.object({
   sellerAddress: z.string().nullable().optional(),
   orderNumberPrefix: z.string().nullable().optional(),
   gstPercent: z.number(),
-  flatShippingMinor: z.number(),
-  freeShippingAboveMinor: z.number().nullable().optional(),
+  flatShippingPaise: z.number(),
+  freeShippingAbovePaise: z.number().nullable().optional(),
 });
 
 export const dashboardViewSchema = z.object({
-  revenueMinor30d: z.number(),
+  revenuePaise30d: z.number(),
   orderCount30d: z.number(),
   topProducts: z.array(
     z.object({
@@ -261,8 +261,8 @@ export const dashboardViewSchema = z.object({
 
 export const refundViewSchema = z.object({
   paymentId: z.string().uuid(),
-  refundedMinor: z.number(),
-  totalRefundedMinor: z.number(),
+  refundedPaise: z.number(),
+  totalRefundedPaise: z.number(),
   status: z.string(),
 });
 

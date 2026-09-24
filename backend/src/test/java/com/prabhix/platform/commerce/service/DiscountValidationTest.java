@@ -39,8 +39,8 @@ class DiscountValidationTest {
     void rejectsExpiredCode() {
         DiscountCode code = new DiscountCode();
         code.setDiscountType(DiscountType.FIXED_AMOUNT);
-        code.setAmountMinor(500L);
-        code.setMinOrderMinor(0);
+        code.setAmountPaise(500L);
+        code.setMinOrderPaise(0);
         code.setValidUntil(Instant.now().minusSeconds(60));
 
         assertThrows(ApiException.class, () ->
@@ -52,7 +52,7 @@ class DiscountValidationTest {
         DiscountCode code = new DiscountCode();
         code.setDiscountType(DiscountType.PERCENTAGE);
         code.setPercentage(10);
-        code.setMinOrderMinor(10_000);
+        code.setMinOrderPaise(10_000);
 
         assertThrows(ApiException.class, () ->
                 discountService.validateRedemption(UUID.randomUUID(), code, 5000, List.of(), null));
