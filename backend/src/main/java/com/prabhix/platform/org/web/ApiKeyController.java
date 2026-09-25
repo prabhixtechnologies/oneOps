@@ -9,9 +9,9 @@ import com.prabhix.platform.security.rbac.Authorize;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/settings/api-keys")
+@RequestMapping("/api/v1/oneops/settings/api-keys")
 @RequiredArgsConstructor
 public class ApiKeyController {
 
@@ -40,9 +40,9 @@ public class ApiKeyController {
                 principal.requireOrganizationId(), principal.userId(), request);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping
     @PreAuthorize(Authorize.ORG_API_KEY_MANAGE)
-    public void revoke(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public void revoke(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         apiKeyService.revoke(principal.requireOrganizationId(), id);
     }
 }

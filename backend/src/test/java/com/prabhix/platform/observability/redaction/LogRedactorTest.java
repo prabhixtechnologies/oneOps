@@ -33,9 +33,9 @@ class LogRedactorTest {
 
     @Test
     void detectsSensitivePathsAndHeaders() {
-        assertTrue(LogRedactor.isSensitivePath("/api/v1/auth/login"));
-        assertTrue(LogRedactor.isSensitivePath("/api/v1/billing/webhooks/razorpay"));
+        assertTrue(LogRedactor.isSensitivePath("/api/v1/oneops/auth/login"));
+        assertTrue(LogRedactor.isSensitivePath("/api/v1/oneops/billing/webhooks/razorpay"));
         assertTrue(LogRedactor.isSensitiveHeader("Authorization"));
-        assertFalse(LogRedactor.isSensitivePath("/api/v1/members"));
+        assertFalse(LogRedactor.isSensitivePath("/api/v1/oneops/members"));
     }
 }

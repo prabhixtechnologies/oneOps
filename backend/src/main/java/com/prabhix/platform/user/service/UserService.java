@@ -83,7 +83,7 @@ public class UserService {
         StoredFile stored = fileStorageService.storeAvatar(content, filename, contentType, userId);
         Optional<String> url = fileStorageService.signedUrl(
                 FileStorageService.PLATFORM_FILES_ORGANIZATION_ID, stored.getId());
-        user.setAvatarUrl(url.orElse("/api/v1/files/" + stored.getId()));
+        user.setAvatarUrl(url.orElse("/api/v1/oneops/files?id=" + stored.getId()));
         return toProfile(userRepository.save(user));
     }
 

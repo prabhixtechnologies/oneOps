@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/api/v1/admin/platform")
+@RequestMapping("/api/v1/oneops/admin/platform")
 @RequiredArgsConstructor
 public class PlatformMailHealthController {
 

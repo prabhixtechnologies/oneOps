@@ -42,7 +42,7 @@ export function useStaffRoles() {
 export function usePlatformOverview() {
   return useQuery({
     queryKey: ["platform-overview"],
-    queryFn: () => apiRequest("/admin/platform/overview", platformOverviewSchema, skipOrg),
+    queryFn: () => apiRequest("/oneops/admin/platform/overview", platformOverviewSchema, skipOrg),
     // Operators leave this screen open; a minute-old backlog reading is misleading.
     refetchInterval: 30_000,
   });
@@ -52,7 +52,7 @@ export function useTenants(status?: string) {
   return useInfiniteQuery({
     queryKey: ["platform-tenants", status],
     queryFn: ({ pageParam }) =>
-      apiRequest(`/admin/platform/tenants?${pageParams(pageParam, status)}`, tenantPageSchema, skipOrg),
+      apiRequest(`/oneops/admin/platform/tenants?${pageParams(pageParam, status)}`, tenantPageSchema, skipOrg),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
   });
@@ -62,7 +62,7 @@ export function useLeads(status?: string) {
   return useInfiniteQuery({
     queryKey: ["site-leads", status],
     queryFn: ({ pageParam }) =>
-      apiRequest(`/admin/site/leads?${pageParams(pageParam, status)}`, leadPageSchema, skipOrg),
+      apiRequest(`/oneops/admin/site/leads?${pageParams(pageParam, status)}`, leadPageSchema, skipOrg),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
   });
@@ -71,7 +71,7 @@ export function useLeads(status?: string) {
 export function useLead(id: string | undefined) {
   return useQuery({
     queryKey: ["site-lead", id],
-    queryFn: () => apiRequest(`/admin/site/leads/${id}`, leadDetailSchema, skipOrg),
+    queryFn: () => apiRequest(`/oneops/admin/site/leads?id=${id}`, leadDetailSchema, skipOrg),
     enabled: !!id,
   });
 }
@@ -80,7 +80,7 @@ export function useUpdateLead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, status, internalNotes }: { id: string; status: string; internalNotes?: string }) =>
-      apiRequest(`/admin/site/leads/${id}`, leadDetailSchema, {
+      apiRequest(`/oneops/admin/site/leads?id=${id}`, leadDetailSchema, {
         method: "PATCH",
         body: { status, internalNotes },
         ...skipOrg,
@@ -96,7 +96,7 @@ export function useSubscribers(status?: string) {
   return useInfiniteQuery({
     queryKey: ["site-subscribers", status],
     queryFn: ({ pageParam }) =>
-      apiRequest(`/admin/site/subscribers?${pageParams(pageParam, status)}`, subscriberPageSchema, skipOrg),
+      apiRequest(`/oneops/admin/site/subscribers?${pageParams(pageParam, status)}`, subscriberPageSchema, skipOrg),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
   });
@@ -106,7 +106,7 @@ export function useApplications(status?: string) {
   return useInfiniteQuery({
     queryKey: ["site-applications", status],
     queryFn: ({ pageParam }) =>
-      apiRequest(`/admin/site/applications?${pageParams(pageParam, status)}`, applicationPageSchema, skipOrg),
+      apiRequest(`/oneops/admin/site/applications?${pageParams(pageParam, status)}`, applicationPageSchema, skipOrg),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
   });
@@ -115,7 +115,7 @@ export function useApplications(status?: string) {
 export function useApplication(id: string | undefined) {
   return useQuery({
     queryKey: ["site-application", id],
-    queryFn: () => apiRequest(`/admin/site/applications/${id}`, applicationDetailSchema, skipOrg),
+    queryFn: () => apiRequest(`/oneops/admin/site/applications?id=${id}`, applicationDetailSchema, skipOrg),
     enabled: !!id,
   });
 }
@@ -124,7 +124,7 @@ export function useUpdateApplication() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, status, internalNotes }: { id: string; status: string; internalNotes?: string }) =>
-      apiRequest(`/admin/site/applications/${id}`, applicationDetailSchema, {
+      apiRequest(`/oneops/admin/site/applications?id=${id}`, applicationDetailSchema, {
         method: "PATCH",
         body: { status, internalNotes },
         ...skipOrg,

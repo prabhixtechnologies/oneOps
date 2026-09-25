@@ -24,7 +24,7 @@ export function useStreamSuggest(options: UseStreamSuggestOptions = {}) {
       setText("");
       setStreaming(true);
       cleanupRef.current = connectAiSuggestStream({
-        path: `/ai/chat/conversations/${conversationId}/reply/suggest/stream`,
+        path: `/oneops/ai/chat/conversations/reply/suggest/stream?conversationId=${conversationId}`,
         conversationId,
         onDelta: (delta, finished) => {
           if (delta) setText((prev) => prev + delta);

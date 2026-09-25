@@ -57,29 +57,29 @@ public class SecurityConfig {
 
     /** Endpoints reachable without a token. Everything not listed requires authentication. */
     private static final String[] PUBLIC_PATHS = {
-            "/api/v1/auth/login",
-            "/api/v1/auth/register",
-            "/api/v1/auth/refresh",
+            "/api/v1/oneops/auth/login",
+            "/api/v1/oneops/auth/register",
+            "/api/v1/oneops/auth/refresh",
             // The browser session cookie is the credential here, so there is no bearer token to
             // check. Listing it as public is what lets a tab that has been open past its access
             // token's lifetime get a new one instead of bouncing the person to the login page.
-            "/api/v1/auth/session/token",
-            "/api/v1/auth/magic-link/**",
-            "/api/v1/auth/otp/**",
-            "/api/v1/auth/sso/**",
-            "/api/v1/auth/password/forgot",
-            "/api/v1/auth/password/reset",
-            "/api/v1/auth/email/verify/confirm",
-            "/api/v1/auth/invites/*/preview",
-            "/api/v1/site/**",
-            "/api/v1/visitor/public/**",
-            "/api/v1/chat/public/**",
-            "/api/v1/commerce/public/**",
-            "/api/v1/mail/t/**",
-            "/api/v1/billing/webhooks/**",
-            "/api/v1/commerce/webhooks/**",
-            "/api/v1/mail/webhooks/**",
-            "/api/v1/mail/inbound/**",
+            "/api/v1/oneops/auth/session/token",
+            "/api/v1/oneops/auth/magic-link/**",
+            "/api/v1/oneops/auth/otp/**",
+            "/api/v1/oneops/auth/sso/**",
+            "/api/v1/oneops/auth/password/forgot",
+            "/api/v1/oneops/auth/password/reset",
+            "/api/v1/oneops/auth/email/verify/confirm",
+            "/api/v1/oneops/auth/invites/preview",
+            "/api/v1/oneops/site/**",
+            "/api/v1/oneops/visitor/public/**",
+            "/api/v1/oneops/chat/public/**",
+            "/api/v1/oneops/commerce/public/**",
+            "/api/v1/oneops/mail/t/**",
+            "/api/v1/oneops/billing/webhooks/**",
+            "/api/v1/oneops/commerce/webhooks/**",
+            "/api/v1/oneops/mail/webhooks/**",
+            "/api/v1/oneops/mail/inbound/**",
             // Service-to-service, and guarded by a shared token checked inside the controller rather
             // than by a bearer token, because the caller is identity rather than a person and holds no
             // account to authenticate as. Listed here so the filter does not demand one.
@@ -144,7 +144,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers("/actuator/**").hasAuthority("PLATFORM_ADMIN")
-                        .requestMatchers("/api/v1/admin/**").hasAuthority("PLATFORM_ADMIN")
+                        .requestMatchers("/api/v1/oneops/admin/**").hasAuthority("PLATFORM_ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint((request, response, ex) -> {

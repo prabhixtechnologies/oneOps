@@ -47,7 +47,7 @@ export function useMembers(search: string) {
       if (pageParam) params.set("cursor", pageParam);
       if (search) params.set("search", search);
       return apiRequest(
-        `/organizations/${orgId(organizationId)}/members?${params}`,
+        `/oneops/organizations/members?orgId=${orgId(organizationId)}&${params}`,
         memberListPageSchema,
       );
     },
@@ -60,28 +60,28 @@ export function useMembers(search: string) {
 export function useRoles() {
   return useQuery({
     queryKey: ["roles"],
-    queryFn: () => apiRequest("/roles", rolePageSchema),
+    queryFn: () => apiRequest("/oneops/roles", rolePageSchema),
   });
 }
 
 export function usePermissions() {
   return useQuery({
     queryKey: ["permissions"],
-    queryFn: () => apiRequest("/permissions", arraySchema(permissionCategorySchema)),
+    queryFn: () => apiRequest("/oneops/permissions", arraySchema(permissionCategorySchema)),
   });
 }
 
 export function useTeams() {
   return useQuery({
     queryKey: ["teams"],
-    queryFn: () => apiRequest("/teams", teamPageSchema),
+    queryFn: () => apiRequest("/oneops/teams", teamPageSchema),
   });
 }
 
 export function useTeamMembers(teamId: string | undefined) {
   return useQuery({
     queryKey: ["team-members", teamId],
-    queryFn: () => apiRequest(`/teams/${teamId}/members`, teamMemberPageSchema),
+    queryFn: () => apiRequest(`/oneops/teams/members?id=${teamId}`, teamMemberPageSchema),
     enabled: !!teamId,
   });
 }
@@ -89,7 +89,7 @@ export function useTeamMembers(teamId: string | undefined) {
 export function useInvites() {
   return useQuery({
     queryKey: ["invites"],
-    queryFn: () => apiRequest("/invites", invitePageSchema),
+    queryFn: () => apiRequest("/oneops/invites", invitePageSchema),
   });
 }
 
@@ -97,7 +97,7 @@ export function useCreateInvite() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { email: string; roleId: string }) =>
-      apiRequest("/invites", z.record(z.string()), { method: "POST", body: data }),
+      apiRequest("/oneops/invites", z.record(z.string()), { method: "POST", body: data }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["invites"] }),
   });
 }
@@ -105,14 +105,14 @@ export function useCreateInvite() {
 export function useRevokeInvite() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiRequestVoid(`/invites/${id}/revoke`, { method: "POST" }),
+    mutationFn: (id: string) => apiRequestVoid(`/oneops/invites/revoke?id=${id}`, { method: "POST" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["invites"] }),
   });
 }
 
 export function useResendInvite() {
   return useMutation({
-    mutationFn: (id: string) => apiRequestVoid(`/invites/${id}/resend`, { method: "POST" }),
+    mutationFn: (id: string) => apiRequestVoid(`/oneops/invites/resend?id=${id}`, { method: "POST" }),
   });
 }
 
@@ -120,7 +120,7 @@ export function useUpdateRole() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, permissions }: { id: string; permissions: string[] }) =>
-      apiRequest(`/roles/${id}`, roleSchema, { method: "PATCH", body: { permissions } }),
+      apiRequest(`/oneops/roles?id=${id}`, roleSchema, { method: "PATCH", body: { permissions } }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["roles"] }),
   });
 }
@@ -131,7 +131,7 @@ export function useChangeMemberRole() {
   return useMutation({
     mutationFn: ({ memberId, roleId }: { memberId: string; roleId: string }) =>
       apiRequest(
-        `/organizations/${orgId(organizationId)}/members/${memberId}/role`,
+        `/oneops/organizations/members/role?orgId=${orgId(organizationId)}&memberId=${memberId}`,
         memberSchema,
         { method: "PATCH", body: { roleId } },
       ),
@@ -145,7 +145,7 @@ export function useSuspendMember() {
   return useMutation({
     mutationFn: (memberId: string) =>
       apiRequestVoid(
-        `/organizations/${orgId(organizationId)}/members/${memberId}/suspend`,
+        `/oneops/organizations/members/suspend?orgId=${orgId(organizationId)}&memberId=${memberId}`,
         { method: "PATCH" },
       ),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["members"] }),
@@ -158,7 +158,7 @@ export function useRemoveMember() {
   return useMutation({
     mutationFn: (memberId: string) =>
       apiRequestVoid(
-        `/organizations/${orgId(organizationId)}/members/${memberId}`,
+        `/oneops/organizations/members?orgId=${orgId(organizationId)}&memberId=${memberId}`,
         { method: "DELETE" },
       ),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["members"] }),
@@ -169,7 +169,7 @@ export function useCreateTeam() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { name: string; description?: string }) =>
-      apiRequest("/teams", teamSchema, { method: "POST", body: data }),
+      apiRequest("/oneops/teams", teamSchema, { method: "POST", body: data }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["teams"] }),
   });
 }
@@ -178,7 +178,7 @@ export function useUpdateTeam() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, name, description }: { id: string; name: string; description?: string }) =>
-      apiRequest(`/teams/${id}`, teamSchema, { method: "PATCH", body: { name, description } }),
+      apiRequest(`/oneops/teams?id=${id}`, teamSchema, { method: "PATCH", body: { name, description } }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["teams"] }),
   });
 }
@@ -186,7 +186,7 @@ export function useUpdateTeam() {
 export function useDeleteTeam() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiRequestVoid(`/teams/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiRequestVoid(`/oneops/teams?id=${id}`, { method: "DELETE" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["teams"] }),
   });
 }
@@ -195,7 +195,7 @@ export function useAddTeamMember() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
-      apiRequest(`/teams/${teamId}/members`, z.object({ userId: z.string() }), {
+      apiRequest(`/oneops/teams/members?id=${teamId}`, z.object({ userId: z.string() }), {
         method: "POST",
         body: { userId },
       }),
@@ -210,7 +210,7 @@ export function useRemoveTeamMember() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
-      apiRequestVoid(`/teams/${teamId}/members/${userId}`, { method: "DELETE" }),
+      apiRequestVoid(`/oneops/teams/members?id=${teamId}&userId=${userId}`, { method: "DELETE" }),
     onSuccess: (_, { teamId }) => {
       void qc.invalidateQueries({ queryKey: ["team-members", teamId] });
       void qc.invalidateQueries({ queryKey: ["teams"] });
@@ -225,7 +225,7 @@ export function useAuditLogs(action?: string) {
       const params = new URLSearchParams({ limit: "25" });
       if (pageParam) params.set("cursor", pageParam);
       if (action) params.set("action", action);
-      return apiRequest(`/audit-logs?${params}`, auditLogPageSchema);
+      return apiRequest(`/oneops/audit-logs?${params}`, auditLogPageSchema);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
@@ -235,21 +235,21 @@ export function useAuditLogs(action?: string) {
 export function useSubscription() {
   return useQuery({
     queryKey: ["subscription"],
-    queryFn: () => apiRequest("/billing/subscription", subscriptionSchema),
+    queryFn: () => apiRequest("/oneops/billing/subscription", subscriptionSchema),
   });
 }
 
 export function useEntitlements() {
   return useQuery({
     queryKey: ["entitlements"],
-    queryFn: () => apiRequest("/billing/entitlements", entitlementsSchema),
+    queryFn: () => apiRequest("/oneops/billing/entitlements", entitlementsSchema),
   });
 }
 
 export function usePlans() {
   return useQuery({
     queryKey: ["plans"],
-    queryFn: () => apiRequest("/billing/plans", planPageSchema),
+    queryFn: () => apiRequest("/oneops/billing/plans", planPageSchema),
   });
 }
 
@@ -259,7 +259,7 @@ export function useInvoices() {
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ limit: "25" });
       if (pageParam) params.set("cursor", pageParam);
-      return apiRequest(`/billing/invoices?${params}`, invoiceListPageSchema);
+      return apiRequest(`/oneops/billing/invoices?${params}`, invoiceListPageSchema);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
@@ -278,14 +278,14 @@ export function useDownloadInvoice() {
 export function usePaymentMethods() {
   return useQuery({
     queryKey: ["payment-methods"],
-    queryFn: () => apiRequest("/billing/payment-methods", paymentMethodListSchema),
+    queryFn: () => apiRequest("/oneops/billing/payment-methods", paymentMethodListSchema),
   });
 }
 
 export function useBillingAddress() {
   return useQuery({
     queryKey: ["billing-address"],
-    queryFn: () => apiRequest("/billing/address", billingAddressSchema),
+    queryFn: () => apiRequest("/oneops/billing/address", billingAddressSchema),
   });
 }
 
@@ -293,7 +293,7 @@ export function useUpdateBillingAddress() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: z.infer<typeof billingAddressInputSchema>) =>
-      apiRequest("/billing/address", billingAddressSchema, { method: "PUT", body: data }),
+      apiRequest("/oneops/billing/address", billingAddressSchema, { method: "PUT", body: data }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["billing-address"] }),
   });
 }
@@ -302,7 +302,7 @@ export function useCancelSubscription() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { atPeriodEnd: boolean; reason?: string }) =>
-      apiRequest("/billing/subscription/cancel", subscriptionSchema, { method: "POST", body: data }),
+      apiRequest("/oneops/billing/subscription/cancel", subscriptionSchema, { method: "POST", body: data }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["subscription"] }),
   });
 }
@@ -311,7 +311,7 @@ export function useReactivateSubscription() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      apiRequest("/billing/subscription/reactivate", subscriptionSchema, { method: "POST" }),
+      apiRequest("/oneops/billing/subscription/reactivate", subscriptionSchema, { method: "POST" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["subscription"] }),
   });
 }
@@ -320,7 +320,7 @@ export function useChangeSeats() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (seats: number) =>
-      apiRequest("/billing/subscription/seats", subscriptionSchema, {
+      apiRequest("/oneops/billing/subscription/seats", subscriptionSchema, {
         method: "POST",
         body: { seats },
       }),
@@ -331,7 +331,7 @@ export function useChangeSeats() {
 export function useCreateOrder() {
   return useMutation({
     mutationFn: (planId: string) =>
-      apiRequest("/billing/orders", orderSchema, { method: "POST", body: { planId } }),
+      apiRequest("/oneops/billing/orders", orderSchema, { method: "POST", body: { planId } }),
   });
 }
 
@@ -339,7 +339,7 @@ export function useVerifyPayment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { orderId: string; paymentId: string; signature: string }) =>
-      apiRequest("/billing/verify", z.object({ success: z.boolean() }), {
+      apiRequest("/oneops/billing/verify", z.object({ success: z.boolean() }), {
         method: "POST",
         body: data,
       }),
@@ -353,7 +353,7 @@ export function useVerifyPayment() {
 export function useSessions() {
   return useQuery({
     queryKey: ["sessions"],
-    queryFn: () => apiRequest("/users/me/sessions", sessionListSchema),
+    queryFn: () => apiRequest("/oneops/users/me/sessions", sessionListSchema),
   });
 }
 
@@ -361,7 +361,7 @@ export function useRevokeSession() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      apiRequestVoid(`/users/me/sessions/${id}`, { method: "DELETE" }),
+      apiRequestVoid(`/oneops/users/me/sessions?id=${id}`, { method: "DELETE" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["sessions"] }),
   });
 }
@@ -369,7 +369,7 @@ export function useRevokeSession() {
 export function useApiKeys() {
   return useQuery({
     queryKey: ["api-keys"],
-    queryFn: () => apiRequest("/settings/api-keys", apiKeyPageSchema),
+    queryFn: () => apiRequest("/oneops/settings/api-keys", apiKeyPageSchema),
   });
 }
 
@@ -377,7 +377,7 @@ export function useCreateApiKey() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (name: string) =>
-      apiRequest("/settings/api-keys", createdApiKeySchema, { method: "POST", body: { name } }),
+      apiRequest("/oneops/settings/api-keys", createdApiKeySchema, { method: "POST", body: { name } }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["api-keys"] }),
   });
 }
@@ -386,7 +386,7 @@ export function useRevokeApiKey() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      apiRequestVoid(`/settings/api-keys/${id}`, { method: "DELETE" }),
+      apiRequestVoid(`/oneops/settings/api-keys?id=${id}`, { method: "DELETE" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["api-keys"] }),
   });
 }
@@ -394,7 +394,7 @@ export function useRevokeApiKey() {
 export function useProfile() {
   return useQuery({
     queryKey: ["profile"],
-    queryFn: () => apiRequest("/users/me", userProfileSchema),
+    queryFn: () => apiRequest("/oneops/users/me", userProfileSchema),
   });
 }
 
@@ -407,7 +407,7 @@ export function useUpdateProfile() {
       jobTitle?: string;
       timezone?: string;
       locale?: string;
-    }) => apiRequest("/users/me", userProfileSchema, { method: "PATCH", body: data }),
+    }) => apiRequest("/oneops/users/me", userProfileSchema, { method: "PATCH", body: data }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["profile"] });
     },
@@ -417,7 +417,7 @@ export function useUpdateProfile() {
 export function useChangePassword() {
   return useMutation({
     mutationFn: (data: { currentPassword: string; newPassword: string }) =>
-      apiRequestVoid("/users/me/password", { method: "POST", body: data }),
+      apiRequestVoid("/oneops/users/me/password", { method: "POST", body: data }),
   });
 }
 
@@ -425,7 +425,7 @@ export function useUpdateNotificationPrefs() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (preferences: Record<string, unknown>) =>
-      apiRequest("/users/me/notification-prefs", userProfileSchema, {
+      apiRequest("/oneops/users/me/notification-prefs", userProfileSchema, {
         method: "PATCH",
         body: { preferences },
       }),
@@ -447,7 +447,7 @@ export function useUploadAvatar() {
 export function useOrganization(id: string | null) {
   return useQuery({
     queryKey: ["organization", id],
-    queryFn: () => apiRequest(`/organizations/${id}`, organizationViewSchema),
+    queryFn: () => apiRequest(`/oneops/organizations?id=${id}`, organizationViewSchema),
     enabled: !!id,
   });
 }
@@ -457,7 +457,7 @@ export function useUpdateOrganization() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { name?: string; timezone?: string; locale?: string }) =>
-      apiRequest(`/organizations/${orgId(organizationId)}`, organizationViewSchema, {
+      apiRequest(`/oneops/organizations?id=${orgId(organizationId)}`, organizationViewSchema, {
         method: "PATCH",
         body: data,
       }),

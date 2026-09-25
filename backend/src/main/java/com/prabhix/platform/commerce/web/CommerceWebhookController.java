@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/commerce/webhooks")
+@RequestMapping("/api/v1/oneops/commerce/webhooks")
 @RequiredArgsConstructor
 public class CommerceWebhookController {
 

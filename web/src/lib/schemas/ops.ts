@@ -2,7 +2,7 @@ import { z } from "zod";
 import { cursorPageSchema } from "./common";
 
 /**
- * Schemas for the platform operator hub. Everything here comes from `/api/v1/admin/**`, which the
+ * Schemas for the platform operator hub. Everything here comes from `/api/v1/oneops/admin**`, which the
  * server gates on PLATFORM_ADMIN, so these shapes are only ever fetched by staff.
  */
 

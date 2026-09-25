@@ -19,7 +19,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/audit-logs")
+@RequestMapping("/api/v1/oneops/audit-logs")
 @RequiredArgsConstructor
 public class AuditController {
 

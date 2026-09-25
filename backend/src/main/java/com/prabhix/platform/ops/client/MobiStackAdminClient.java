@@ -83,7 +83,7 @@ public class MobiStackAdminClient {
     }
 
     private String url(String path) {
-        return mobistack.internalBaseUrl() + "/api/v1/admin" + path;
+        return mobistack.internalBaseUrl() + "/api/v1/mobistack/admin" + path;
     }
 
     private void headers(org.springframework.http.HttpHeaders headers, UUID actor, String reason) {

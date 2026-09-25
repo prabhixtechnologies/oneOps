@@ -10,8 +10,8 @@ import com.prabhix.platform.security.rbac.Authorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -23,13 +23,13 @@ import java.util.concurrent.Executors;
 /**
  * Streams a suggested reply for a mail thread.
  *
- * <p>The route is unchanged — still under {@code /api/v1/ai} — because it is an AI endpoint from the
+ * <p>The route is unchanged — still under {@code /api/v1/oneops/ai} — because it is an AI endpoint from the
  * client's point of view and the console calls it by that URL. What changed is which module serves
  * it: it was in the AI module, which had to compile against mail to build the prompt, and mail is
  * the module being extracted.
  */
 @RestController
-@RequestMapping("/api/v1/ai/mail")
+@RequestMapping("/api/v1/oneops/ai/mail")
 @RequiredArgsConstructor
 public class MailAiStreamController {
 
@@ -37,11 +37,11 @@ public class MailAiStreamController {
     private final AiOrchestrator orchestrator;
     private final MailAiService mailAiService;
 
-    @GetMapping(value = "/threads/{threadId}/reply/suggest/stream",
+    @GetMapping(value = "/threads/reply/suggest/stream",
             produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @PreAuthorize(Authorize.AI_USE)
     public SseEmitter streamMailReply(@CurrentUser PrabhixPrincipal principal,
-                                      @PathVariable UUID threadId) {
+                                      @RequestParam UUID threadId) {
         UUID orgId = principal.requireOrganizationId();
         SseEmitter emitter = hub.subscribeUser(orgId, principal.userId());
         Executors.newSingleThreadExecutor(r -> {

@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -28,7 +28,7 @@ import java.util.concurrent.Executors;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/ai")
+@RequestMapping("/api/v1/oneops/ai")
 @RequiredArgsConstructor
 public class AiStreamController {
 
@@ -42,11 +42,11 @@ public class AiStreamController {
         return hub.subscribeUser(principal.requireOrganizationId(), principal.userId());
     }
 
-    @GetMapping(value = "/chat/conversations/{conversationId}/reply/suggest/stream",
+    @GetMapping(value = "/chat/conversations/reply/suggest/stream",
             produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @PreAuthorize(Authorize.AI_USE)
     public SseEmitter streamChatReply(@CurrentUser PrabhixPrincipal principal,
-                                      @PathVariable UUID conversationId) {
+                                      @RequestParam UUID conversationId) {
         UUID orgId = principal.requireOrganizationId();
         SseEmitter emitter = hub.subscribeUser(orgId, principal.userId());
         Executors.newSingleThreadExecutor(r -> {

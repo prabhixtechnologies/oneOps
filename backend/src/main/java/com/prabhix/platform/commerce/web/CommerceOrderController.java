@@ -14,7 +14,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/commerce/orders")
+@RequestMapping("/api/v1/oneops/commerce/orders")
 @RequiredArgsConstructor
 public class CommerceOrderController {
 
@@ -47,32 +46,32 @@ public class CommerceOrderController {
         return orderService.list(principal.requireOrganizationId(), status, from, to, search, cursor, limit);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(params = "id")
     @PreAuthorize(Authorize.COMMERCE_ORDER_READ)
-    public CommerceDtos.OrderDetail get(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public CommerceDtos.OrderDetail get(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         return orderService.get(principal.requireOrganizationId(), id);
     }
 
-    @PostMapping("/{id}/fulfill")
+    @PostMapping("/fulfill")
     @PreAuthorize(Authorize.COMMERCE_ORDER_MANAGE)
     public CommerceDtos.OrderDetail fulfill(@CurrentUser PrabhixPrincipal principal,
-                                            @PathVariable UUID id,
+                                            @RequestParam UUID id,
                                             @Valid @RequestBody(required = false) CommerceDtos.FulfillOrderRequest request) {
         CommerceDtos.FulfillOrderRequest body = request == null
                 ? new CommerceDtos.FulfillOrderRequest(null, null) : request;
         return orderService.fulfill(principal, id, body);
     }
 
-    @PostMapping("/{id}/cancel")
+    @PostMapping("/cancel")
     @PreAuthorize(Authorize.COMMERCE_ORDER_MANAGE)
-    public CommerceDtos.OrderDetail cancel(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public CommerceDtos.OrderDetail cancel(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         return orderService.cancel(principal, id);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping
     @PreAuthorize(Authorize.COMMERCE_ORDER_MANAGE)
     public CommerceDtos.OrderDetail annotate(@CurrentUser PrabhixPrincipal principal,
-                                             @PathVariable UUID id,
+                                             @RequestParam UUID id,
                                              @Valid @RequestBody CommerceDtos.UpdateOrderRequest request) {
         return orderService.annotate(principal, id, request);
     }
@@ -84,18 +83,18 @@ public class CommerceOrderController {
         return refundService.refund(principal, request);
     }
 
-    @GetMapping("/{id}/downloads")
+    @GetMapping("/downloads")
     @PreAuthorize(Authorize.COMMERCE_ORDER_READ)
     public List<CommerceDtos.DownloadView> downloads(@CurrentUser PrabhixPrincipal principal,
-                                                     @PathVariable UUID id) {
+                                                     @RequestParam UUID id) {
         return downloadService.listForOrder(principal.requireOrganizationId(), id);
     }
 
-    @PostMapping("/{orderId}/downloads/{orderItemId}/reissue")
+    @PostMapping("/downloads/reissue")
     @PreAuthorize(Authorize.COMMERCE_ORDER_MANAGE)
     public CommerceDtos.DownloadLinkResponse reissueDownload(@CurrentUser PrabhixPrincipal principal,
-                                                             @PathVariable UUID orderId,
-                                                             @PathVariable UUID orderItemId) {
+                                                             @RequestParam UUID orderId,
+                                                             @RequestParam UUID orderItemId) {
         return downloadService.reissue(principal.requireOrganizationId(), orderId, orderItemId);
     }
 }

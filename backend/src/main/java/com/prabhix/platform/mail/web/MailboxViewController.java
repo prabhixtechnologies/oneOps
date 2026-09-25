@@ -17,7 +17,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,7 +35,7 @@ import java.util.UUID;
  * folding them into one controller would give every screen every field it does not need.
  */
 @RestController
-@RequestMapping("/api/v1/mailbox")
+@RequestMapping("/api/v1/oneops/mailbox")
 @RequiredArgsConstructor
 public class MailboxViewController {
 
@@ -58,26 +57,26 @@ public class MailboxViewController {
         return list.sidebar(principal, MailboxAccess.Visibility.fromQuery(mode));
     }
 
-    @GetMapping("/folders/{folderId}/threads")
+    @GetMapping("/folders/threads")
     @PreAuthorize(Authorize.MAIL_READ)
     public List<MailboxDtos.MailThreadView> threadsIn(@CurrentUser PrabhixPrincipal principal,
-                                                      @PathVariable UUID folderId,
+                                                      @RequestParam UUID folderId,
                                                       @RequestParam(required = false) Integer limit,
                                                       @RequestParam(required = false) Integer offset) {
         return list.threadsIn(principal, folderId, limit, offset);
     }
 
-    @GetMapping("/threads/{threadId}")
+    @GetMapping("/threads")
     @PreAuthorize(Authorize.MAIL_READ)
     public MailboxDtos.MailThreadView thread(@CurrentUser PrabhixPrincipal principal,
-                                             @PathVariable UUID threadId) {
+                                             @RequestParam UUID threadId) {
         return list.thread(principal, threadId);
     }
 
-    @GetMapping("/threads/{threadId}/messages")
+    @GetMapping("/threads/messages")
     @PreAuthorize(Authorize.MAIL_READ)
     public List<MailboxDtos.MessageView> messages(@CurrentUser PrabhixPrincipal principal,
-                                                 @PathVariable UUID threadId) {
+                                                 @RequestParam UUID threadId) {
         return list.messages(principal, threadId);
     }
 
@@ -91,39 +90,39 @@ public class MailboxViewController {
     // Folders
     // -----------------------------------------------------------------------------------------------
 
-    @GetMapping("/{mailboxId}/folders")
+    @GetMapping("/folders")
     @PreAuthorize(Authorize.MAIL_READ)
     public List<MailboxDtos.FolderView> folders(@CurrentUser PrabhixPrincipal principal,
-                                                @PathVariable UUID mailboxId) {
+                                                @RequestParam UUID mailboxId) {
         return folders.list(principal, mailboxId);
     }
 
-    @PostMapping("/{mailboxId}/folders")
+    @PostMapping("/folders")
     @PreAuthorize(Authorize.MAIL_READ)
     public MailboxDtos.FolderView createFolder(@CurrentUser PrabhixPrincipal principal,
-                                               @PathVariable UUID mailboxId,
+                                               @RequestParam UUID mailboxId,
                                                @Valid @RequestBody MailboxDtos.SaveFolderRequest request) {
         return folders.create(principal, mailboxId, request);
     }
 
-    @PatchMapping("/folders/{folderId}")
+    @PatchMapping("/folders")
     @PreAuthorize(Authorize.MAIL_READ)
     public MailboxDtos.FolderView updateFolder(@CurrentUser PrabhixPrincipal principal,
-                                               @PathVariable UUID folderId,
+                                               @RequestParam UUID folderId,
                                                @Valid @RequestBody MailboxDtos.SaveFolderRequest request) {
         return folders.rename(principal, folderId, request);
     }
 
-    @DeleteMapping("/folders/{folderId}")
+    @DeleteMapping("/folders")
     @PreAuthorize(Authorize.MAIL_READ)
-    public void deleteFolder(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID folderId) {
+    public void deleteFolder(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID folderId) {
         folders.delete(principal, folderId);
     }
 
-    @PostMapping("/folders/{folderId}/move")
+    @PostMapping("/folders/move")
     @PreAuthorize(Authorize.MAIL_THREAD_UPDATE)
     public int move(@CurrentUser PrabhixPrincipal principal,
-                    @PathVariable UUID folderId,
+                    @RequestParam UUID folderId,
                     @Valid @RequestBody MailboxDtos.MoveRequest request) {
         return folders.move(principal, folderId, request.threadIds());
     }
@@ -132,10 +131,10 @@ public class MailboxViewController {
     // Flags
     // -----------------------------------------------------------------------------------------------
 
-    @PatchMapping("/threads/{threadId}/flags")
+    @PatchMapping("/threads/flags")
     @PreAuthorize(Authorize.MAIL_READ)
     public MailboxDtos.MailThreadView flag(@CurrentUser PrabhixPrincipal principal,
-                                           @PathVariable UUID threadId,
+                                           @RequestParam UUID threadId,
                                            @Valid @RequestBody MailboxDtos.FlagRequest request) {
         return flags.apply(principal, threadId, request);
     }
@@ -157,10 +156,10 @@ public class MailboxViewController {
         return drafts.mine(principal);
     }
 
-    @GetMapping("/drafts/{draftId}")
+    @GetMapping(value = "/drafts", params = "draftId")
     @PreAuthorize(Authorize.MAIL_READ)
     public MailboxDtos.DraftView draft(@CurrentUser PrabhixPrincipal principal,
-                                       @PathVariable UUID draftId) {
+                                       @RequestParam UUID draftId) {
         return drafts.get(principal, draftId);
     }
 
@@ -171,9 +170,9 @@ public class MailboxViewController {
         return drafts.save(principal, request);
     }
 
-    @DeleteMapping("/drafts/{draftId}")
+    @DeleteMapping("/drafts")
     @PreAuthorize(Authorize.MAIL_READ)
-    public void discardDraft(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID draftId) {
+    public void discardDraft(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID draftId) {
         drafts.discard(principal, draftId);
     }
 
@@ -188,26 +187,26 @@ public class MailboxViewController {
     // Addresses
     // -----------------------------------------------------------------------------------------------
 
-    @GetMapping("/{mailboxId}/aliases")
+    @GetMapping("/aliases")
     @PreAuthorize(Authorize.MAIL_READ)
     public List<MailboxDtos.AliasView> aliases(@CurrentUser PrabhixPrincipal principal,
-                                               @PathVariable UUID mailboxId) {
+                                               @RequestParam UUID mailboxId) {
         return aliases.list(principal, mailboxId);
     }
 
-    @PostMapping("/{mailboxId}/aliases")
+    @PostMapping("/aliases")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public MailboxDtos.AliasView createAlias(@CurrentUser PrabhixPrincipal principal,
-                                             @PathVariable UUID mailboxId,
+                                             @RequestParam UUID mailboxId,
                                              @Valid @RequestBody MailboxDtos.CreateAliasRequest request) {
         return aliases.create(principal, mailboxId, request);
     }
 
-    @DeleteMapping("/{mailboxId}/aliases/{aliasId}")
+    @DeleteMapping("/aliases")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public void deleteAlias(@CurrentUser PrabhixPrincipal principal,
-                            @PathVariable UUID mailboxId,
-                            @PathVariable UUID aliasId) {
+                            @RequestParam UUID mailboxId,
+                            @RequestParam UUID aliasId) {
         aliases.delete(principal, mailboxId, aliasId);
     }
 }

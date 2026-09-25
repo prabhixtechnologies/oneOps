@@ -71,6 +71,6 @@ public class PublicProductImageService {
     }
 
     public String publicImagePath(String orgSlug, UUID fileId) {
-        return "/api/v1/commerce/public/" + orgSlug + "/images/" + fileId;
+        return "/api/v1/oneops/commerce/public/images?orgSlug=" + orgSlug + "&fileId=" + fileId;
     }
 }

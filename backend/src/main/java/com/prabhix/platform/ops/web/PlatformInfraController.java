@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  * errors inside response bodies so the hub can still render. OPERATOR (or OWNER) only.
  */
 @RestController
-@RequestMapping("/api/v1/admin/platform")
+@RequestMapping("/api/v1/oneops/admin/platform")
 @RequiredArgsConstructor
 public class PlatformInfraController {
 

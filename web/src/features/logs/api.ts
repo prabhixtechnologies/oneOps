@@ -42,7 +42,7 @@ export function useEventLogs(filters: EventLogFilters) {
   return useInfiniteQuery({
     queryKey: ["event-logs", filters],
     queryFn: ({ pageParam }) =>
-      apiRequest(`/event-logs?${buildParams(filters, pageParam)}`, eventLogPageSchema, {
+      apiRequest(`/oneops/event-logs?${buildParams(filters, pageParam)}`, eventLogPageSchema, {
         // The org header would contradict allOrganizations and be refused, so it is dropped for the
         // cross-organization sweep and sent as usual otherwise.
         skipOrg: filters.allOrganizations,
@@ -57,7 +57,7 @@ export function useEventLog(id: string | undefined, allOrganizations = false) {
     queryKey: ["event-log", id, allOrganizations],
     queryFn: () =>
       apiRequest(
-        `/event-logs/${id}${allOrganizations ? "?allOrganizations=true" : ""}`,
+        `/oneops/event-logs?id=${id}${allOrganizations ? "&allOrganizations=true" : ""}`,
         eventLogSchema,
         { skipOrg: allOrganizations },
       ),
@@ -74,7 +74,7 @@ export function useEventLogStats(from?: string, to?: string, allOrganizations = 
   return useQuery({
     queryKey: ["event-log-stats", from, to, allOrganizations],
     queryFn: () =>
-      apiRequest(`/event-logs/stats${qs ? `?${qs}` : ""}`, eventLogStatsSchema, {
+      apiRequest(`/oneops/event-logs/stats${qs ? `?${qs}` : ""}`, eventLogStatsSchema, {
         skipOrg: allOrganizations,
       }),
   });
@@ -85,7 +85,7 @@ export function useEventLogTrace(correlationId: string | undefined, allOrganizat
     queryKey: ["event-log-trace", correlationId, allOrganizations],
     queryFn: () =>
       apiRequest(
-        `/event-logs/trace/${correlationId}${allOrganizations ? "?allOrganizations=true" : ""}`,
+        `/oneops/event-logs/trace?correlationId=${correlationId}${allOrganizations ? "&allOrganizations=true" : ""}`,
         traceViewSchema,
         { skipOrg: allOrganizations },
       ),

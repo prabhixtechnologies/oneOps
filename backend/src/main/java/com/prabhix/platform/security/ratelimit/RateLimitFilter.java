@@ -49,7 +49,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * minute with sign-in meant an ordinary morning of reloading could exhaust the budget, and a 429
      * here is indistinguishable from being signed out.
      */
-    private static final Set<String> ROUTINE_AUTH_PATHS = Set.of("/api/v1/auth/session/token");
+    private static final Set<String> ROUTINE_AUTH_PATHS = Set.of("/api/v1/oneops/auth/session/token");
 
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
@@ -70,8 +70,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 || path.startsWith("/actuator/health")
                 // Gateway callbacks must never be throttled: Razorpay retries are finite and
                 // dropping one loses a payment state transition.
-                || path.startsWith("/api/v1/billing/webhooks")
-                || path.startsWith("/api/v1/commerce/webhooks");
+                || path.startsWith("/api/v1/oneops/billing/webhooks")
+                || path.startsWith("/api/v1/oneops/commerce/webhooks");
     }
 
     @Override
@@ -79,7 +79,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
         String path = request.getRequestURI();
-        boolean authEndpoint = path.startsWith("/api/v1/auth/") && !ROUTINE_AUTH_PATHS.contains(path);
+        boolean authEndpoint = path.startsWith("/api/v1/oneops/auth/") && !ROUTINE_AUTH_PATHS.contains(path);
         int limit = authEndpoint ? config.authAttemptsPerMinute() : config.apiRequestsPerMinute();
         String key = KEY_PREFIX + (authEndpoint ? "auth:" : "api:") + clientKey(request);
 

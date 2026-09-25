@@ -24,7 +24,7 @@ export const aiQueryKeys = {
 export function useAiStatus() {
   return useQuery({
     queryKey: aiQueryKeys.status,
-    queryFn: () => apiRequest("/ai/status", aiAvailabilitySchema),
+    queryFn: () => apiRequest("/oneops/ai/status", aiAvailabilitySchema),
     staleTime: 60_000,
   });
 }
@@ -32,7 +32,7 @@ export function useAiStatus() {
 export function useAiSettings() {
   return useQuery({
     queryKey: aiQueryKeys.settings,
-    queryFn: () => apiRequest("/ai/settings", aiOrgSettingsSchema),
+    queryFn: () => apiRequest("/oneops/ai/settings", aiOrgSettingsSchema),
   });
 }
 
@@ -44,7 +44,7 @@ export function useUpdateAiSettings() {
       preferredChatModel?: string | null;
       preferredReasoningModel?: string | null;
       firstResponderEnabled?: boolean;
-    }) => apiRequest("/ai/settings", aiOrgSettingsSchema, { method: "PATCH", body: data }),
+    }) => apiRequest("/oneops/ai/settings", aiOrgSettingsSchema, { method: "PATCH", body: data }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: aiQueryKeys.settings });
       void qc.invalidateQueries({ queryKey: aiQueryKeys.status });
@@ -55,7 +55,7 @@ export function useUpdateAiSettings() {
 export function useAiPrompts() {
   return useQuery({
     queryKey: aiQueryKeys.prompts,
-    queryFn: () => apiRequest("/ai/prompts", aiPromptListSchema),
+    queryFn: () => apiRequest("/oneops/ai/prompts", aiPromptListSchema),
   });
 }
 
@@ -75,7 +75,7 @@ export function useUpdateAiPrompt() {
       model?: string;
       temperature?: number;
     }) =>
-      apiRequest(`/ai/prompts/${encodeURIComponent(taskKey)}`, aiPromptSchema, {
+      apiRequest(`/oneops/ai/prompts?taskKey=${encodeURIComponent(taskKey)}`, aiPromptSchema, {
         method: "PUT",
         body: { template, provider, model, temperature },
       }),
@@ -86,7 +86,7 @@ export function useUpdateAiPrompt() {
 export function useAiUsageSummary() {
   return useQuery({
     queryKey: aiQueryKeys.usageSummary,
-    queryFn: () => apiRequest("/ai/usage/summary", aiUsageSummarySchema),
+    queryFn: () => apiRequest("/oneops/ai/usage/summary", aiUsageSummarySchema),
   });
 }
 
@@ -96,7 +96,7 @@ export function useAiUsage() {
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ limit: "25" });
       if (pageParam) params.set("cursor", pageParam);
-      return apiRequest(`/ai/usage?${params}`, aiUsagePageSchema);
+      return apiRequest(`/oneops/ai/usage?${params}`, aiUsagePageSchema);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor : undefined),
@@ -114,7 +114,7 @@ export function useChatRewrite() {
       draft: string;
       action: string;
     }) =>
-      apiRequest(`/chat/conversations/${conversationId}/ai/rewrite`, aiRewriteResultSchema, {
+      apiRequest(`/oneops/chat/conversations/ai/rewrite?id=${conversationId}`, aiRewriteResultSchema, {
         method: "POST",
         body: { draft, action },
       }),
@@ -125,7 +125,7 @@ export function useChatHandoffSummary() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (conversationId: string) =>
-      apiRequest(`/chat/conversations/${conversationId}/ai/handoff-summary`, aiHandoffSummaryResultSchema, {
+      apiRequest(`/oneops/chat/conversations/ai/handoff-summary?id=${conversationId}`, aiHandoffSummaryResultSchema, {
         method: "POST",
       }),
     onSuccess: (_, conversationId) => {
@@ -138,7 +138,7 @@ export function useChatSentiment(conversationId: string | undefined) {
   return useQuery({
     queryKey: ["ai", "chat", "sentiment", conversationId],
     queryFn: () =>
-      apiRequest(`/chat/conversations/${conversationId}/ai/sentiment`, aiSentimentResultSchema, {
+      apiRequest(`/oneops/chat/conversations/ai/sentiment?id=${conversationId}`, aiSentimentResultSchema, {
         method: "POST",
       }),
     enabled: !!conversationId,
@@ -153,6 +153,6 @@ export function useAiAssist() {
       context?: string;
       taskKey?: string;
       providerOverride?: string;
-    }) => apiRequest("/ai/assist", aiAssistResultSchema, { method: "POST", body }),
+    }) => apiRequest("/oneops/ai/assist", aiAssistResultSchema, { method: "POST", body }),
   });
 }

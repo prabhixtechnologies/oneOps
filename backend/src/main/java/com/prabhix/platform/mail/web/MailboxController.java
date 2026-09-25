@@ -9,10 +9,10 @@ import com.prabhix.platform.security.rbac.Authorize;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/mail/mailboxes")
+@RequestMapping("/api/v1/oneops/mail/mailboxes")
 @RequiredArgsConstructor
 public class MailboxController {
 
@@ -35,10 +35,10 @@ public class MailboxController {
         return mailboxService.list(principal.requireOrganizationId());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(params = "id")
     @PreAuthorize(Authorize.MAIL_MAILBOX_READ)
     public MailboxDtos.MailboxDetailResponse get(@CurrentUser PrabhixPrincipal principal,
-                                                   @PathVariable UUID id) {
+                                                   @RequestParam UUID id) {
         return mailboxService.get(principal.requireOrganizationId(), id);
     }
 
@@ -49,17 +49,17 @@ public class MailboxController {
         return mailboxService.create(principal.requireOrganizationId(), request);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public MailboxDtos.MailboxDetailResponse update(@CurrentUser PrabhixPrincipal principal,
-                                                    @PathVariable UUID id,
+                                                    @RequestParam UUID id,
                                                     @Valid @RequestBody MailboxDtos.UpdateMailboxRequest request) {
         return mailboxService.update(principal.requireOrganizationId(), id, request);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
-    public void delete(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public void delete(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         mailboxService.delete(principal.requireOrganizationId(), id);
     }
 
@@ -69,33 +69,33 @@ public class MailboxController {
      * <p>POST rather than PUT: it is not idempotent. Calling it twice produces two different
      * passwords and invalidates the first, which signs out every client configured with it.
      */
-    @PostMapping("/{id}/mail-password")
+    @PostMapping("/mail-password")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public MailboxPasswordService.Issued issueMailPassword(@CurrentUser PrabhixPrincipal principal,
-                                                           @PathVariable UUID id) {
+                                                           @RequestParam UUID id) {
         return mailPasswordService.issue(principal.requireOrganizationId(), id);
     }
 
-    @DeleteMapping("/{id}/mail-password")
+    @DeleteMapping("/mail-password")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
-    public void revokeMailPassword(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public void revokeMailPassword(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         mailPasswordService.revoke(principal.requireOrganizationId(), id);
     }
 
-    @PostMapping("/{id}/members")
+    @PostMapping("/members")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public MailboxDtos.MailboxMemberResponse addMember(@CurrentUser PrabhixPrincipal principal,
-                                                       @PathVariable UUID id,
+                                                       @RequestParam UUID id,
                                                        @Valid @RequestBody MailboxDtos.AddMailboxMemberRequest request) {
         return mailboxService.addMember(principal.requireOrganizationId(), id, request);
     }
 
-    @PatchMapping("/{id}/members/{memberId}")
+    @PatchMapping("/members")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public MailboxDtos.MailboxMemberResponse updateMember(
             @CurrentUser PrabhixPrincipal principal,
-            @PathVariable UUID id,
-            @PathVariable UUID memberId,
+            @RequestParam UUID id,
+            @RequestParam UUID memberId,
             @Valid @RequestBody MailboxDtos.UpdateMailboxMemberRequest request) {
         return mailboxService.updateMember(principal.requireOrganizationId(), id, memberId, request);
     }
@@ -107,46 +107,46 @@ public class MailboxController {
      * only a membership id can name a team grant, and only a user id is available to a caller that
      * has just looked someone up in the directory.
      */
-    @DeleteMapping("/{id}/members/{memberId}")
+    @DeleteMapping("/members")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public void removeMember(@CurrentUser PrabhixPrincipal principal,
-                             @PathVariable UUID id,
-                             @PathVariable UUID memberId) {
+                             @RequestParam UUID id,
+                             @RequestParam UUID memberId) {
         mailboxService.removeMember(principal.requireOrganizationId(), id, memberId);
     }
 
-    @DeleteMapping("/{id}/members/by-user/{userId}")
+    @DeleteMapping("/members/by-user")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public void removeMemberByUser(@CurrentUser PrabhixPrincipal principal,
-                                   @PathVariable UUID id,
-                                   @PathVariable UUID userId) {
+                                   @RequestParam UUID id,
+                                   @RequestParam UUID userId) {
         mailboxService.removeMemberByUser(principal.requireOrganizationId(), id, userId);
     }
 
-    @PostMapping("/{id}/routing-rules")
+    @PostMapping("/routing-rules")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public MailboxDtos.RoutingRuleResponse createRoutingRule(
             @CurrentUser PrabhixPrincipal principal,
-            @PathVariable UUID id,
+            @RequestParam UUID id,
             @Valid @RequestBody MailboxDtos.SaveRoutingRuleRequest request) {
         return mailboxService.createRoutingRule(principal.requireOrganizationId(), id, request);
     }
 
-    @PatchMapping("/{id}/routing-rules/{ruleId}")
+    @PatchMapping("/routing-rules")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public MailboxDtos.RoutingRuleResponse updateRoutingRule(
             @CurrentUser PrabhixPrincipal principal,
-            @PathVariable UUID id,
-            @PathVariable UUID ruleId,
+            @RequestParam UUID id,
+            @RequestParam UUID ruleId,
             @Valid @RequestBody MailboxDtos.SaveRoutingRuleRequest request) {
         return mailboxService.updateRoutingRule(principal.requireOrganizationId(), id, ruleId, request);
     }
 
-    @DeleteMapping("/{id}/routing-rules/{ruleId}")
+    @DeleteMapping("/routing-rules")
     @PreAuthorize(Authorize.MAIL_MAILBOX_MANAGE)
     public void deleteRoutingRule(@CurrentUser PrabhixPrincipal principal,
-                                  @PathVariable UUID id,
-                                  @PathVariable UUID ruleId) {
+                                  @RequestParam UUID id,
+                                  @RequestParam UUID ruleId) {
         mailboxService.deleteRoutingRule(principal.requireOrganizationId(), id, ruleId);
     }
 }

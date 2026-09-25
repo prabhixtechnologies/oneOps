@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/mail/webhooks")
+@RequestMapping("/api/v1/oneops/mail/webhooks")
 @RequiredArgsConstructor
 public class SesWebhookController {
 

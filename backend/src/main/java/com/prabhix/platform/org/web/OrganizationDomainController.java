@@ -10,9 +10,9 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,7 +32,7 @@ import java.util.UUID;
  * decision — not something the person who sends invitations should be able to change unilaterally.
  */
 @RestController
-@RequestMapping("/api/v1/organization/domains")
+@RequestMapping("/api/v1/oneops/organization/domains")
 @RequiredArgsConstructor
 public class OrganizationDomainController {
 
@@ -58,25 +58,25 @@ public class OrganizationDomainController {
      * <p>A POST, not a GET: it performs an outbound lookup and writes the result, so it is neither
      * safe nor cacheable, and a browser prefetching it would be spending someone else's DNS budget.
      */
-    @PostMapping("/{id}/verify")
+    @PostMapping("/verify")
     @PreAuthorize(Authorize.ORG_UPDATE)
-    public DomainView verify(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public DomainView verify(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         return toView(domains.verify(principal.requireOrganizationId(), id));
     }
 
-    @PutMapping("/{id}/auto-join")
+    @PutMapping("/auto-join")
     @PreAuthorize(Authorize.ORG_UPDATE)
     public DomainView setAutoJoin(@CurrentUser PrabhixPrincipal principal,
-                                  @PathVariable UUID id,
+                                  @RequestParam UUID id,
                                   @Valid @RequestBody AutoJoinRequest request) {
         return toView(domains.setAutoJoin(
                 principal.requireOrganizationId(), id, request.enabled(), request.roleId()));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize(Authorize.ORG_UPDATE)
-    public void release(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public void release(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         domains.release(principal.requireOrganizationId(), id);
     }
 

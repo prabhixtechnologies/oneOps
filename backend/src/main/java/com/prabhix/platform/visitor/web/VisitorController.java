@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,7 +21,7 @@ import java.util.UUID;
 
 @Tag(name = "Visitors", description = "Authenticated visitor analytics and live presence")
 @RestController
-@RequestMapping("/api/v1/visitors")
+@RequestMapping("/api/v1/oneops/visitors")
 @RequiredArgsConstructor
 public class VisitorController {
 
@@ -44,27 +43,27 @@ public class VisitorController {
         return queryService.list(principal, cursor, limit);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(params = "id")
     @PreAuthorize(Authorize.VISITOR_READ)
-    public VisitorDtos.VisitorDetail get(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public VisitorDtos.VisitorDetail get(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         return queryService.get(principal, id);
     }
 
-    @GetMapping("/{id}/page-views")
+    @GetMapping("/page-views")
     @PreAuthorize(Authorize.VISITOR_READ)
     public CursorPage<VisitorDtos.PageViewView> pageViews(
             @CurrentUser PrabhixPrincipal principal,
-            @PathVariable UUID id,
+            @RequestParam UUID id,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer limit) {
         return queryService.pageViews(principal, id, cursor, limit);
     }
 
-    @GetMapping("/{id}/events")
+    @GetMapping("/events")
     @PreAuthorize(Authorize.VISITOR_READ)
     public CursorPage<VisitorDtos.EventView> events(
             @CurrentUser PrabhixPrincipal principal,
-            @PathVariable UUID id,
+            @RequestParam UUID id,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer limit) {
         return queryService.events(principal, id, cursor, limit);
@@ -78,9 +77,9 @@ public class VisitorController {
         return queryService.analytics(principal, days);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping
     @PreAuthorize(Authorize.VISITOR_MANAGE)
-    public void delete(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public void delete(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         queryService.deleteVisitorData(principal, id);
     }
 }

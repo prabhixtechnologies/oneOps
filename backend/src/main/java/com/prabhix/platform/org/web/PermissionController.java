@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/permissions")
+@RequestMapping("/api/v1/oneops/permissions")
 @RequiredArgsConstructor
 public class PermissionController {
 

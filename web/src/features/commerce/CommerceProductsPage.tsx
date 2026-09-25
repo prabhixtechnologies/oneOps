@@ -60,7 +60,7 @@ export default function CommerceProductsPage() {
     setBulkBusy(true);
     try {
       for (const id of selected) {
-        await apiRequest(`/commerce/products/${id}`, productDetailSchema, {
+        await apiRequest(`/oneops/commerce/products?id=${id}`, productDetailSchema, {
           method: "PUT",
           body: { status: bulkStatus },
         });

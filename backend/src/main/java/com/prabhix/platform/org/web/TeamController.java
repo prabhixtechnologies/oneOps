@@ -13,10 +13,10 @@ import com.prabhix.platform.security.rbac.Authorize;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/teams")
+@RequestMapping("/api/v1/oneops/teams")
 @RequiredArgsConstructor
 public class TeamController {
 
@@ -44,40 +44,40 @@ public class TeamController {
         return teamService.createTeam(principal.requireOrganizationId(), request);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping
     @PreAuthorize(Authorize.ORG_TEAM_MANAGE)
     public TeamView update(@CurrentUser PrabhixPrincipal principal,
-                           @PathVariable UUID id,
+                           @RequestParam UUID id,
                            @Valid @RequestBody UpdateTeamRequest request) {
         return teamService.updateTeam(principal.requireOrganizationId(), id, request);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping
     @PreAuthorize(Authorize.ORG_TEAM_MANAGE)
-    public void delete(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public void delete(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         teamService.deleteTeam(principal.requireOrganizationId(), id);
     }
 
-    @GetMapping("/{id}/members")
+    @GetMapping("/members")
     @PreAuthorize(Authorize.ORG_TEAM_READ)
     public PageResponse<TeamMemberView> listMembers(@CurrentUser PrabhixPrincipal principal,
-                                                    @PathVariable UUID id) {
+                                                    @RequestParam UUID id) {
         return teamService.listTeamMembers(principal.requireOrganizationId(), id);
     }
 
-    @PostMapping("/{id}/members")
+    @PostMapping("/members")
     @PreAuthorize(Authorize.ORG_TEAM_MANAGE)
     public TeamMemberView addMember(@CurrentUser PrabhixPrincipal principal,
-                                    @PathVariable UUID id,
+                                    @RequestParam UUID id,
                                     @Valid @RequestBody AddTeamMemberRequest request) {
         return teamService.addMember(principal.requireOrganizationId(), id, request);
     }
 
-    @DeleteMapping("/{id}/members/{userId}")
+    @DeleteMapping("/members")
     @PreAuthorize(Authorize.ORG_TEAM_MANAGE)
     public void removeMember(@CurrentUser PrabhixPrincipal principal,
-                             @PathVariable UUID id,
-                             @PathVariable UUID userId) {
+                             @RequestParam UUID id,
+                             @RequestParam UUID userId) {
         teamService.removeMember(principal.requireOrganizationId(), id, userId);
     }
 }

@@ -16,8 +16,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,13 +32,13 @@ import java.util.UUID;
 /**
  * Who works here, and what they may do.
  *
- * <p>{@code SecurityConfig} gates the whole {@code /api/v1/admin/**} tree on PLATFORM_ADMIN, which is
+ * <p>{@code SecurityConfig} gates the whole {@code /api/v1/oneops/admin/**} tree on PLATFORM_ADMIN, which is
  * now the coarse "is staff at all" check. Every handler here narrows further through
  * {@link PlatformStaffService}, because the point of the roles is that holding the flag is no longer
  * enough for the dangerous operations.
  */
 @RestController
-@RequestMapping("/api/v1/admin/platform/staff")
+@RequestMapping("/api/v1/oneops/admin/platform/staff")
 @RequiredArgsConstructor
 public class PlatformStaffController {
 
@@ -85,10 +85,10 @@ public class PlatformStaffController {
      * panic by whoever happens to be logged in. A support hire who can do this is a support hire who
      * can lock a customer out of their own business by mistake.
      */
-    @PostMapping("/break-glass/users/{userId}/revoke-tokens")
+    @PostMapping("/break-glass/users/revoke-tokens")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Map<String, Object> revokeUserTokens(@CurrentUser PrabhixPrincipal principal,
-                                                @PathVariable UUID userId,
+                                                @RequestParam UUID userId,
                                                 @Valid @RequestBody BreakGlassRequest request) {
         staff.requireAny(principal.userId(), StaffRole.BREAK_GLASS);
 

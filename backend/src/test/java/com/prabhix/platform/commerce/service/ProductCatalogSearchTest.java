@@ -57,7 +57,7 @@ class ProductCatalogSearchTest {
         when(variantRepository.findByProductIdAndOrganizationIdAndDeletedAtIsNullOrderBySortOrderAsc(
                 product.getId(), orgId)).thenReturn(List.of());
         when(publicImageService.publicImagePath("acme", product.getHeroImageFileId()))
-                .thenReturn("/api/v1/commerce/public/acme/images/" + product.getHeroImageFileId());
+                .thenReturn("/api/v1/oneops/commerce/public/images?orgSlug=acme&fileId=" + product.getHeroImageFileId());
 
         var page = catalogService.listPublic(
                 orgId, "acme", "widget", "DIGITAL",

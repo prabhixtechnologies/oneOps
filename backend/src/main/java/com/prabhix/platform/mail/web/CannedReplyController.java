@@ -9,10 +9,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/mail/canned-replies")
+@RequestMapping("/api/v1/oneops/mail/canned-replies")
 @RequiredArgsConstructor
 public class CannedReplyController {
 
@@ -41,17 +41,17 @@ public class CannedReplyController {
         return cannedReplyService.create(principal.requireOrganizationId(), request);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping
     @PreAuthorize(Authorize.MAIL_THREAD_UPDATE)
     public CannedReplyDtos.CannedReplyResponse update(@CurrentUser PrabhixPrincipal principal,
-                                                      @PathVariable UUID id,
+                                                      @RequestParam UUID id,
                                                       @Valid @RequestBody CannedReplyDtos.UpdateRequest request) {
         return cannedReplyService.update(principal.requireOrganizationId(), id, request);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping
     @PreAuthorize(Authorize.MAIL_THREAD_UPDATE)
-    public ResponseEntity<Void> delete(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         cannedReplyService.delete(principal.requireOrganizationId(), id);
         return ResponseEntity.noContent().build();
     }

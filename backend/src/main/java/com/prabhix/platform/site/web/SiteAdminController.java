@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/admin/site")
+@RequestMapping("/api/v1/oneops/admin/site")
 @RequiredArgsConstructor
 public class SiteAdminController {
 
@@ -35,16 +34,16 @@ public class SiteAdminController {
         return siteAdminService.listLeads(status, cursor, limit);
     }
 
-    @GetMapping("/leads/{id}")
+    @GetMapping(value = "/leads", params = "id")
     @PreAuthorize(Authorize.SITE_LEAD_READ)
-    public SiteAdminDtos.LeadDetail getLead(@PathVariable UUID id) {
+    public SiteAdminDtos.LeadDetail getLead(@RequestParam UUID id) {
         return siteAdminService.getLead(id);
     }
 
-    @PatchMapping("/leads/{id}")
+    @PatchMapping("/leads")
     @PreAuthorize(Authorize.SITE_LEAD_MANAGE)
     public SiteAdminDtos.LeadDetail updateLead(@CurrentUser PrabhixPrincipal principal,
-                                               @PathVariable UUID id,
+                                               @RequestParam UUID id,
                                                @Valid @RequestBody SiteAdminDtos.UpdateLeadStatusRequest request) {
         return siteAdminService.updateLeadStatus(id, principal.userId(), request);
     }
@@ -58,9 +57,9 @@ public class SiteAdminController {
         return siteAdminService.listSubscribers(status, cursor, limit);
     }
 
-    @GetMapping("/subscribers/{id}")
+    @GetMapping(value = "/subscribers", params = "id")
     @PreAuthorize(Authorize.SITE_SUBSCRIBER_READ)
-    public SiteAdminDtos.SubscriberSummary getSubscriber(@PathVariable UUID id) {
+    public SiteAdminDtos.SubscriberSummary getSubscriber(@RequestParam UUID id) {
         return siteAdminService.getSubscriber(id);
     }
 
@@ -73,16 +72,16 @@ public class SiteAdminController {
         return siteAdminService.listApplications(status, cursor, limit);
     }
 
-    @GetMapping("/applications/{id}")
+    @GetMapping(value = "/applications", params = "id")
     @PreAuthorize(Authorize.SITE_APPLICATION_READ)
-    public SiteAdminDtos.ApplicationDetail getApplication(@PathVariable UUID id) {
+    public SiteAdminDtos.ApplicationDetail getApplication(@RequestParam UUID id) {
         return siteAdminService.getApplication(id);
     }
 
-    @PatchMapping("/applications/{id}")
+    @PatchMapping("/applications")
     @PreAuthorize(Authorize.SITE_APPLICATION_MANAGE)
     public SiteAdminDtos.ApplicationDetail updateApplication(@CurrentUser PrabhixPrincipal principal,
-                                                             @PathVariable UUID id,
+                                                             @RequestParam UUID id,
                                                              @Valid @RequestBody SiteAdminDtos.UpdateApplicationStatusRequest request) {
         return siteAdminService.updateApplicationStatus(id, principal.userId(), request);
     }

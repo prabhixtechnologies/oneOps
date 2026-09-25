@@ -301,7 +301,7 @@ public class PaymentCompletionService {
                             "paidOn", Instant.now().toString(),
                             "nextRenewal", subscription.getNextBillingAt() == null
                                     ? "" : subscription.getNextBillingAt().toString(),
-                            "invoiceUrl", "/api/v1/billing/invoices/" + invoice.getId() + "/download"),
+                            "invoiceUrl", "/api/v1/oneops/billing/invoices/download?id=" + invoice.getId()),
                     "payment-success-" + order.getId()));
         });
     }

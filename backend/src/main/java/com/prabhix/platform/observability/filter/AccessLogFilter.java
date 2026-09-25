@@ -98,7 +98,7 @@ public class AccessLogFilter extends OncePerRequestFilter {
         return uri.startsWith("/actuator/")
                 || uri.startsWith("/swagger-ui")
                 || uri.startsWith("/v3/api-docs")
-                || uri.startsWith("/api/v1/event-logs")
+                || uri.startsWith("/api/v1/oneops/event-logs")
                 // Long-lived streams have no meaningful "completed" moment, and logging one
                 // per open connection says nothing useful.
                 || uri.endsWith("/stream")

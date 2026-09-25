@@ -15,7 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -28,7 +27,7 @@ import java.util.UUID;
 
 @Tag(name = "Chat", description = "Agent chat inbox and configuration")
 @RestController
-@RequestMapping("/api/v1/chat")
+@RequestMapping("/api/v1/oneops/chat")
 @RequiredArgsConstructor
 public class ChatController {
 
@@ -53,53 +52,53 @@ public class ChatController {
         return conversationService.counts(principal);
     }
 
-    @GetMapping("/conversations/{id}")
+    @GetMapping(value = "/conversations", params = "id")
     @PreAuthorize(Authorize.CHAT_READ)
-    public ChatDtos.ConversationDetail get(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public ChatDtos.ConversationDetail get(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         return conversationService.get(principal, id);
     }
 
-    @PostMapping("/conversations/{id}/messages")
+    @PostMapping("/conversations/messages")
     @PreAuthorize(Authorize.CHAT_REPLY)
     public ChatDtos.MessageView send(@CurrentUser PrabhixPrincipal principal,
-                                     @PathVariable UUID id,
+                                     @RequestParam UUID id,
                                      @Valid @RequestBody ChatDtos.SendMessageRequest request,
                                      @RequestParam(defaultValue = "false") boolean note,
                                      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return messageService.sendAgent(principal, id, request, note || request.isInternal(), idempotencyKey);
     }
 
-    @GetMapping("/conversations/{id}/messages")
+    @GetMapping("/conversations/messages")
     @PreAuthorize(Authorize.CHAT_READ)
     public CursorPage<ChatDtos.MessageView> messages(
             @CurrentUser PrabhixPrincipal principal,
-            @PathVariable UUID id,
+            @RequestParam UUID id,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer limit) {
         return messageService.listAgent(principal, id, cursor, limit);
     }
 
-    @PostMapping("/conversations/{id}/assign")
+    @PostMapping("/conversations/assign")
     @PreAuthorize(Authorize.CHAT_ASSIGN)
     public ChatDtos.ConversationSummary assign(@CurrentUser PrabhixPrincipal principal,
-                                                 @PathVariable UUID id,
+                                                 @RequestParam UUID id,
                                                  @Valid @RequestBody ChatDtos.AssignRequest request) {
         return conversationService.assign(principal, id, request);
     }
 
-    @PatchMapping("/conversations/{id}")
+    @PatchMapping("/conversations")
     @PreAuthorize(Authorize.CHAT_REPLY)
     public ChatDtos.ConversationSummary update(@CurrentUser PrabhixPrincipal principal,
-                                               @PathVariable UUID id,
+                                               @RequestParam UUID id,
                                                @Valid @RequestBody ChatDtos.UpdateConversationRequest request) {
         return conversationService.update(principal, id, request);
     }
 
-    @PostMapping("/visitors/{visitorId}/conversations")
+    @PostMapping("/visitors/conversations")
     @PreAuthorize(Authorize.CHAT_REPLY)
     public ChatDtos.StartWithVisitorResponse startWithVisitor(
             @CurrentUser PrabhixPrincipal principal,
-            @PathVariable UUID visitorId,
+            @RequestParam UUID visitorId,
             @Valid @RequestBody ChatDtos.StartWithVisitorRequest request) {
         return conversationService.startWithLiveVisitor(principal, visitorId, request);
     }
@@ -130,9 +129,9 @@ public class ChatController {
         return settingsService.createCannedReply(principal, request);
     }
 
-    @DeleteMapping("/canned-replies/{id}")
+    @DeleteMapping("/canned-replies")
     @PreAuthorize(Authorize.CHAT_MANAGE)
-    public void deleteCannedReply(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public void deleteCannedReply(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         settingsService.deleteCannedReply(principal, id);
     }
 }

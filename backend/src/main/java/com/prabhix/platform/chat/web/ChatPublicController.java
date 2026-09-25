@@ -10,7 +10,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -23,7 +22,7 @@ import java.util.UUID;
 
 @Tag(name = "Chat (public)", description = "Visitor-facing chat endpoints secured by conversation token")
 @RestController
-@RequestMapping("/api/v1/chat/public/{orgSlug}")
+@RequestMapping("/api/v1/oneops/chat/public")
 @RequiredArgsConstructor
 public class ChatPublicController {
 
@@ -33,34 +32,34 @@ public class ChatPublicController {
 
     @PostMapping("/conversations")
     @Operation(summary = "Start a chat conversation with pre-chat form")
-    public ChatDtos.StartConversationResponse start(@PathVariable String orgSlug,
+    public ChatDtos.StartConversationResponse start(@RequestParam String orgSlug,
                                                     @Valid @RequestBody ChatDtos.PreChatRequest request) {
         return conversationService.startPublic(orgSlug, request);
     }
 
-    @PostMapping("/conversations/{id}/messages")
+    @PostMapping("/conversations/messages")
     @Operation(summary = "Send a visitor message")
-    public ChatDtos.MessageView send(@PathVariable String orgSlug,
-                                     @PathVariable UUID id,
+    public ChatDtos.MessageView send(@RequestParam String orgSlug,
+                                     @RequestParam UUID id,
                                      @RequestHeader("X-Chat-Token") String token,
                                      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                      @Valid @RequestBody ChatDtos.SendMessageRequest request) {
         return messageService.sendVisitor(orgSlug, id, token, request, idempotencyKey);
     }
 
-    @PostMapping(value = "/conversations/{id}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/conversations/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload a file for a visitor chat message")
-    public ChatDtos.UploadAck uploadAttachment(@PathVariable UUID id,
+    public ChatDtos.UploadAck uploadAttachment(@RequestParam UUID id,
                                                @RequestHeader("X-Chat-Token") String token,
                                                @RequestParam("file") MultipartFile file) {
         UUID fileId = visitorFileService.upload(token, id, file);
         return new ChatDtos.UploadAck(fileId);
     }
 
-    @GetMapping("/conversations/{id}/messages")
+    @GetMapping("/conversations/messages")
     @Operation(summary = "List visitor-visible messages")
     public com.prabhix.platform.common.web.CursorPage<ChatDtos.MessageView> messages(
-            @PathVariable UUID id,
+            @RequestParam UUID id,
             @RequestHeader("X-Chat-Token") String token,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer limit) {

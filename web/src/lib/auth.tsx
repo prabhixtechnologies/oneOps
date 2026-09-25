@@ -57,15 +57,15 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function fetchMe(): Promise<AuthMe> {
-  return apiRequest("/auth/me", authMeSchema);
+  return apiRequest("/oneops/auth/me", authMeSchema);
 }
 
 async function fetchProfile(): Promise<UserProfile> {
-  return apiRequest("/users/me", userProfileSchema);
+  return apiRequest("/oneops/users/me", userProfileSchema);
 }
 
 async function fetchOrganization(id: string): Promise<OrganizationView> {
-  return apiRequest(`/organizations/${id}`, organizationViewSchema);
+  return apiRequest(`/oneops/organizations?id=${id}`, organizationViewSchema);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       if (accessTokenRef.current) {
         // The server clears the cookie on this call, so the other console is signed out too.
-        await apiRequest("/auth/logout", { parse: () => undefined }, { method: "POST" });
+        await apiRequest("/oneops/auth/logout", { parse: () => undefined }, { method: "POST" });
       }
     } catch {
       // ignore logout errors
@@ -217,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // it set would silently keep sending the old customer's id after the switch.
       setViewingOrg(null);
       const tokens = await apiRequest(
-        `/organizations/${orgId}/select`,
+        `/oneops/organizations/select?id=${orgId}`,
         authTokensSchema,
         { method: "POST" },
       );
@@ -313,6 +313,6 @@ export function useAuth() {
 export function useOrganizations() {
   return useQuery({
     queryKey: ["organizations"],
-    queryFn: () => apiRequest("/organizations", arraySchema(organizationViewSchema)),
+    queryFn: () => apiRequest("/oneops/organizations", arraySchema(organizationViewSchema)),
   });
 }

@@ -240,7 +240,7 @@ export function useTickets(filters: TicketFilters) {
   return useInfiniteQuery({
     queryKey: helpdeskKeys.tickets(filters),
     queryFn: ({ pageParam }) =>
-      apiRequest(`/mail/threads?${ticketQuery(filters, pageParam)}`, ticketPageSchema),
+      apiRequest(`/oneops/mail/threads?${ticketQuery(filters, pageParam)}`, ticketPageSchema),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     refetchInterval: 60_000,
@@ -250,7 +250,7 @@ export function useTickets(filters: TicketFilters) {
 export function useTicket(threadId: string | undefined) {
   return useQuery({
     queryKey: threadId ? helpdeskKeys.ticket(threadId) : ["helpdesk", "ticket", "none"],
-    queryFn: () => apiRequest(`/mail/threads/${threadId}`, ticketDetailSchema),
+    queryFn: () => apiRequest(`/oneops/mail/threads?id=${threadId}`, ticketDetailSchema),
     enabled: !!threadId,
   });
 }
@@ -258,7 +258,7 @@ export function useTicket(threadId: string | undefined) {
 export function useHelpdeskMailboxes() {
   return useQuery({
     queryKey: helpdeskKeys.mailboxes,
-    queryFn: () => apiRequest("/mail/mailboxes", z.array(helpdeskMailboxSchema)),
+    queryFn: () => apiRequest("/oneops/mail/mailboxes", z.array(helpdeskMailboxSchema)),
     refetchInterval: 60_000,
   });
 }
@@ -266,7 +266,7 @@ export function useHelpdeskMailboxes() {
 export function useTags() {
   return useQuery({
     queryKey: helpdeskKeys.tags,
-    queryFn: () => apiRequest("/mail/tags", z.array(tagSchema)),
+    queryFn: () => apiRequest("/oneops/mail/tags", z.array(tagSchema)),
     staleTime: 5 * 60_000,
   });
 }
@@ -274,7 +274,7 @@ export function useTags() {
 export function useCannedReplies() {
   return useQuery({
     queryKey: helpdeskKeys.cannedReplies,
-    queryFn: () => apiRequest("/mail/canned-replies", z.array(cannedReplySchema)),
+    queryFn: () => apiRequest("/oneops/mail/canned-replies", z.array(cannedReplySchema)),
     staleTime: 5 * 60_000,
   });
 }
@@ -301,7 +301,7 @@ export function useAssignableMembers(orgId: string | undefined) {
   return useQuery({
     queryKey: ["helpdesk", "members", orgId],
     queryFn: () =>
-      apiRequest(`/organizations/${orgId}/members?limit=200`, memberPageSchema),
+      apiRequest(`/oneops/organizations/members?orgId=${orgId}&limit=200`, memberPageSchema),
     enabled: !!orgId,
     retry: false,
     staleTime: 5 * 60_000,
@@ -335,7 +335,7 @@ export function useUpdateTicket() {
   const invalidate = useTicketInvalidation();
   return useMutation({
     mutationFn: (vars: { threadId: string; status?: ThreadStatus; priority?: Priority }) =>
-      apiRequest(`/mail/threads/${vars.threadId}`, ticketSchema, {
+      apiRequest(`/oneops/mail/threads?id=${vars.threadId}`, ticketSchema, {
         method: "PATCH",
         body: { status: vars.status, priority: vars.priority },
       }),
@@ -347,7 +347,7 @@ export function useAssignTicket() {
   const invalidate = useTicketInvalidation();
   return useMutation({
     mutationFn: (vars: { threadId: string; userId?: string; teamId?: string }) =>
-      apiRequestVoid(`/mail/threads/${vars.threadId}/assign`, {
+      apiRequestVoid(`/oneops/mail/threads/assign?id=${vars.threadId}`, {
         body: { userId: vars.userId, teamId: vars.teamId },
       }),
     onSuccess: (_data, vars) => invalidate(vars.threadId),
@@ -358,7 +358,7 @@ export function useUnassignTicket() {
   const invalidate = useTicketInvalidation();
   return useMutation({
     mutationFn: (vars: { threadId: string }) =>
-      apiRequestVoid(`/mail/threads/${vars.threadId}/unassign`, { method: "POST" }),
+      apiRequestVoid(`/oneops/mail/threads/unassign?id=${vars.threadId}`, { method: "POST" }),
     onSuccess: (_data, vars) => invalidate(vars.threadId),
   });
 }
@@ -367,7 +367,7 @@ export function useAddNote() {
   const invalidate = useTicketInvalidation();
   return useMutation({
     mutationFn: (vars: { threadId: string; bodyHtml: string }) =>
-      apiRequest(`/mail/threads/${vars.threadId}/notes`, noteSchema, {
+      apiRequest(`/oneops/mail/threads/notes?id=${vars.threadId}`, noteSchema, {
         body: { bodyHtml: vars.bodyHtml },
       }),
     onSuccess: (_data, vars) => invalidate(vars.threadId),
@@ -378,7 +378,7 @@ export function useAddTicketTag() {
   const invalidate = useTicketInvalidation();
   return useMutation({
     mutationFn: (vars: { threadId: string; tagId: string }) =>
-      apiRequestVoid(`/mail/threads/${vars.threadId}/tags`, { body: { tagId: vars.tagId } }),
+      apiRequestVoid(`/oneops/mail/threads/tags?id=${vars.threadId}`, { body: { tagId: vars.tagId } }),
     onSuccess: (_data, vars) => invalidate(vars.threadId),
   });
 }
@@ -387,7 +387,7 @@ export function useRemoveTicketTag() {
   const invalidate = useTicketInvalidation();
   return useMutation({
     mutationFn: (vars: { threadId: string; tagId: string }) =>
-      apiRequestVoid(`/mail/threads/${vars.threadId}/tags/${vars.tagId}`, { method: "DELETE" }),
+      apiRequestVoid(`/oneops/mail/threads/tags?id=${vars.threadId}&tagId=${vars.tagId}`, { method: "DELETE" }),
     onSuccess: (_data, vars) => invalidate(vars.threadId),
   });
 }
@@ -402,7 +402,7 @@ export function useReplyToTicket() {
       to?: string[];
       cannedReplyId?: string;
     }) =>
-      apiRequest(`/mail/threads/${vars.threadId}/reply`, ticketMessageSchema, {
+      apiRequest(`/oneops/mail/threads/reply?id=${vars.threadId}`, ticketMessageSchema, {
         body: {
           replyMode: vars.replyMode ?? "REPLY",
           bodyHtml: vars.bodyHtml,
@@ -420,7 +420,7 @@ export function useCreateTag() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { name: string; colour?: string; slug?: string }) =>
-      apiRequest("/mail/tags", tagSchema, { body: vars }),
+      apiRequest("/oneops/mail/tags", tagSchema, { body: vars }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: helpdeskKeys.tags }),
   });
 }
@@ -429,7 +429,7 @@ export function useUpdateTag() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { tagId: string; name: string; colour?: string }) =>
-      apiRequest(`/mail/tags/${vars.tagId}`, tagSchema, {
+      apiRequest(`/oneops/mail/tags?id=${vars.tagId}`, tagSchema, {
         method: "PATCH",
         body: { name: vars.name, colour: vars.colour },
       }),
@@ -441,7 +441,7 @@ export function useDeleteTag() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (tagId: string) =>
-      apiRequestVoid(`/mail/tags/${tagId}`, { method: "DELETE" }),
+      apiRequestVoid(`/oneops/mail/tags?id=${tagId}`, { method: "DELETE" }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: helpdeskKeys.tags }),
   });
 }
@@ -455,7 +455,7 @@ export function useCreateCannedReply() {
       mailboxId?: string;
       shortcut?: string;
       subject?: string;
-    }) => apiRequest("/mail/canned-replies", cannedReplySchema, { body: vars }),
+    }) => apiRequest("/oneops/mail/canned-replies", cannedReplySchema, { body: vars }),
     onSuccess: () =>
       void queryClient.invalidateQueries({ queryKey: helpdeskKeys.cannedReplies }),
   });
@@ -472,7 +472,7 @@ export function useUpdateCannedReply() {
       shortcut?: string;
       subject?: string;
     }) =>
-      apiRequest(`/mail/canned-replies/${vars.replyId}`, cannedReplySchema, {
+      apiRequest(`/oneops/mail/canned-replies?id=${vars.replyId}`, cannedReplySchema, {
         method: "PATCH",
         body: {
           title: vars.title,
@@ -491,7 +491,7 @@ export function useDeleteCannedReply() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (replyId: string) =>
-      apiRequestVoid(`/mail/canned-replies/${replyId}`, { method: "DELETE" }),
+      apiRequestVoid(`/oneops/mail/canned-replies?id=${replyId}`, { method: "DELETE" }),
     onSuccess: () =>
       void queryClient.invalidateQueries({ queryKey: helpdeskKeys.cannedReplies }),
   });

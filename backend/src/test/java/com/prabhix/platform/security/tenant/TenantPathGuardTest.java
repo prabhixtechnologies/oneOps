@@ -39,10 +39,10 @@ class TenantPathGuardTest {
                 new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
     }
 
-    private MockHttpServletRequest request(String route, Map<String, String> variables) {
+    private MockHttpServletRequest request(String route, Map<String, String> query) {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", route);
         request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, route);
-        request.setAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, variables);
+        query.forEach(request::setParameter);
         return request;
     }
 
@@ -53,7 +53,7 @@ class TenantPathGuardTest {
     @Test
     void allowsOwnOrganization() {
         authenticate(ownOrg, false);
-        var request = request("/api/v1/organizations/{orgId}/members",
+        var request = request("/api/v1/oneops/organizations/members",
                 Map.of("orgId", ownOrg.toString()));
         assertTrue(assertDoesNotThrow(() -> preHandle(request)));
     }
@@ -61,7 +61,7 @@ class TenantPathGuardTest {
     @Test
     void rejectsForeignOrganizationInOrgIdVariable() {
         authenticate(ownOrg, false);
-        var request = request("/api/v1/organizations/{orgId}/members",
+        var request = request("/api/v1/oneops/organizations/members",
                 Map.of("orgId", foreignOrg.toString()));
         ApiException thrown = assertThrows(ApiException.class, () -> preHandle(request));
         assertEquals(ErrorCode.CROSS_TENANT_ACCESS, thrown.getCode());
@@ -70,7 +70,7 @@ class TenantPathGuardTest {
     @Test
     void rejectsForeignOrganizationOnOrganizationsIdRoute() {
         authenticate(ownOrg, false);
-        var request = request("/api/v1/organizations/{id}",
+        var request = request("/api/v1/oneops/organizations",
                 Map.of("id", foreignOrg.toString()));
         assertThrows(ApiException.class, () -> preHandle(request));
     }
@@ -78,7 +78,7 @@ class TenantPathGuardTest {
     @Test
     void allowsForeignOrganizationOnSelectRoute() {
         authenticate(ownOrg, false);
-        var request = request("/api/v1/organizations/{id}/select",
+        var request = request("/api/v1/oneops/organizations/select",
                 Map.of("id", foreignOrg.toString()));
         assertTrue(assertDoesNotThrow(() -> preHandle(request)));
     }
@@ -86,7 +86,7 @@ class TenantPathGuardTest {
     @Test
     void ignoresUnrelatedIdVariables() {
         authenticate(ownOrg, false);
-        var request = request("/api/v1/mail/threads/{id}",
+        var request = request("/api/v1/oneops/mail/threads",
                 Map.of("id", UUID.randomUUID().toString()));
         assertTrue(assertDoesNotThrow(() -> preHandle(request)));
     }
@@ -94,14 +94,14 @@ class TenantPathGuardTest {
     @Test
     void allowsPlatformAdminCrossTenant() {
         authenticate(ownOrg, true);
-        var request = request("/api/v1/organizations/{id}",
+        var request = request("/api/v1/oneops/organizations",
                 Map.of("id", foreignOrg.toString()));
         assertTrue(assertDoesNotThrow(() -> preHandle(request)));
     }
 
     @Test
     void ignoresAnonymousRequests() {
-        var request = request("/api/v1/organizations/{orgId}/members",
+        var request = request("/api/v1/oneops/organizations/members",
                 Map.of("orgId", foreignOrg.toString()));
         assertTrue(assertDoesNotThrow(() -> preHandle(request)));
     }

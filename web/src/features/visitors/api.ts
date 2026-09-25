@@ -12,7 +12,7 @@ import {
 export function useLiveVisitors() {
   return useQuery({
     queryKey: ["visitors-live"],
-    queryFn: () => apiRequest("/visitors/live", liveVisitorListSchema),
+    queryFn: () => apiRequest("/oneops/visitors/live", liveVisitorListSchema),
     refetchInterval: 15_000,
   });
 }
@@ -24,7 +24,7 @@ export function useVisitors(search?: string) {
       const params = new URLSearchParams({ limit: "50" });
       if (pageParam) params.set("cursor", pageParam);
       if (search) params.set("search", search);
-      return apiRequest(`/visitors?${params}`, visitorListPageSchema);
+      return apiRequest(`/oneops/visitors?${params}`, visitorListPageSchema);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
@@ -34,7 +34,7 @@ export function useVisitors(search?: string) {
 export function useVisitor(id: string | undefined) {
   return useQuery({
     queryKey: ["visitor", id],
-    queryFn: () => apiRequest(`/visitors/${id}`, visitorDetailSchema),
+    queryFn: () => apiRequest(`/oneops/visitors?id=${id}`, visitorDetailSchema),
     enabled: !!id,
   });
 }
@@ -45,7 +45,7 @@ export function useVisitorPageViews(visitorId: string | undefined) {
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ limit: "50" });
       if (pageParam) params.set("cursor", pageParam);
-      return apiRequest(`/visitors/${visitorId}/page-views?${params}`, pageViewListPageSchema);
+      return apiRequest(`/oneops/visitors/page-views?id=${visitorId}&${params}`, pageViewListPageSchema);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
@@ -59,7 +59,7 @@ export function useVisitorEvents(visitorId: string | undefined) {
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ limit: "50" });
       if (pageParam) params.set("cursor", pageParam);
-      return apiRequest(`/visitors/${visitorId}/events?${params}`, visitorEventListPageSchema);
+      return apiRequest(`/oneops/visitors/events?id=${visitorId}&${params}`, visitorEventListPageSchema);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
@@ -71,14 +71,14 @@ export function useVisitorAnalytics(days = 30) {
   return useQuery({
     queryKey: ["visitor-analytics", days],
     queryFn: () =>
-      apiRequest(`/visitors/analytics/summary?days=${days}`, visitorAnalyticsSummarySchema),
+      apiRequest(`/oneops/visitors/analytics/summary?days=${days}`, visitorAnalyticsSummarySchema),
   });
 }
 
 export function useDeleteVisitor() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiRequestVoid(`/visitors/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiRequestVoid(`/oneops/visitors?id=${id}`, { method: "DELETE" }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["visitors"] });
       void qc.invalidateQueries({ queryKey: ["visitors-live"] });

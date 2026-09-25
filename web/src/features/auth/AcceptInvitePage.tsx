@@ -34,7 +34,7 @@ export function AcceptInvitePage() {
     void (async () => {
       try {
         const preview = await apiRequest(
-          `/auth/invites/${encodeURIComponent(token)}/preview`,
+          `/oneops/auth/invites/preview?token=${encodeURIComponent(token)}`,
           z.object({ email: z.string(), organizationName: z.string(), roleName: z.string() }),
           { skipAuth: true },
         );
@@ -50,7 +50,7 @@ export function AcceptInvitePage() {
   const onSubmit = form.handleSubmit(async (data) => {
     if (!token) return;
     try {
-      await apiRequest("/invites/accept", z.object({ organizationId: z.string() }), {
+      await apiRequest("/oneops/invites/accept", z.object({ organizationId: z.string() }), {
         method: "POST",
         body: { token, fullName: data.fullName, password: data.password },
         skipAuth: true,

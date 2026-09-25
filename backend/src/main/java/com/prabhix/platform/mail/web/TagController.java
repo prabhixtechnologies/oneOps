@@ -9,10 +9,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/mail/tags")
+@RequestMapping("/api/v1/oneops/mail/tags")
 @RequiredArgsConstructor
 public class TagController {
 
@@ -41,17 +41,17 @@ public class TagController {
         return tagService.create(principal.requireOrganizationId(), request);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping
     @PreAuthorize(Authorize.MAIL_THREAD_UPDATE)
     public TagDtos.TagResponse update(@CurrentUser PrabhixPrincipal principal,
-                                      @PathVariable UUID id,
+                                      @RequestParam UUID id,
                                       @Valid @RequestBody TagDtos.UpdateTagRequest request) {
         return tagService.update(principal.requireOrganizationId(), id, request);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping
     @PreAuthorize(Authorize.MAIL_THREAD_UPDATE)
-    public ResponseEntity<Void> delete(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         tagService.delete(principal.requireOrganizationId(), id);
         return ResponseEntity.noContent().build();
     }

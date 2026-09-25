@@ -77,7 +77,7 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("signing in draws from the tight credential-stuffing budget")
     void loginUsesTheAuthBudget() throws Exception {
-        MockHttpServletResponse response = callAfter("/api/v1/auth/login", 0);
+        MockHttpServletResponse response = callAfter("/api/v1/oneops/auth/login", 0);
 
         assertThat(remaining(response)).isEqualTo(AUTH_LIMIT - 1);
     }
@@ -87,7 +87,7 @@ class RateLimitFilterTest {
     void loginIsRefusedOnceTheBudgetIsSpent() throws Exception {
         FilterChain chain = mock(FilterChain.class);
         when(valueOps.increment(anyString())).thenReturn((long) AUTH_LIMIT + 1);
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/auth/login");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/oneops/auth/login");
         request.setRemoteAddr("203.0.113.9");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -103,7 +103,7 @@ class RateLimitFilterTest {
         // It is a routine call: every console tab makes it on load and again when its access token
         // ages out. Charged against ten attempts a minute, two consoles and a few reloads would
         // exhaust it, and the resulting 429 is indistinguishable from having been signed out.
-        MockHttpServletResponse response = callAfter("/api/v1/auth/session/token", 0);
+        MockHttpServletResponse response = callAfter("/api/v1/oneops/auth/session/token", 0);
 
         assertThat(remaining(response)).isEqualTo(API_LIMIT - 1);
     }
@@ -111,7 +111,7 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("the session exchange still survives a burst that would lock out sign-in")
     void sessionExchangeSurvivesABurst() throws Exception {
-        MockHttpServletResponse response = callAfter("/api/v1/auth/session/token", AUTH_LIMIT + 5);
+        MockHttpServletResponse response = callAfter("/api/v1/oneops/auth/session/token", AUTH_LIMIT + 5);
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(remaining(response)).isEqualTo(API_LIMIT - AUTH_LIMIT - 6);
@@ -120,7 +120,7 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("the session exchange is still bounded, so it cannot be hammered indefinitely")
     void sessionExchangeIsStillLimited() throws Exception {
-        MockHttpServletResponse response = callAfter("/api/v1/auth/session/token", API_LIMIT);
+        MockHttpServletResponse response = callAfter("/api/v1/oneops/auth/session/token", API_LIMIT);
 
         assertThat(response.getStatus()).isEqualTo(429);
     }
@@ -128,7 +128,7 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("refresh keeps the tight budget, since a refresh token is a guessable secret")
     void refreshKeepsTheAuthBudget() throws Exception {
-        MockHttpServletResponse response = callAfter("/api/v1/auth/refresh", 0);
+        MockHttpServletResponse response = callAfter("/api/v1/oneops/auth/refresh", 0);
 
         assertThat(remaining(response)).isEqualTo(AUTH_LIMIT - 1);
     }

@@ -27,7 +27,8 @@ public class MailTrackingInjector {
         String apiBase = properties.urls().api().replaceAll("/$", "");
         String secret = properties.mail().tracking().secret();
         String openToken = MailTrackingToken.buildToken(secret, "open", outboxId.toString());
-        String pixel = "<img src=\"" + apiBase + "/api/v1/mail/t/o/" + openToken
+        String pixel = "<img src=\"" + apiBase + "/api/v1/oneops/mail/t/o?token="
+                + java.net.URLEncoder.encode(openToken, StandardCharsets.UTF_8)
                 + "\" width=\"1\" height=\"1\" alt=\"\" style=\"display:none\"/>";
 
         Document document = Jsoup.parseBodyFragment(bodyHtml);
@@ -42,7 +43,8 @@ public class MailTrackingInjector {
                     .encodeToString(href.getBytes(StandardCharsets.UTF_8));
             String clickPayload = outboxId + ":" + encodedUrl;
             String clickToken = MailTrackingToken.buildToken(secret, "click", clickPayload);
-            link.attr("href", apiBase + "/api/v1/mail/t/c/" + clickToken);
+            link.attr("href", apiBase + "/api/v1/oneops/mail/t/c?token="
+                    + java.net.URLEncoder.encode(clickToken, StandardCharsets.UTF_8));
         }
 
         return document.body().html();

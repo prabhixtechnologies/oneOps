@@ -35,7 +35,7 @@ export function useChatConversations(filters: {
     queryFn: ({ pageParam }) => {
       const qs = new URLSearchParams(params);
       if (pageParam) qs.set("cursor", pageParam);
-      return apiRequest(`/chat/conversations?${qs}`, conversationListPageSchema);
+      return apiRequest(`/oneops/chat/conversations?${qs}`, conversationListPageSchema);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
@@ -45,7 +45,7 @@ export function useChatConversations(filters: {
 export function useChatCounts() {
   return useQuery({
     queryKey: ["chat-counts"],
-    queryFn: () => apiRequest("/chat/conversations/counts", chatInboxCountsSchema),
+    queryFn: () => apiRequest("/oneops/chat/conversations/counts", chatInboxCountsSchema),
     refetchInterval: 30_000,
   });
 }
@@ -53,7 +53,7 @@ export function useChatCounts() {
 export function useChatConversation(id: string | undefined) {
   return useQuery({
     queryKey: ["chat-conversation", id],
-    queryFn: () => apiRequest(`/chat/conversations/${id}`, conversationDetailSchema),
+    queryFn: () => apiRequest(`/oneops/chat/conversations?id=${id}`, conversationDetailSchema),
     enabled: !!id,
   });
 }
@@ -65,7 +65,7 @@ export function useChatMessages(conversationId: string | undefined) {
       const params = new URLSearchParams({ limit: "50" });
       if (pageParam) params.set("cursor", pageParam);
       return apiRequest(
-        `/chat/conversations/${conversationId}/messages?${params}`,
+        `/oneops/chat/conversations/messages?id=${conversationId}&${params}`,
         chatMessageListPageSchema,
       );
     },
@@ -89,8 +89,8 @@ export function useSendChatMessage() {
       internal?: boolean;
       fileId?: string;
     }) => {
-      const params = internal ? "?note=true" : "";
-      return apiRequest(`/chat/conversations/${conversationId}/messages${params}`, chatMessageSchema, {
+      const params = internal ? "&note=true" : "";
+      return apiRequest(`/oneops/chat/conversations/messages?id=${conversationId}${params}`, chatMessageSchema, {
         method: "POST",
         body: { body, internal: internal ?? false, fileId },
       });
@@ -108,7 +108,7 @@ export function useAssignChatConversation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ conversationId, agentId }: { conversationId: string; agentId: string }) =>
-      apiRequest(`/chat/conversations/${conversationId}/assign`, conversationSummarySchema, {
+      apiRequest(`/oneops/chat/conversations/assign?id=${conversationId}`, conversationSummarySchema, {
         method: "POST",
         body: { agentId },
       }),
@@ -130,7 +130,7 @@ export function useUpdateChatConversation() {
       conversationId: string;
       data: { status?: string; priority?: string; tags?: string[] };
     }) =>
-      apiRequest(`/chat/conversations/${conversationId}`, conversationSummarySchema, {
+      apiRequest(`/oneops/chat/conversations?id=${conversationId}`, conversationSummarySchema, {
         method: "PATCH",
         body: data,
       }),
@@ -144,7 +144,7 @@ export function useUpdateChatConversation() {
 export function useChatSettings() {
   return useQuery({
     queryKey: ["chat-settings"],
-    queryFn: () => apiRequest("/chat/settings", chatSettingsSchema),
+    queryFn: () => apiRequest("/oneops/chat/settings", chatSettingsSchema),
   });
 }
 
@@ -157,7 +157,7 @@ export function useUpdateChatSettings() {
       businessHours?: Record<string, unknown>;
       preChatEnabled?: boolean;
       offlineMailboxId?: string | null;
-    }) => apiRequest("/chat/settings", chatSettingsSchema, { method: "PATCH", body: data }),
+    }) => apiRequest("/oneops/chat/settings", chatSettingsSchema, { method: "PATCH", body: data }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["chat-settings"] }),
   });
 }
@@ -165,7 +165,7 @@ export function useUpdateChatSettings() {
 export function useChatCannedReplies() {
   return useQuery({
     queryKey: ["chat-canned-replies"],
-    queryFn: () => apiRequest("/chat/canned-replies", chatCannedReplyListSchema),
+    queryFn: () => apiRequest("/oneops/chat/canned-replies", chatCannedReplyListSchema),
   });
 }
 
@@ -173,7 +173,7 @@ export function useCreateChatCannedReply() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { title: string; body: string; shortcut?: string }) =>
-      apiRequest("/chat/canned-replies", chatCannedReplySchema, { method: "POST", body: data }),
+      apiRequest("/oneops/chat/canned-replies", chatCannedReplySchema, { method: "POST", body: data }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["chat-canned-replies"] }),
   });
 }
@@ -181,7 +181,7 @@ export function useCreateChatCannedReply() {
 export function useDeleteChatCannedReply() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiRequestVoid(`/chat/canned-replies/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiRequestVoid(`/oneops/chat/canned-replies?id=${id}`, { method: "DELETE" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["chat-canned-replies"] }),
   });
 }
@@ -190,6 +190,6 @@ export function useDeleteChatCannedReply() {
 export function useOfflineMailboxOptions() {
   return useQuery({
     queryKey: ["mailboxes"],
-    queryFn: () => apiRequest("/mail/mailboxes", offlineMailboxOptionsSchema),
+    queryFn: () => apiRequest("/oneops/mail/mailboxes", offlineMailboxOptionsSchema),
   });
 }

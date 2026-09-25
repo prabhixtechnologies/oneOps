@@ -59,15 +59,15 @@ export default function DomainsPage() {
   const queryClient = useQueryClient();
   const domains = useQuery({
     queryKey: domainKeys.all,
-    queryFn: () => apiRequest("/mail/domains", z.array(domainSchema)),
+    queryFn: () => apiRequest("/oneops/mail/domains", z.array(domainSchema)),
   });
   const create = useMutation({
     mutationFn: (vars: { domain: string; mode: MailDomain["mode"] }) =>
-      apiRequest("/mail/domains", domainSchema, { body: vars }),
+      apiRequest("/oneops/mail/domains", domainSchema, { body: vars }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: domainKeys.all }),
   });
   const remove = useMutation({
-    mutationFn: (id: string) => apiRequestVoid(`/mail/domains/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiRequestVoid(`/oneops/mail/domains?id=${id}`, { method: "DELETE" }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: domainKeys.all }),
   });
 
@@ -242,11 +242,11 @@ function DomainDns({ domainId }: { domainId: string }) {
   const queryClient = useQueryClient();
   const dns = useQuery({
     queryKey: domainKeys.dns(domainId),
-    queryFn: () => apiRequest(`/mail/domains/${domainId}/dns`, dnsReportSchema),
+    queryFn: () => apiRequest(`/oneops/mail/domains/dns?id=${domainId}`, dnsReportSchema),
   });
   const verify = useMutation({
     mutationFn: () =>
-      apiRequest(`/mail/domains/${domainId}/verify`, dnsReportSchema, { method: "POST" }),
+      apiRequest(`/oneops/mail/domains/verify?id=${domainId}`, dnsReportSchema, { method: "POST" }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: domainKeys.dns(domainId) });
       void queryClient.invalidateQueries({ queryKey: domainKeys.all });

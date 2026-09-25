@@ -14,7 +14,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/organizations/{orgId}/members")
+@RequestMapping("/api/v1/oneops/organizations/members")
 @RequiredArgsConstructor
 public class MemberController {
 
@@ -31,7 +30,7 @@ public class MemberController {
 
     @GetMapping
     @PreAuthorize(Authorize.ORG_MEMBER_READ)
-    public CursorPage<MemberView> list(@PathVariable UUID orgId,
+    public CursorPage<MemberView> list(@RequestParam UUID orgId,
                                        @RequestParam(required = false) String cursor,
                                        @RequestParam(required = false) Integer limit,
                                        @RequestParam(required = false) String search,
@@ -42,27 +41,27 @@ public class MemberController {
                 cursor, limit, search, status, roleId, department));
     }
 
-    @PatchMapping("/{memberId}/role")
+    @PatchMapping("/role")
     @PreAuthorize(Authorize.ORG_MEMBER_UPDATE)
-    public MemberView changeRole(@PathVariable UUID orgId,
-                                 @PathVariable UUID memberId,
+    public MemberView changeRole(@RequestParam UUID orgId,
+                                 @RequestParam UUID memberId,
                                  @CurrentUser PrabhixPrincipal principal,
                                  @Valid @RequestBody ChangeMemberRoleRequest request) {
         return memberService.changeRole(orgId, memberId, request, principal.userId());
     }
 
-    @PatchMapping("/{memberId}/suspend")
+    @PatchMapping("/suspend")
     @PreAuthorize(Authorize.ORG_MEMBER_UPDATE)
-    public void suspend(@PathVariable UUID orgId,
-                        @PathVariable UUID memberId,
+    public void suspend(@RequestParam UUID orgId,
+                        @RequestParam UUID memberId,
                         @CurrentUser PrabhixPrincipal principal) {
         memberService.suspend(orgId, memberId, principal.userId());
     }
 
-    @DeleteMapping("/{memberId}")
+    @DeleteMapping
     @PreAuthorize(Authorize.ORG_MEMBER_REMOVE)
-    public void remove(@PathVariable UUID orgId,
-                       @PathVariable UUID memberId,
+    public void remove(@RequestParam UUID orgId,
+                       @RequestParam UUID memberId,
                        @CurrentUser PrabhixPrincipal principal) {
         memberService.remove(orgId, memberId, principal.userId(), principal.email());
     }

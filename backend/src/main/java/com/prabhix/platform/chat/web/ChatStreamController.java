@@ -31,7 +31,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/chat")
+@RequestMapping("/api/v1/oneops/chat")
 @RequiredArgsConstructor
 public class ChatStreamController {
 

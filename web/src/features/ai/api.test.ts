@@ -35,7 +35,7 @@ describe("AI API mutations", () => {
     });
 
     expect(apiRequest).toHaveBeenCalledWith(
-      "/chat/conversations/conv-1/ai/rewrite",
+      "/oneops/chat/conversations/ai/rewrite?id=conv-1",
       expect.anything(),
       {
         method: "POST",

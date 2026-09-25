@@ -5,6 +5,6 @@ import { dashboardSchema } from "@/lib/schemas/billing";
 export function useDashboard() {
   return useQuery({
     queryKey: ["dashboard"],
-    queryFn: () => apiRequest("/dashboard", dashboardSchema),
+    queryFn: () => apiRequest("/oneops/dashboard", dashboardSchema),
   });
 }

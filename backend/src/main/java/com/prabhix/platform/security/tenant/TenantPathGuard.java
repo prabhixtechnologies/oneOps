@@ -11,14 +11,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 /**
- * Rejects requests whose URL names an organization other than the caller's own.
+ * Rejects requests whose query names an organization other than the caller's own.
  *
- * <p>Many endpoints take the organization from the path and pass it straight to a query.
+ * <p>Many endpoints take the organization from a query parameter and pass it straight to a query.
  * {@code @PreAuthorize} does not help: it checks that the caller holds a permission, and the
  * permissions on the token were granted within the caller's own tenant, so an owner of one
  * organization satisfies {@code ORG_UPDATE} while pointing at somebody else's.
@@ -32,29 +31,13 @@ import java.util.UUID;
 @Component
 public class TenantPathGuard implements HandlerInterceptor {
 
-    /** Path variables that always denote an organization. */
+    /** Query parameters that always denote an organization. */
     private static final Set<String> ORGANIZATION_VARIABLES = Set.of("orgId", "organizationId");
 
-    private static final String ORGANIZATION_ROUTE_PREFIX = "/api/v1/organizations/{id}";
-
-    /**
-     * Selecting a tenant is the one case where the path organization is supposed to differ from
-     * the token's; {@code OrganizationSelectController} verifies membership itself.
-     */
-    private static final String SELECT_ROUTE = "/api/v1/organizations/{id}/select";
+    private static final String ORGANIZATION_ROUTE = "/api/v1/oneops/organizations";
 
     @Override
-    @SuppressWarnings("unchecked")
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        Object raw = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-        if (!(raw instanceof Map)) {
-            return true;
-        }
-        Map<String, String> variables = (Map<String, String>) raw;
-        if (variables.isEmpty()) {
-            return true;
-        }
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !(authentication.getPrincipal() instanceof PrabhixPrincipal principal)) {
@@ -67,20 +50,28 @@ public class TenantPathGuard implements HandlerInterceptor {
         }
 
         for (String name : ORGANIZATION_VARIABLES) {
-            assertMatches(variables.get(name), principal);
+            assertMatches(request.getParameter(name), principal);
         }
         if (namesOrganizationById(request)) {
-            assertMatches(variables.get("id"), principal);
+            assertMatches(request.getParameter("id"), principal);
         }
         return true;
     }
 
+    /**
+     * Item routes on {@code /organizations} use {@code ?id=}. Selecting a tenant is a different
+     * path, and {@code OrganizationSelectController} verifies membership itself.
+     */
     private boolean namesOrganizationById(HttpServletRequest request) {
         Object pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
         if (!(pattern instanceof String route)) {
             return false;
         }
-        return route.startsWith(ORGANIZATION_ROUTE_PREFIX) && !route.equals(SELECT_ROUTE);
+        int query = route.indexOf('?');
+        if (query >= 0) {
+            route = route.substring(0, query);
+        }
+        return ORGANIZATION_ROUTE.equals(route) && request.getParameter("id") != null;
     }
 
     private void assertMatches(String value, PrabhixPrincipal principal) {

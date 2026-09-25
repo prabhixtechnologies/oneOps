@@ -164,7 +164,7 @@ export const mailboxAdminKeys = {
 export function useAdminMailboxes() {
   return useQuery({
     queryKey: mailboxAdminKeys.mailboxes,
-    queryFn: () => apiRequest("/mail/mailboxes", z.array(mailboxAdminSummarySchema)),
+    queryFn: () => apiRequest("/oneops/mail/mailboxes", z.array(mailboxAdminSummarySchema)),
     staleTime: 30_000,
   });
 }
@@ -172,7 +172,7 @@ export function useAdminMailboxes() {
 export function useMailboxDetail(mailboxId: string | undefined) {
   return useQuery({
     queryKey: mailboxId ? mailboxAdminKeys.mailbox(mailboxId) : ["mailbox-admin", "mailbox", "none"],
-    queryFn: () => apiRequest(`/mail/mailboxes/${mailboxId}`, mailboxDetailSchema),
+    queryFn: () => apiRequest(`/oneops/mail/mailboxes?id=${mailboxId}`, mailboxDetailSchema),
     enabled: !!mailboxId,
   });
 }
@@ -181,7 +181,7 @@ export function useMailboxDetail(mailboxId: string | undefined) {
 export function useTeams() {
   return useQuery({
     queryKey: mailboxAdminKeys.teams,
-    queryFn: () => apiRequest("/teams", teamPageSchema),
+    queryFn: () => apiRequest("/oneops/teams", teamPageSchema),
     retry: false,
     staleTime: 5 * 60_000,
   });
@@ -214,7 +214,7 @@ export function useUpdateMailbox() {
       slaResolutionMins?: number;
       businessHours?: BusinessHours;
     }) =>
-      apiRequest(`/mail/mailboxes/${vars.mailboxId}`, mailboxDetailSchema, {
+      apiRequest(`/oneops/mail/mailboxes?id=${vars.mailboxId}`, mailboxDetailSchema, {
         method: "PATCH",
         body: {
           name: vars.name,
@@ -239,7 +239,7 @@ export function useCreateMailbox() {
       kind?: "SHARED" | "PERSONAL";
       ownerUserId?: string;
     }) =>
-      apiRequest("/mail/mailboxes", mailboxAdminSummarySchema, {
+      apiRequest("/oneops/mail/mailboxes", mailboxAdminSummarySchema, {
         body: {
           address: vars.address,
           name: vars.name,
@@ -256,7 +256,7 @@ export function useDeleteMailbox() {
   const invalidate = useMailboxInvalidation();
   return useMutation({
     mutationFn: (mailboxId: string) =>
-      apiRequestVoid(`/mail/mailboxes/${mailboxId}`, { method: "DELETE" }),
+      apiRequestVoid(`/oneops/mail/mailboxes?id=${mailboxId}`, { method: "DELETE" }),
     onSuccess: () => invalidate(),
   });
 }
@@ -273,7 +273,7 @@ export function useIssueMailPassword() {
   const invalidate = useMailboxInvalidation();
   return useMutation({
     mutationFn: (mailboxId: string) =>
-      apiRequest(`/mail/mailboxes/${mailboxId}/mail-password`, issuedMailPasswordSchema, {
+      apiRequest(`/oneops/mail/mailboxes/mail-password?id=${mailboxId}`, issuedMailPasswordSchema, {
         method: "POST",
       }),
     onSuccess: (_data, mailboxId) => invalidate(mailboxId),
@@ -284,7 +284,7 @@ export function useRevokeMailPassword() {
   const invalidate = useMailboxInvalidation();
   return useMutation({
     mutationFn: (mailboxId: string) =>
-      apiRequestVoid(`/mail/mailboxes/${mailboxId}/mail-password`, { method: "DELETE" }),
+      apiRequestVoid(`/oneops/mail/mailboxes/mail-password?id=${mailboxId}`, { method: "DELETE" }),
     onSuccess: (_data, mailboxId) => invalidate(mailboxId),
   });
 }
@@ -298,7 +298,7 @@ const mailDomainSchema = z.object({
 export function useMailDomains() {
   return useQuery({
     queryKey: ["mailbox-admin", "domains"],
-    queryFn: () => apiRequest("/mail/domains", z.array(mailDomainSchema)),
+    queryFn: () => apiRequest("/oneops/mail/domains", z.array(mailDomainSchema)),
     staleTime: 60_000,
   });
 }
@@ -312,7 +312,7 @@ export function useAddMailboxMember() {
       teamId?: string;
       accessLevel: MemberAccessLevel;
     }) =>
-      apiRequest(`/mail/mailboxes/${vars.mailboxId}/members`, mailboxMemberSchema, {
+      apiRequest(`/oneops/mail/mailboxes/members?id=${vars.mailboxId}`, mailboxMemberSchema, {
         body: {
           userId: vars.userId,
           teamId: vars.teamId,
@@ -332,7 +332,7 @@ export function useUpdateMailboxMember() {
       accessLevel: MemberAccessLevel;
     }) =>
       apiRequest(
-        `/mail/mailboxes/${vars.mailboxId}/members/${vars.memberId}`,
+        `/oneops/mail/mailboxes/members?id=${vars.mailboxId}&memberId=${vars.memberId}`,
         mailboxMemberSchema,
         { method: "PATCH", body: { accessLevel: vars.accessLevel } },
       ),
@@ -344,7 +344,7 @@ export function useRemoveMailboxMember() {
   const invalidate = useMailboxInvalidation();
   return useMutation({
     mutationFn: (vars: { mailboxId: string; memberId: string }) =>
-      apiRequestVoid(`/mail/mailboxes/${vars.mailboxId}/members/${vars.memberId}`, {
+      apiRequestVoid(`/oneops/mail/mailboxes/members?id=${vars.mailboxId}&memberId=${vars.memberId}`, {
         method: "DELETE",
       }),
     onSuccess: (_data, vars) => invalidate(vars.mailboxId),
@@ -366,7 +366,7 @@ export function useCreateRoutingRule() {
   const invalidate = useMailboxInvalidation();
   return useMutation({
     mutationFn: (vars: { mailboxId: string; rule: SaveRoutingRuleInput }) =>
-      apiRequest(`/mail/mailboxes/${vars.mailboxId}/routing-rules`, routingRuleSchema, {
+      apiRequest(`/oneops/mail/mailboxes/routing-rules?id=${vars.mailboxId}`, routingRuleSchema, {
         body: vars.rule,
       }),
     onSuccess: (_data, vars) => invalidate(vars.mailboxId),
@@ -378,7 +378,7 @@ export function useUpdateRoutingRule() {
   return useMutation({
     mutationFn: (vars: { mailboxId: string; ruleId: string; rule: SaveRoutingRuleInput }) =>
       apiRequest(
-        `/mail/mailboxes/${vars.mailboxId}/routing-rules/${vars.ruleId}`,
+        `/oneops/mail/mailboxes/routing-rules?id=${vars.mailboxId}&ruleId=${vars.ruleId}`,
         routingRuleSchema,
         { method: "PATCH", body: vars.rule },
       ),
@@ -390,7 +390,7 @@ export function useDeleteRoutingRule() {
   const invalidate = useMailboxInvalidation();
   return useMutation({
     mutationFn: (vars: { mailboxId: string; ruleId: string }) =>
-      apiRequestVoid(`/mail/mailboxes/${vars.mailboxId}/routing-rules/${vars.ruleId}`, {
+      apiRequestVoid(`/oneops/mail/mailboxes/routing-rules?id=${vars.mailboxId}&ruleId=${vars.ruleId}`, {
         method: "DELETE",
       }),
     onSuccess: (_data, vars) => invalidate(vars.mailboxId),

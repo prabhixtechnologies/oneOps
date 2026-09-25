@@ -9,7 +9,6 @@ import com.prabhix.platform.security.rbac.Authorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/commerce/customers")
+@RequestMapping("/api/v1/oneops/commerce/customers")
 @RequiredArgsConstructor
 public class CommerceCustomerController {
 
@@ -32,9 +31,9 @@ public class CommerceCustomerController {
         return customerService.list(principal.requireOrganizationId(), cursor, limit);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(params = "id")
     @PreAuthorize(Authorize.COMMERCE_CUSTOMER_READ)
-    public CommerceDtos.CustomerDetail get(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public CommerceDtos.CustomerDetail get(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         return customerService.get(principal.requireOrganizationId(), id);
     }
 }

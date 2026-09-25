@@ -18,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,7 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/files")
+@RequestMapping("/api/v1/oneops/files")
 @RequiredArgsConstructor
 public class FileController {
 
@@ -49,10 +48,10 @@ public class FileController {
                 principal.requireOrganizationId(), purpose, scanStatus, q, cursor, limit);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(params = "id")
     @PreAuthorize(Authorize.FILE_READ)
     public ResponseEntity<Resource> download(@CurrentUser PrabhixPrincipal principal,
-                                             @PathVariable UUID id) {
+                                             @RequestParam UUID id) {
         Optional<String> redirect = fileStorageService.signedUrl(principal.requireOrganizationId(), id);
         if (redirect.isPresent()) {
             return ResponseEntity.status(302)
@@ -85,9 +84,9 @@ public class FileController {
                 stored.getSizeBytes(), stored.getScanStatus());
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping
     @PreAuthorize(Authorize.FILE_DELETE)
-    public ResponseEntity<Void> delete(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         fileStorageService.softDelete(principal.requireOrganizationId(), id);
         return ResponseEntity.noContent().build();
     }

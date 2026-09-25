@@ -141,7 +141,7 @@ export function connectChatStream(
   onStateChange?: (state: StreamConnectionState) => void,
 ): () => void {
   return connectEventStream<ChatStreamEvent>({
-    path: "/chat/stream",
+    path: "/oneops/chat/stream",
     onEvent,
     onError,
     onStateChange,
@@ -154,7 +154,7 @@ export function connectAiStream(
   onStateChange?: (state: StreamConnectionState) => void,
 ): () => void {
   return connectEventStream<AiStreamEvent>({
-    path: "/ai/stream",
+    path: "/oneops/ai/stream",
     onEvent,
     onError,
     onStateChange,

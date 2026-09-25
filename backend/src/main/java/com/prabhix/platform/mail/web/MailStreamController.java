@@ -23,7 +23,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mail")
+@RequestMapping("/api/v1/oneops/mail")
 @RequiredArgsConstructor
 public class MailStreamController {
 

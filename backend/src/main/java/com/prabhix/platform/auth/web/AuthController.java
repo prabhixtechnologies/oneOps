@@ -19,12 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>Everything that establishes a session — sign-in by any means, sign-up, refresh, the browser
  * session cookie, password recovery, email verification — lives at identity now, and the edge routes
- * the rest of {@code /api/v1/auth/*} there. These two stay because only this database can answer
+ * the rest of {@code /api/v1/oneops/auth/*} there. These two stay because only this database can answer
  * them: which organization the caller is acting in and what they may do there, and the revocation
  * that makes a sign-out take effect here before the token expires.
  */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v1/oneops/auth")
 @RequiredArgsConstructor
 public class AuthController {
 

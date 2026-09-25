@@ -125,7 +125,7 @@ beforeAll(async () => {
     throw new Error("CONTRACT_LIVE=1 but PBX_CONTRACT_EMAIL / PBX_CONTRACT_PASSWORD are unset");
   }
 
-  const res = await fetch(`${API}/auth/login`, {
+  const res = await fetch(`${API}/identity/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: ORIGIN },
     body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
@@ -147,7 +147,7 @@ beforeAll(async () => {
   }
   token = body.accessToken;
 
-  const me = await fetch(`${API}/auth/me`, {
+  const me = await fetch(`${API}/oneops/auth/me`, {
     headers: { Authorization: `Bearer ${token}`, Origin: ORIGIN },
   });
   const meBody = (await me.json()) as { organizationId?: string; memberships?: { orgId: string }[] };
@@ -200,47 +200,47 @@ async function check(path: string, schema: ZodTypeAny) {
 describe.skipIf(!enabled)("live API matches client schemas", () => {
   it("every console endpoint parses", async () => {
     const cases: [string, ZodTypeAny][] = [
-      ["/dashboard", dashboardSchema],
-      ["/users/me", userProfileSchema],
-      ["/users/me/sessions", sessionListSchema],
-      [`/organizations/${orgId}`, organizationViewSchema],
-      [`/organizations/${orgId}/members?limit=20`, memberListPageSchema],
-      ["/flags", effectiveFlagsSchema],
-      ["/ai/status", aiAvailabilitySchema],
-      ["/ai/settings", aiOrgSettingsSchema],
-      ["/ai/prompts", aiPromptListSchema],
-      ["/ai/usage/summary", aiUsageSummarySchema],
-      ["/ai/usage?limit=20", aiUsagePageSchema],
-      ["/audit-logs?limit=20", auditLogPageSchema],
-      ["/event-logs?limit=20", eventLogPageSchema],
-      ["/billing/subscription", subscriptionSchema],
-      ["/billing/plans", planPageSchema],
-      ["/billing/entitlements", entitlementsSchema],
-      ["/billing/invoices?limit=20", invoiceListPageSchema],
-      ["/billing/payment-methods", paymentMethodListSchema],
-      ["/billing/address", billingAddressSchema],
-      ["/chat/conversations?limit=20", conversationListPageSchema],
-      ["/chat/conversations/counts", chatInboxCountsSchema],
-      ["/chat/canned-replies", chatCannedReplyListSchema],
-      ["/chat/settings", chatSettingsSchema],
-      ["/commerce/dashboard", dashboardViewSchema],
-      ["/commerce/products?limit=20", productListPageSchema],
-      ["/commerce/orders?limit=20", orderListPageSchema],
-      ["/commerce/customers?limit=20", customerListPageSchema],
-      ["/commerce/discounts", discountListSchema],
-      ["/commerce/settings", settingsViewSchema],
-      ["/visitors?limit=20", visitorListPageSchema],
-      ["/visitors/live", liveVisitorListSchema],
-      ["/visitors/analytics/summary?days=7", visitorAnalyticsSummarySchema],
-      ["/roles", rolePageSchema],
-      ["/teams", teamPageSchema],
-      ["/invites", invitePageSchema],
-      ["/settings/api-keys", apiKeyPageSchema],
-      ["/admin/platform/overview", platformOverviewSchema],
-      ["/admin/platform/tenants?limit=20", tenantPageSchema],
-      ["/admin/site/leads?limit=20", leadPageSchema],
-      ["/admin/site/subscribers?limit=20", subscriberPageSchema],
-      ["/admin/site/applications?limit=20", applicationPageSchema],
+      ["/oneops/dashboard", dashboardSchema],
+      ["/oneops/users/me", userProfileSchema],
+      ["/oneops/users/me/sessions", sessionListSchema],
+      [`/oneops/organizations?id=${orgId}`, organizationViewSchema],
+      [`/oneops/organizations/members?orgId=${orgId}&limit=20`, memberListPageSchema],
+      ["/oneops/flags", effectiveFlagsSchema],
+      ["/oneops/ai/status", aiAvailabilitySchema],
+      ["/oneops/ai/settings", aiOrgSettingsSchema],
+      ["/oneops/ai/prompts", aiPromptListSchema],
+      ["/oneops/ai/usage/summary", aiUsageSummarySchema],
+      ["/oneops/ai/usage?limit=20", aiUsagePageSchema],
+      ["/oneops/audit-logs?limit=20", auditLogPageSchema],
+      ["/oneops/event-logs?limit=20", eventLogPageSchema],
+      ["/oneops/billing/subscription", subscriptionSchema],
+      ["/oneops/billing/plans", planPageSchema],
+      ["/oneops/billing/entitlements", entitlementsSchema],
+      ["/oneops/billing/invoices?limit=20", invoiceListPageSchema],
+      ["/oneops/billing/payment-methods", paymentMethodListSchema],
+      ["/oneops/billing/address", billingAddressSchema],
+      ["/oneops/chat/conversations?limit=20", conversationListPageSchema],
+      ["/oneops/chat/conversations/counts", chatInboxCountsSchema],
+      ["/oneops/chat/canned-replies", chatCannedReplyListSchema],
+      ["/oneops/chat/settings", chatSettingsSchema],
+      ["/oneops/commerce/dashboard", dashboardViewSchema],
+      ["/oneops/commerce/products?limit=20", productListPageSchema],
+      ["/oneops/commerce/orders?limit=20", orderListPageSchema],
+      ["/oneops/commerce/customers?limit=20", customerListPageSchema],
+      ["/oneops/commerce/discounts", discountListSchema],
+      ["/oneops/commerce/settings", settingsViewSchema],
+      ["/oneops/visitors?limit=20", visitorListPageSchema],
+      ["/oneops/visitors/live", liveVisitorListSchema],
+      ["/oneops/visitors/analytics/summary?days=7", visitorAnalyticsSummarySchema],
+      ["/oneops/roles", rolePageSchema],
+      ["/oneops/teams", teamPageSchema],
+      ["/oneops/invites", invitePageSchema],
+      ["/oneops/settings/api-keys", apiKeyPageSchema],
+      ["/oneops/admin/platform/overview", platformOverviewSchema],
+      ["/oneops/admin/platform/tenants?limit=20", tenantPageSchema],
+      ["/oneops/admin/site/leads?limit=20", leadPageSchema],
+      ["/oneops/admin/site/subscribers?limit=20", subscriberPageSchema],
+      ["/oneops/admin/site/applications?limit=20", applicationPageSchema],
     ];
 
     const results = [];

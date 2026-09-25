@@ -17,7 +17,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,7 +27,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/organizations")
+@RequestMapping("/api/v1/oneops/organizations")
 @RequiredArgsConstructor
 public class OrganizationController {
 
@@ -48,23 +47,23 @@ public class OrganizationController {
         return organizationService.listForUser(principal.userId());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(params = "id")
     @PreAuthorize(Authorize.ORG_READ)
-    public OrganizationView get(@PathVariable UUID id) {
+    public OrganizationView get(@RequestParam UUID id) {
         return organizationService.get(id);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping
     @PreAuthorize(Authorize.ORG_UPDATE)
-    public OrganizationView update(@PathVariable UUID id,
+    public OrganizationView update(@RequestParam UUID id,
                                    @Valid @RequestBody UpdateOrganizationRequest request) {
         return organizationService.update(id, request);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping
     @PreAuthorize(Authorize.ORG_DELETE)
     public ResponseEntity<Void> delete(@CurrentUser PrabhixPrincipal principal,
-                                       @PathVariable UUID id,
+                                       @RequestParam UUID id,
                                        @RequestParam(defaultValue = "false") boolean confirm) {
         organizationDeletionService.delete(id, principal.userId(), confirm);
         return ResponseEntity.noContent().build();

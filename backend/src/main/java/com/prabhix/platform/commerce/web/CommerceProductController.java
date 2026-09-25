@@ -10,7 +10,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/commerce/products")
+@RequestMapping("/api/v1/oneops/commerce/products")
 @RequiredArgsConstructor
 public class CommerceProductController {
 
@@ -42,9 +41,9 @@ public class CommerceProductController {
                 principal.requireOrganizationId(), status, featured, type, cursor, limit);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(params = "id")
     @PreAuthorize(Authorize.COMMERCE_CATALOG_READ)
-    public CommerceDtos.ProductDetail get(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public CommerceDtos.ProductDetail get(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         return catalogService.getAdmin(principal.requireOrganizationId(), id);
     }
 
@@ -55,36 +54,36 @@ public class CommerceProductController {
         return catalogService.create(principal, request);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping
     @PreAuthorize(Authorize.COMMERCE_CATALOG_MANAGE)
     public CommerceDtos.ProductDetail update(@CurrentUser PrabhixPrincipal principal,
-                                             @PathVariable UUID id,
+                                             @RequestParam UUID id,
                                              @Valid @RequestBody CommerceDtos.UpdateProductRequest request) {
         return catalogService.update(principal, id, request);
     }
 
-    @PostMapping("/{id}/variants")
+    @PostMapping("/variants")
     @PreAuthorize(Authorize.COMMERCE_CATALOG_MANAGE)
     public CommerceDtos.VariantView createVariant(@CurrentUser PrabhixPrincipal principal,
-                                                  @PathVariable UUID id,
+                                                  @RequestParam UUID id,
                                                   @Valid @RequestBody CommerceDtos.CreateVariantRequest request) {
         return catalogService.createVariant(principal, id, request);
     }
 
-    @PutMapping("/{productId}/variants/{variantId}")
+    @PutMapping("/variants")
     @PreAuthorize(Authorize.COMMERCE_CATALOG_MANAGE)
     public CommerceDtos.VariantView updateVariant(@CurrentUser PrabhixPrincipal principal,
-                                                  @PathVariable UUID productId,
-                                                  @PathVariable UUID variantId,
+                                                  @RequestParam UUID productId,
+                                                  @RequestParam UUID variantId,
                                                   @Valid @RequestBody CommerceDtos.UpdateVariantRequest request) {
         return catalogService.updateVariant(principal, productId, variantId, request);
     }
 
-    @DeleteMapping("/{productId}/variants/{variantId}")
+    @DeleteMapping("/variants")
     @PreAuthorize(Authorize.COMMERCE_CATALOG_MANAGE)
     public void archiveVariant(@CurrentUser PrabhixPrincipal principal,
-                               @PathVariable UUID productId,
-                               @PathVariable UUID variantId) {
+                               @RequestParam UUID productId,
+                               @RequestParam UUID variantId) {
         catalogService.archiveVariant(principal, productId, variantId);
     }
 

@@ -9,7 +9,6 @@ import com.prabhix.platform.security.rbac.Authorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,7 +27,7 @@ import java.util.UUID;
  * hire answering a ticket has no reason to change what a shop pays.
  */
 @RestController
-@RequestMapping("/api/v1/admin/platform")
+@RequestMapping("/api/v1/oneops/admin/platform")
 @RequiredArgsConstructor
 public class PlatformMobiStackAdminController {
 
@@ -42,31 +41,31 @@ public class PlatformMobiStackAdminController {
         return mobistack.get(principal.userId(), "/workspaces");
     }
 
-    @PostMapping("/mobistack/workspaces/{id}/suspend")
+    @PostMapping("/mobistack/workspaces/suspend")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Object suspend(@CurrentUser PrabhixPrincipal principal,
-                          @PathVariable UUID id,
+                          @RequestParam UUID id,
                           @RequestBody(required = false) Map<String, String> body) {
         requireSupport(principal);
-        return mobistack.post(principal.userId(), "/workspaces/" + id + "/suspend", Map.of(), reason(body));
+        return mobistack.post(principal.userId(), "/workspaces/suspend?id=" + id, Map.of(), reason(body));
     }
 
-    @PostMapping("/mobistack/workspaces/{id}/activate")
+    @PostMapping("/mobistack/workspaces/activate")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Object activate(@CurrentUser PrabhixPrincipal principal,
-                           @PathVariable UUID id,
+                           @RequestParam UUID id,
                            @RequestBody(required = false) Map<String, String> body) {
         requireSupport(principal);
-        return mobistack.post(principal.userId(), "/workspaces/" + id + "/activate", Map.of(), reason(body));
+        return mobistack.post(principal.userId(), "/workspaces/activate?id=" + id, Map.of(), reason(body));
     }
 
-    @PostMapping("/mobistack/workspaces/{id}/screens")
+    @PostMapping("/mobistack/workspaces/screens")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Object screens(@CurrentUser PrabhixPrincipal principal,
-                          @PathVariable UUID id,
+                          @RequestParam UUID id,
                           @RequestBody Map<String, Object> body) {
         requireSupport(principal);
-        return mobistack.post(principal.userId(), "/workspaces/" + id + "/screens", body, null);
+        return mobistack.post(principal.userId(), "/workspaces/screens?id=" + id, body, null);
     }
 
     @GetMapping("/mobistack/live")
@@ -76,13 +75,13 @@ public class PlatformMobiStackAdminController {
         return mobistack.get(principal.userId(), "/live");
     }
 
-    @PostMapping("/mobistack/live/{userId}/kick")
+    @PostMapping("/mobistack/live/kick")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Object kick(@CurrentUser PrabhixPrincipal principal,
-                       @PathVariable UUID userId,
+                       @RequestParam UUID userId,
                        @RequestBody(required = false) Map<String, String> body) {
         requireSupport(principal);
-        return mobistack.post(principal.userId(), "/live/" + userId + "/kick",
+        return mobistack.post(principal.userId(), "/live/kick?userId=" + userId,
                 body == null ? Map.of() : body, reason(body));
     }
 
@@ -107,13 +106,13 @@ public class PlatformMobiStackAdminController {
         return mobistack.get(principal.userId(), "/app-releases");
     }
 
-    @PutMapping("/mobistack/app-releases/{platform}")
+    @PutMapping("/mobistack/app-releases")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Object updateRelease(@CurrentUser PrabhixPrincipal principal,
-                                @PathVariable String platform,
+                                @RequestParam String platform,
                                 @RequestBody Map<String, Object> body) {
         requireSupport(principal);
-        return mobistack.put(principal.userId(), "/app-releases/" + platform, body, null);
+        return mobistack.put(principal.userId(), "/app-releases?platform=" + platform, body, null);
     }
 
     @GetMapping("/mobistack/support")
@@ -124,22 +123,22 @@ public class PlatformMobiStackAdminController {
         return mobistack.get(principal.userId(), "/support", Map.of("status", status == null ? "" : status));
     }
 
-    @PostMapping("/mobistack/support/{id}/messages")
+    @PostMapping("/mobistack/support/messages")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Object supportReply(@CurrentUser PrabhixPrincipal principal,
-                               @PathVariable UUID id,
+                               @RequestParam UUID id,
                                @RequestBody Map<String, String> body) {
         requireSupport(principal);
         String message = body.get("message") != null ? body.get("message") : body.get("body");
-        return mobistack.post(principal.userId(), "/support/" + id + "/messages",
+        return mobistack.post(principal.userId(), "/support/messages?id=" + id,
                 Map.of("message", message == null ? "" : message), null);
     }
 
-    @PostMapping("/mobistack/support/{id}/resolve")
+    @PostMapping("/mobistack/support/resolve")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
-    public Object supportResolve(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public Object supportResolve(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         requireSupport(principal);
-        return mobistack.post(principal.userId(), "/support/" + id + "/resolve", Map.of(), null);
+        return mobistack.post(principal.userId(), "/support/resolve?id=" + id, Map.of(), null);
     }
 
     @GetMapping("/mobistack/plans")
@@ -163,22 +162,22 @@ public class PlatformMobiStackAdminController {
         return mobistack.post(principal.userId(), "/plans", body, null);
     }
 
-    @PutMapping("/mobistack/plans/{id}")
+    @PutMapping("/mobistack/plans")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Object updatePlan(@CurrentUser PrabhixPrincipal principal,
-                             @PathVariable UUID id,
+                             @RequestParam UUID id,
                              @RequestBody Map<String, Object> body) {
         requireBilling(principal);
-        return mobistack.put(principal.userId(), "/plans/" + id, body, null);
+        return mobistack.put(principal.userId(), "/plans?id=" + id, body, null);
     }
 
-    @PostMapping("/mobistack/workspaces/{id}/plan")
+    @PostMapping("/mobistack/workspaces/plan")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Object assignPlan(@CurrentUser PrabhixPrincipal principal,
-                             @PathVariable UUID id,
+                             @RequestParam UUID id,
                              @RequestBody Map<String, Object> body) {
         requireBilling(principal);
-        return mobistack.post(principal.userId(), "/workspaces/" + id + "/plan", body, null);
+        return mobistack.post(principal.userId(), "/workspaces/plan?id=" + id, body, null);
     }
 
     @GetMapping("/mobistack/billing/orders")
@@ -205,23 +204,23 @@ public class PlatformMobiStackAdminController {
                 Map.of("page", page, "size", size));
     }
 
-    @PostMapping("/commons/{id}/accept")
+    @PostMapping("/commons/accept")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Object commonsAccept(@CurrentUser PrabhixPrincipal principal,
-                                @PathVariable UUID id,
+                                @RequestParam UUID id,
                                 @RequestBody(required = false) Map<String, String> body) {
         requireSupport(principal);
-        return mobistack.post(principal.userId(), "/commons/" + id + "/accept",
+        return mobistack.post(principal.userId(), "/commons/accept?id=" + id,
                 body == null ? Map.of() : body, reason(body));
     }
 
-    @PostMapping("/commons/{id}/reject")
+    @PostMapping("/commons/reject")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public Object commonsReject(@CurrentUser PrabhixPrincipal principal,
-                                @PathVariable UUID id,
+                                @RequestParam UUID id,
                                 @RequestBody(required = false) Map<String, String> body) {
         requireSupport(principal);
-        return mobistack.post(principal.userId(), "/commons/" + id + "/reject",
+        return mobistack.post(principal.userId(), "/commons/reject?id=" + id,
                 body == null ? Map.of() : body, reason(body));
     }
 

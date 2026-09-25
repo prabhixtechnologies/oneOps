@@ -24,7 +24,7 @@ import java.security.MessageDigest;
 import java.util.Base64;
 
 @RestController
-@RequestMapping("/api/v1/mail/inbound")
+@RequestMapping("/api/v1/oneops/mail/inbound")
 @RequiredArgsConstructor
 public class LmtpIngestController {
 

@@ -36,7 +36,7 @@ export function VerifyEmailPage() {
 
     void (async () => {
       try {
-        await apiRequest("/auth/email/verify/confirm", ackResponseSchema, {
+        await apiRequest("/oneops/auth/email/verify/confirm", ackResponseSchema, {
           method: "POST",
           body: { token },
           skipAuth: true,

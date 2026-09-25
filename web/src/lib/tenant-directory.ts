@@ -20,7 +20,7 @@ import { tenantPageSchema } from "./schemas/ops";
 export function useTenantNames(enabled: boolean) {
   const query = useQuery({
     queryKey: ["tenant-names"],
-    queryFn: () => apiRequest("/admin/platform/tenants?limit=200", tenantPageSchema),
+    queryFn: () => apiRequest("/oneops/admin/platform/tenants?limit=200", tenantPageSchema),
     enabled,
     // Organization names change about never, and this is a display convenience rather than data.
     staleTime: 10 * 60 * 1000,

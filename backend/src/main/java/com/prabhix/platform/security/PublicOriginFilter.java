@@ -36,9 +36,9 @@ public class PublicOriginFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return !path.startsWith("/api/v1/visitor/public/")
-                && !path.startsWith("/api/v1/chat/public/")
-                && !path.startsWith("/api/v1/commerce/public/");
+        return !path.startsWith("/api/v1/oneops/visitor/public/")
+                && !path.startsWith("/api/v1/oneops/chat/public/")
+                && !path.startsWith("/api/v1/oneops/commerce/public/");
     }
 
     @Override
@@ -67,10 +67,10 @@ public class PublicOriginFilter extends OncePerRequestFilter {
     }
 
     private List<String> allowedOriginsFor(String path) {
-        if (path.startsWith("/api/v1/chat/public/")) {
+        if (path.startsWith("/api/v1/oneops/chat/public/")) {
             return chatProperties.allowedOrigins();
         }
-        if (path.startsWith("/api/v1/commerce/public/")) {
+        if (path.startsWith("/api/v1/oneops/commerce/public/")) {
             return commerceProperties.allowedOrigins();
         }
         return visitorProperties.allowedOrigins();

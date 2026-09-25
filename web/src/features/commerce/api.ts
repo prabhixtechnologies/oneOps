@@ -22,14 +22,14 @@ import { z } from "zod";
 export function useCommerceDashboard() {
   return useQuery({
     queryKey: ["commerce-dashboard"],
-    queryFn: () => apiRequest("/commerce/dashboard", dashboardViewSchema),
+    queryFn: () => apiRequest("/oneops/commerce/dashboard", dashboardViewSchema),
   });
 }
 
 export function useCommerceSettings() {
   return useQuery({
     queryKey: ["commerce-settings"],
-    queryFn: () => apiRequest("/commerce/settings", settingsViewSchema),
+    queryFn: () => apiRequest("/oneops/commerce/settings", settingsViewSchema),
   });
 }
 
@@ -37,7 +37,7 @@ export function useUpdateCommerceSettings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      apiRequest("/commerce/settings", settingsViewSchema, {
+      apiRequest("/oneops/commerce/settings", settingsViewSchema, {
         method: "PUT",
         body,
       }),
@@ -58,7 +58,7 @@ export function useCommerceProducts(filters: {
       if (filters.status) params.set("status", filters.status);
       if (filters.type) params.set("type", filters.type);
       if (filters.featured != null) params.set("featured", String(filters.featured));
-      return apiRequest(`/commerce/products?${params}`, productListPageSchema);
+      return apiRequest(`/oneops/commerce/products?${params}`, productListPageSchema);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
@@ -68,7 +68,7 @@ export function useCommerceProducts(filters: {
 export function useCommerceProduct(id: string | undefined) {
   return useQuery({
     queryKey: ["commerce-product", id],
-    queryFn: () => apiRequest(`/commerce/products/${id}`, productDetailSchema),
+    queryFn: () => apiRequest(`/oneops/commerce/products?id=${id}`, productDetailSchema),
     enabled: !!id,
   });
 }
@@ -77,7 +77,7 @@ export function useCreateCommerceProduct() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      apiRequest("/commerce/products", productDetailSchema, { method: "POST", body }),
+      apiRequest("/oneops/commerce/products", productDetailSchema, { method: "POST", body }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["commerce-products"] }),
   });
 }
@@ -86,7 +86,7 @@ export function useUpdateCommerceProduct(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      apiRequest(`/commerce/products/${id}`, productDetailSchema, { method: "PUT", body }),
+      apiRequest(`/oneops/commerce/products?id=${id}`, productDetailSchema, { method: "PUT", body }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["commerce-products"] });
       void qc.invalidateQueries({ queryKey: ["commerce-product", id] });
@@ -98,7 +98,7 @@ export function useCreateVariant(productId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      apiRequest(`/commerce/products/${productId}/variants`, variantViewSchema, {
+      apiRequest(`/oneops/commerce/products/variants?id=${productId}`, variantViewSchema, {
         method: "POST",
         body,
       }),
@@ -110,7 +110,7 @@ export function useCommerceCategories() {
   return useQuery({
     queryKey: ["commerce-categories"],
     queryFn: () =>
-      apiRequest("/commerce/products/categories", categoryListSchema),
+      apiRequest("/oneops/commerce/products/categories", categoryListSchema),
   });
 }
 
@@ -129,7 +129,7 @@ export function useCommerceOrders(filters: {
       if (filters.search) params.set("search", filters.search);
       if (filters.from) params.set("from", filters.from);
       if (filters.to) params.set("to", filters.to);
-      return apiRequest(`/commerce/orders?${params}`, orderListPageSchema);
+      return apiRequest(`/oneops/commerce/orders?${params}`, orderListPageSchema);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
@@ -139,7 +139,7 @@ export function useCommerceOrders(filters: {
 export function useCommerceOrder(id: string | undefined) {
   return useQuery({
     queryKey: ["commerce-order", id],
-    queryFn: () => apiRequest(`/commerce/orders/${id}`, orderDetailSchema),
+    queryFn: () => apiRequest(`/oneops/commerce/orders?id=${id}`, orderDetailSchema),
     enabled: !!id,
   });
 }
@@ -148,7 +148,7 @@ export function useFulfillOrder(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      apiRequest(`/commerce/orders/${id}/fulfill`, orderDetailSchema, { method: "POST" }),
+      apiRequest(`/oneops/commerce/orders/fulfill?id=${id}`, orderDetailSchema, { method: "POST" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["commerce-order", id] }),
   });
 }
@@ -157,7 +157,7 @@ export function useCancelOrder(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      apiRequest(`/commerce/orders/${id}/cancel`, orderDetailSchema, { method: "POST" }),
+      apiRequest(`/oneops/commerce/orders/cancel?id=${id}`, orderDetailSchema, { method: "POST" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["commerce-order", id] }),
   });
 }
@@ -166,7 +166,7 @@ export function useAnnotateOrder(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (internalNote: string) =>
-      apiRequest(`/commerce/orders/${id}`, orderDetailSchema, {
+      apiRequest(`/oneops/commerce/orders?id=${id}`, orderDetailSchema, {
         method: "PATCH",
         body: { internalNote },
       }),
@@ -178,7 +178,7 @@ export function useRefundOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { orderId: string; amountPaise?: number }) =>
-      apiRequest("/commerce/orders/refunds", refundViewSchema, { method: "POST", body }),
+      apiRequest("/oneops/commerce/orders/refunds", refundViewSchema, { method: "POST", body }),
     onSuccess: (_data, vars) =>
       void qc.invalidateQueries({ queryKey: ["commerce-order", vars.orderId] }),
   });
@@ -188,7 +188,7 @@ export function useOrderDownloads(orderId: string | undefined) {
   return useQuery({
     queryKey: ["commerce-order-downloads", orderId],
     queryFn: () =>
-      apiRequest(`/commerce/orders/${orderId}/downloads`, downloadListSchema),
+      apiRequest(`/oneops/commerce/orders/downloads?id=${orderId}`, downloadListSchema),
     enabled: !!orderId,
   });
 }
@@ -198,7 +198,7 @@ export function useReissueDownload(orderId: string) {
   return useMutation({
     mutationFn: (orderItemId: string) =>
       apiRequest(
-        `/commerce/orders/${orderId}/downloads/${orderItemId}/reissue`,
+        `/oneops/commerce/orders/downloads/reissue?orderId=${orderId}&orderItemId=${orderItemId}`,
         z.object({ downloadUrl: z.string(), expiresAt: z.string() }),
         { method: "POST" },
       ),
@@ -213,7 +213,7 @@ export function useCommerceCustomers() {
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ limit: "50" });
       if (pageParam) params.set("cursor", pageParam);
-      return apiRequest(`/commerce/customers?${params}`, customerListPageSchema);
+      return apiRequest(`/oneops/commerce/customers?${params}`, customerListPageSchema);
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
@@ -223,7 +223,7 @@ export function useCommerceCustomers() {
 export function useCommerceCustomer(id: string | undefined) {
   return useQuery({
     queryKey: ["commerce-customer", id],
-    queryFn: () => apiRequest(`/commerce/customers/${id}`, customerDetailSchema),
+    queryFn: () => apiRequest(`/oneops/commerce/customers?id=${id}`, customerDetailSchema),
     enabled: !!id,
   });
 }
@@ -231,7 +231,7 @@ export function useCommerceCustomer(id: string | undefined) {
 export function useCommerceDiscounts() {
   return useQuery({
     queryKey: ["commerce-discounts"],
-    queryFn: () => apiRequest("/commerce/discounts", discountListSchema),
+    queryFn: () => apiRequest("/oneops/commerce/discounts", discountListSchema),
   });
 }
 
@@ -239,7 +239,7 @@ export function useCreateDiscount() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      apiRequest("/commerce/discounts", discountViewSchema, { method: "POST", body }),
+      apiRequest("/oneops/commerce/discounts", discountViewSchema, { method: "POST", body }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["commerce-discounts"] }),
   });
 }
@@ -248,7 +248,7 @@ export function useUpdateDiscount(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      apiRequest(`/commerce/discounts/${id}`, discountViewSchema, {
+      apiRequest(`/oneops/commerce/discounts?id=${id}`, discountViewSchema, {
         method: "PATCH",
         body,
       }),

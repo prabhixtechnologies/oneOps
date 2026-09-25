@@ -8,9 +8,9 @@ import com.prabhix.platform.security.rbac.Authorize;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/commerce/discounts")
+@RequestMapping("/api/v1/oneops/commerce/discounts")
 @RequiredArgsConstructor
 public class CommerceDiscountController {
 
@@ -39,10 +39,10 @@ public class CommerceDiscountController {
         return discountAdminService.create(principal, request);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping
     @PreAuthorize(Authorize.COMMERCE_DISCOUNT_MANAGE)
     public CommerceDtos.DiscountView update(@CurrentUser PrabhixPrincipal principal,
-                                            @PathVariable UUID id,
+                                            @RequestParam UUID id,
                                             @Valid @RequestBody CommerceDtos.UpdateDiscountRequest request) {
         return discountAdminService.update(principal, id, request);
     }

@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/v1/billing/address": {
+    "/api/v1/oneops/billing/address": {
         parameters: {
             query?: never;
             header?: never;
@@ -20,7 +20,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/visitor/public/{orgSlug}/ingest": {
+    "/api/v1/oneops/visitor/public/ingest": {
         parameters: {
             query?: never;
             header?: never;
@@ -37,7 +37,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/visitor/public/{orgSlug}/identify": {
+    "/api/v1/oneops/visitor/public/identify": {
         parameters: {
             query?: never;
             header?: never;
@@ -54,7 +54,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/me/password": {
+    "/api/v1/oneops/users/me/password": {
         parameters: {
             query?: never;
             header?: never;
@@ -70,7 +70,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/me/avatar": {
+    "/api/v1/oneops/users/me/avatar": {
         parameters: {
             query?: never;
             header?: never;
@@ -86,7 +86,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/teams": {
+    "/api/v1/oneops/teams": {
         parameters: {
             query?: never;
             header?: never;
@@ -96,13 +96,13 @@ export interface paths {
         get: operations["list"];
         put?: never;
         post: operations["create"];
-        delete?: never;
+        delete: operations["delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["update"];
         trace?: never;
     };
-    "/api/v1/teams/{id}/members": {
+    "/api/v1/oneops/teams/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -112,13 +112,13 @@ export interface paths {
         get: operations["listMembers"];
         put?: never;
         post: operations["addMember"];
-        delete?: never;
+        delete: operations["removeMember"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/site/subscribers": {
+    "/api/v1/oneops/site/subscribers": {
         parameters: {
             query?: never;
             header?: never;
@@ -134,7 +134,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/site/leads": {
+    "/api/v1/oneops/site/leads": {
         parameters: {
             query?: never;
             header?: never;
@@ -150,7 +150,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/site/applications": {
+    "/api/v1/oneops/site/applications": {
         parameters: {
             query?: never;
             header?: never;
@@ -166,7 +166,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/settings/api-keys": {
+    "/api/v1/oneops/settings/api-keys": {
         parameters: {
             query?: never;
             header?: never;
@@ -176,13 +176,13 @@ export interface paths {
         get: operations["list_1"];
         put?: never;
         post: operations["create_1"];
-        delete?: never;
+        delete: operations["revoke_1"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/roles": {
+    "/api/v1/oneops/roles": {
         parameters: {
             query?: never;
             header?: never;
@@ -192,13 +192,13 @@ export interface paths {
         get: operations["list_2"];
         put?: never;
         post: operations["create_2"];
-        delete?: never;
+        delete: operations["delete_1"];
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["update_1"];
         trace?: never;
     };
-    "/api/v1/organizations": {
+    "/api/v1/oneops/organizations": {
         parameters: {
             query?: never;
             header?: never;
@@ -211,10 +211,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["update_2"];
         trace?: never;
     };
-    "/api/v1/organizations/{id}/select": {
+    "/api/v1/oneops/organizations/select": {
         parameters: {
             query?: never;
             header?: never;
@@ -230,7 +230,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/threads/{id}/unassign": {
+    "/api/v1/oneops/mail/threads/unassign": {
         parameters: {
             query?: never;
             header?: never;
@@ -246,7 +246,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/threads/{id}/reply": {
+    "/api/v1/oneops/mail/threads/reply": {
         parameters: {
             query?: never;
             header?: never;
@@ -262,7 +262,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/threads/{id}/notes": {
+    "/api/v1/oneops/mail/threads/notes": {
         parameters: {
             query?: never;
             header?: never;
@@ -278,7 +278,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/threads/{id}/assign": {
+    "/api/v1/oneops/mail/threads/assign": {
         parameters: {
             query?: never;
             header?: never;
@@ -294,23 +294,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/threads/bulk": {
+    "/api/v1/oneops/mail/threads": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["list_12"];
         put?: never;
         post: operations["bulkUpdate"];
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["update_3"];
         trace?: never;
     };
-    "/api/v1/mail/templates/{key}/preview": {
+    "/api/v1/oneops/mail/templates/preview": {
         parameters: {
             query?: never;
             header?: never;
@@ -326,7 +326,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/tags": {
+    "/api/v1/oneops/mail/tags": {
         parameters: {
             query?: never;
             header?: never;
@@ -342,7 +342,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/suppressions": {
+    "/api/v1/oneops/mail/suppressions": {
         parameters: {
             query?: never;
             header?: never;
@@ -358,7 +358,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/mailboxes": {
+    "/api/v1/oneops/mail/mailboxes": {
         parameters: {
             query?: never;
             header?: never;
@@ -368,13 +368,13 @@ export interface paths {
         get: operations["list_6"];
         put?: never;
         post: operations["create_5"];
-        delete?: never;
+        delete: operations["delete_2"];
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["update_5"];
         trace?: never;
     };
-    "/api/v1/mail/mailboxes/{id}/members": {
+    "/api/v1/oneops/mail/mailboxes/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -384,13 +384,13 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["addMember_1"];
-        delete?: never;
+        delete: operations["removeMember_1"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/inbound/lmtp": {
+    "/api/v1/oneops/mail/inbound/lmtp": {
         parameters: {
             query?: never;
             header?: never;
@@ -406,7 +406,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/domains": {
+    "/api/v1/oneops/mail/domains": {
         parameters: {
             query?: never;
             header?: never;
@@ -416,13 +416,13 @@ export interface paths {
         get: operations["list_7"];
         put?: never;
         post: operations["create_6"];
-        delete?: never;
+        delete: operations["delete_5"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/domains/{id}/verify": {
+    "/api/v1/oneops/mail/domains/verify": {
         parameters: {
             query?: never;
             header?: never;
@@ -438,7 +438,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/canned-replies": {
+    "/api/v1/oneops/mail/canned-replies": {
         parameters: {
             query?: never;
             header?: never;
@@ -454,7 +454,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/invites": {
+    "/api/v1/oneops/invites": {
         parameters: {
             query?: never;
             header?: never;
@@ -470,7 +470,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/invites/{id}/revoke": {
+    "/api/v1/oneops/invites/revoke": {
         parameters: {
             query?: never;
             header?: never;
@@ -486,7 +486,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/invites/{id}/resend": {
+    "/api/v1/oneops/invites/resend": {
         parameters: {
             query?: never;
             header?: never;
@@ -502,7 +502,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/invites/accept": {
+    "/api/v1/oneops/invites/accept": {
         parameters: {
             query?: never;
             header?: never;
@@ -518,23 +518,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/files": {
+    "/api/v1/oneops/files": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["download"];
         put?: never;
         post: operations["upload"];
-        delete?: never;
+        delete: operations["delete_4"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/chat/public/{orgSlug}/conversations": {
+    "/api/v1/oneops/chat/public/conversations": {
         parameters: {
             query?: never;
             header?: never;
@@ -551,7 +551,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/chat/public/{orgSlug}/conversations/{id}/messages": {
+    "/api/v1/oneops/chat/public/conversations/messages": {
         parameters: {
             query?: never;
             header?: never;
@@ -569,7 +569,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/chat/conversations/{id}/messages": {
+    "/api/v1/oneops/chat/conversations/messages": {
         parameters: {
             query?: never;
             header?: never;
@@ -585,7 +585,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/chat/conversations/{id}/assign": {
+    "/api/v1/oneops/chat/conversations/assign": {
         parameters: {
             query?: never;
             header?: never;
@@ -601,7 +601,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/chat/canned-replies": {
+    "/api/v1/oneops/chat/canned-replies": {
         parameters: {
             query?: never;
             header?: never;
@@ -611,13 +611,13 @@ export interface paths {
         get: operations["cannedReplies"];
         put?: never;
         post: operations["createCannedReply"];
-        delete?: never;
+        delete: operations["deleteCannedReply"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/webhooks/razorpay": {
+    "/api/v1/oneops/billing/webhooks/razorpay": {
         parameters: {
             query?: never;
             header?: never;
@@ -633,7 +633,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/verify": {
+    "/api/v1/oneops/billing/verify": {
         parameters: {
             query?: never;
             header?: never;
@@ -649,7 +649,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/subscription/seats": {
+    "/api/v1/oneops/billing/subscription/seats": {
         parameters: {
             query?: never;
             header?: never;
@@ -665,7 +665,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/subscription/reactivate": {
+    "/api/v1/oneops/billing/subscription/reactivate": {
         parameters: {
             query?: never;
             header?: never;
@@ -681,7 +681,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/subscription/change-plan": {
+    "/api/v1/oneops/billing/subscription/change-plan": {
         parameters: {
             query?: never;
             header?: never;
@@ -697,7 +697,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/subscription/cancel": {
+    "/api/v1/oneops/billing/subscription/cancel": {
         parameters: {
             query?: never;
             header?: never;
@@ -713,7 +713,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/refunds": {
+    "/api/v1/oneops/billing/refunds": {
         parameters: {
             query?: never;
             header?: never;
@@ -729,7 +729,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/orders": {
+    "/api/v1/oneops/billing/orders": {
         parameters: {
             query?: never;
             header?: never;
@@ -745,7 +745,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/orders/{id}/dev-complete": {
+    "/api/v1/oneops/billing/orders/dev-complete": {
         parameters: {
             query?: never;
             header?: never;
@@ -761,7 +761,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/sso/google": {
+    "/api/v1/oneops/auth/sso/google": {
         parameters: {
             query?: never;
             header?: never;
@@ -777,7 +777,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/register": {
+    "/api/v1/oneops/auth/register": {
         parameters: {
             query?: never;
             header?: never;
@@ -793,7 +793,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/refresh": {
+    "/api/v1/oneops/auth/refresh": {
         parameters: {
             query?: never;
             header?: never;
@@ -809,7 +809,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/password/reset": {
+    "/api/v1/oneops/auth/password/reset": {
         parameters: {
             query?: never;
             header?: never;
@@ -825,7 +825,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/password/forgot": {
+    "/api/v1/oneops/auth/password/forgot": {
         parameters: {
             query?: never;
             header?: never;
@@ -841,7 +841,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/otp/verify": {
+    "/api/v1/oneops/auth/otp/verify": {
         parameters: {
             query?: never;
             header?: never;
@@ -857,7 +857,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/otp/request": {
+    "/api/v1/oneops/auth/otp/request": {
         parameters: {
             query?: never;
             header?: never;
@@ -873,7 +873,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/magic-link/verify": {
+    "/api/v1/oneops/auth/magic-link/verify": {
         parameters: {
             query?: never;
             header?: never;
@@ -889,7 +889,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/magic-link/request": {
+    "/api/v1/oneops/auth/magic-link/request": {
         parameters: {
             query?: never;
             header?: never;
@@ -905,7 +905,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/logout": {
+    "/api/v1/oneops/auth/logout": {
         parameters: {
             query?: never;
             header?: never;
@@ -921,7 +921,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/login": {
+    "/api/v1/oneops/auth/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -937,7 +937,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/me": {
+    "/api/v1/oneops/users/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -953,7 +953,7 @@ export interface paths {
         patch: operations["updateMe"];
         trace?: never;
     };
-    "/api/v1/users/me/notification-prefs": {
+    "/api/v1/oneops/users/me/notification-prefs": {
         parameters: {
             query?: never;
             header?: never;
@@ -969,39 +969,7 @@ export interface paths {
         patch: operations["updateNotificationPrefs"];
         trace?: never;
     };
-    "/api/v1/teams/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["delete"];
-        options?: never;
-        head?: never;
-        patch: operations["update"];
-        trace?: never;
-    };
-    "/api/v1/roles/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["delete_1"];
-        options?: never;
-        head?: never;
-        patch: operations["update_1"];
-        trace?: never;
-    };
-    "/api/v1/organizations/{orgId}/members/{memberId}/suspend": {
+    "/api/v1/oneops/organizations/members/suspend": {
         parameters: {
             query?: never;
             header?: never;
@@ -1017,7 +985,7 @@ export interface paths {
         patch: operations["suspend"];
         trace?: never;
     };
-    "/api/v1/organizations/{orgId}/members/{memberId}/role": {
+    "/api/v1/oneops/organizations/members/role": {
         parameters: {
             query?: never;
             header?: never;
@@ -1033,46 +1001,14 @@ export interface paths {
         patch: operations["changeRole"];
         trace?: never;
     };
-    "/api/v1/organizations/{id}": {
+    "/api/v1/oneops/mail/templates": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["update_2"];
-        trace?: never;
-    };
-    "/api/v1/mail/threads/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_1"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["update_3"];
-        trace?: never;
-    };
-    "/api/v1/mail/templates/{key}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_2"];
+        get: operations["list_13"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1081,23 +1017,7 @@ export interface paths {
         patch: operations["update_4"];
         trace?: never;
     };
-    "/api/v1/mail/mailboxes/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_3"];
-        put?: never;
-        post?: never;
-        delete: operations["delete_2"];
-        options?: never;
-        head?: never;
-        patch: operations["update_5"];
-        trace?: never;
-    };
-    "/api/v1/chat/settings": {
+    "/api/v1/oneops/chat/settings": {
         parameters: {
             query?: never;
             header?: never;
@@ -1113,14 +1033,14 @@ export interface paths {
         patch: operations["updateSettings"];
         trace?: never;
     };
-    "/api/v1/chat/conversations/{id}": {
+    "/api/v1/oneops/chat/conversations": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["get_4"];
+        get: operations["list_15"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1129,7 +1049,7 @@ export interface paths {
         patch: operations["update_6"];
         trace?: never;
     };
-    "/api/v1/visitors": {
+    "/api/v1/oneops/visitors": {
         parameters: {
             query?: never;
             header?: never;
@@ -1139,29 +1059,13 @@ export interface paths {
         get: operations["list_10"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/visitors/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_5"];
-        put?: never;
-        post?: never;
         delete: operations["delete_3"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/visitors/{id}/page-views": {
+    "/api/v1/oneops/visitors/page-views": {
         parameters: {
             query?: never;
             header?: never;
@@ -1177,7 +1081,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/visitors/{id}/events": {
+    "/api/v1/oneops/visitors/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -1193,7 +1097,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/visitors/live": {
+    "/api/v1/oneops/visitors/live": {
         parameters: {
             query?: never;
             header?: never;
@@ -1210,7 +1114,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/visitors/analytics/summary": {
+    "/api/v1/oneops/visitors/analytics/summary": {
         parameters: {
             query?: never;
             header?: never;
@@ -1226,7 +1130,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/me/sessions": {
+    "/api/v1/oneops/users/me/sessions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1236,13 +1140,13 @@ export interface paths {
         get: operations["sessions"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["revokeSession"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/site/subscribers/unsubscribe": {
+    "/api/v1/oneops/site/subscribers/unsubscribe": {
         parameters: {
             query?: never;
             header?: never;
@@ -1258,7 +1162,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/site/subscribers/confirm": {
+    "/api/v1/oneops/site/subscribers/confirm": {
         parameters: {
             query?: never;
             header?: never;
@@ -1274,7 +1178,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/site/careers": {
+    "/api/v1/oneops/site/careers": {
         parameters: {
             query?: never;
             header?: never;
@@ -1290,23 +1194,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/site/careers/{slug}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["career"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/permissions": {
+    "/api/v1/oneops/permissions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1322,7 +1210,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/organizations/{orgId}/members": {
+    "/api/v1/oneops/organizations/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -1332,45 +1220,13 @@ export interface paths {
         get: operations["list_11"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["remove"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/threads": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_12"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/mail/templates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_13"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/mail/t/o/{token}": {
+    "/api/v1/oneops/mail/t/o": {
         parameters: {
             query?: never;
             header?: never;
@@ -1386,7 +1242,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/t/c/{token}": {
+    "/api/v1/oneops/mail/t/c": {
         parameters: {
             query?: never;
             header?: never;
@@ -1402,7 +1258,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/stream": {
+    "/api/v1/oneops/mail/stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -1418,7 +1274,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/mail/domains/{id}/dns": {
+    "/api/v1/oneops/mail/domains/dns": {
         parameters: {
             query?: never;
             header?: never;
@@ -1434,7 +1290,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/flags": {
+    "/api/v1/oneops/flags": {
         parameters: {
             query?: never;
             header?: never;
@@ -1450,23 +1306,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/files/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["download"];
-        put?: never;
-        post?: never;
-        delete: operations["delete_4"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/dashboard": {
+    "/api/v1/oneops/dashboard": {
         parameters: {
             query?: never;
             header?: never;
@@ -1482,7 +1322,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/chat/stream": {
+    "/api/v1/oneops/chat/stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -1498,7 +1338,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/chat/public/stream": {
+    "/api/v1/oneops/chat/public/stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -1514,23 +1354,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/chat/conversations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_15"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chat/conversations/counts": {
+    "/api/v1/oneops/chat/conversations/counts": {
         parameters: {
             query?: never;
             header?: never;
@@ -1546,7 +1370,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/subscription": {
+    "/api/v1/oneops/billing/subscription": {
         parameters: {
             query?: never;
             header?: never;
@@ -1562,7 +1386,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/plans": {
+    "/api/v1/oneops/billing/plans": {
         parameters: {
             query?: never;
             header?: never;
@@ -1578,7 +1402,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/payment-methods": {
+    "/api/v1/oneops/billing/payment-methods": {
         parameters: {
             query?: never;
             header?: never;
@@ -1594,7 +1418,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/invoices": {
+    "/api/v1/oneops/billing/invoices": {
         parameters: {
             query?: never;
             header?: never;
@@ -1610,7 +1434,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/invoices/{id}/download": {
+    "/api/v1/oneops/billing/invoices/download": {
         parameters: {
             query?: never;
             header?: never;
@@ -1626,7 +1450,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/billing/entitlements": {
+    "/api/v1/oneops/billing/entitlements": {
         parameters: {
             query?: never;
             header?: never;
@@ -1642,7 +1466,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/me": {
+    "/api/v1/oneops/auth/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -1658,7 +1482,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/invites/{token}/preview": {
+    "/api/v1/oneops/auth/invites/preview": {
         parameters: {
             query?: never;
             header?: never;
@@ -1674,7 +1498,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/audit-logs": {
+    "/api/v1/oneops/audit-logs": {
         parameters: {
             query?: never;
             header?: never;
@@ -1690,119 +1514,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/me/sessions/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["revokeSession"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/teams/{id}/members/{userId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["removeMember"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/settings/api-keys/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["revoke_1"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/organizations/{orgId}/members/{memberId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["remove"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/mail/mailboxes/{id}/members/{userId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["removeMember_1"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/mail/domains/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["delete_5"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/chat/canned-replies/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["deleteCannedReply"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/commerce/public/{orgSlug}/products": {
+    "/api/v1/oneops/commerce/public/products": {
         parameters: {
             query?: never;
             header?: never;
@@ -1818,39 +1530,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/public/{orgSlug}/products/{slug}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getPublicProduct"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/commerce/public/{orgSlug}/carts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["createPublicCart"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/commerce/public/{orgSlug}/carts/{cartToken}": {
+    "/api/v1/oneops/commerce/public/carts": {
         parameters: {
             query?: never;
             header?: never;
@@ -1859,14 +1539,14 @@ export interface paths {
         };
         get: operations["getPublicCart"];
         put?: never;
-        post?: never;
+        post: operations["createPublicCart"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/public/{orgSlug}/carts/{cartToken}/items": {
+    "/api/v1/oneops/commerce/public/carts/items": {
         parameters: {
             query?: never;
             header?: never;
@@ -1882,7 +1562,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/public/{orgSlug}/carts/{cartToken}/checkout": {
+    "/api/v1/oneops/commerce/public/carts/checkout": {
         parameters: {
             query?: never;
             header?: never;
@@ -1898,7 +1578,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/public/{orgSlug}/payments/verify": {
+    "/api/v1/oneops/commerce/public/payments/verify": {
         parameters: {
             query?: never;
             header?: never;
@@ -1914,7 +1594,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/public/{orgSlug}/orders/{accessToken}": {
+    "/api/v1/oneops/commerce/public/orders": {
         parameters: {
             query?: never;
             header?: never;
@@ -1930,7 +1610,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/products": {
+    "/api/v1/oneops/commerce/products": {
         parameters: {
             query?: never;
             header?: never;
@@ -1946,7 +1626,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/orders": {
+    "/api/v1/oneops/commerce/orders": {
         parameters: {
             query?: never;
             header?: never;
@@ -1962,7 +1642,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/customers": {
+    "/api/v1/oneops/commerce/customers": {
         parameters: {
             query?: never;
             header?: never;
@@ -1978,7 +1658,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/discounts": {
+    "/api/v1/oneops/commerce/discounts": {
         parameters: {
             query?: never;
             header?: never;
@@ -1994,7 +1674,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/settings": {
+    "/api/v1/oneops/commerce/settings": {
         parameters: {
             query?: never;
             header?: never;
@@ -2010,7 +1690,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/commerce/dashboard": {
+    "/api/v1/oneops/commerce/dashboard": {
         parameters: {
             query?: never;
             header?: never;
@@ -3690,11 +3370,11 @@ export interface operations {
     };
     ingest: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 orgSlug: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -3716,11 +3396,11 @@ export interface operations {
     };
     identify: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 orgSlug: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -3838,15 +3518,62 @@ export interface operations {
             };
         };
     };
+    delete: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTeamRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TeamView"];
+                };
+            };
+        };
+    };
     listMembers: {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -3866,11 +3593,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -3887,6 +3613,28 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["TeamMemberView"];
                 };
+            };
+        };
+    };
+    removeMember: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4014,6 +3762,27 @@ export interface operations {
             };
         };
     };
+    revoke_1: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     list_2: {
         parameters: {
             query: {
@@ -4062,10 +3831,59 @@ export interface operations {
             };
         };
     };
+    delete_1: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_1: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RoleView"];
+                };
+            };
+        };
+    };
     list_3: {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
+                id?: string;
             };
             header?: never;
             path?: never;
@@ -4110,15 +3928,40 @@ export interface operations {
             };
         };
     };
+    update_2: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOrganizationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OrganizationView"];
+                };
+            };
+        };
+    };
     select: {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -4138,11 +3981,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -4160,11 +4002,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4188,11 +4029,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4216,11 +4056,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4235,6 +4074,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    list_12: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                mailboxId?: string;
+                status?: string;
+                priority?: string;
+                assigneeUserId?: string;
+                assigneeTeamId?: string;
+                tagId?: string;
+                unreadOnly?: boolean;
+                hasAttachment?: boolean;
+                q?: string;
+                cursor?: string;
+                limit?: number;
+                id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CursorPageThreadSummary"];
+                };
             };
         };
     };
@@ -4264,15 +4137,41 @@ export interface operations {
             };
         };
     };
+    update_3: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateThreadRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ThreadSummary"];
+                };
+            };
+        };
+    };
     preview: {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 key: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4392,6 +4291,7 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
+                id?: string;
             };
             header?: never;
             path?: never;
@@ -4436,15 +4336,62 @@ export interface operations {
             };
         };
     };
+    delete_2: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_5: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMailboxRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MailboxDetailResponse"];
+                };
+            };
+        };
+    };
     addMember_1: {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4461,6 +4408,29 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["MailboxMemberResponse"];
                 };
+            };
+        };
+    };
+    removeMember_1: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4538,15 +4508,35 @@ export interface operations {
             };
         };
     };
+    delete_5: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     verify: {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -4664,11 +4654,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -4686,11 +4675,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -4734,6 +4722,29 @@ export interface operations {
             };
         };
     };
+    download: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
     upload: {
         parameters: {
             query?: {
@@ -4764,13 +4775,34 @@ export interface operations {
             };
         };
     };
+    delete_4: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     start: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 orgSlug: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4792,16 +4824,15 @@ export interface operations {
     };
     messages: {
         parameters: {
-            query?: {
+            query: {
+                id: string;
                 cursor?: string;
                 limit?: number;
             };
             header: {
                 "X-Chat-Token": string;
             };
-            path: {
-                id: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -4819,14 +4850,14 @@ export interface operations {
     };
     send: {
         parameters: {
-            query?: never;
-            header: {
-                "X-Chat-Token": string;
-            };
-            path: {
+            query: {
                 orgSlug: string;
                 id: string;
             };
+            header: {
+                "X-Chat-Token": string;
+            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4850,13 +4881,12 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
                 cursor?: string;
                 limit?: number;
             };
             header?: never;
-            path: {
-                id: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -4876,12 +4906,11 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
                 note?: boolean;
             };
             header?: never;
-            path: {
-                id: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4905,11 +4934,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4974,6 +5002,27 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["CannedReplyView"];
                 };
+            };
+        };
+    };
+    deleteCannedReply: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -5184,11 +5233,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -5542,116 +5590,15 @@ export interface operations {
             };
         };
     };
-    delete: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    update: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateTeamRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TeamView"];
-                };
-            };
-        };
-    };
-    delete_1: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    update_1: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RoleView"];
-                };
-            };
-        };
-    };
     suspend: {
         parameters: {
             query: {
+                orgId: string;
+                memberId: string;
                 principal: components["schemas"]["PrabhixPrincipal"];
             };
             header?: never;
-            path: {
-                orgId: string;
-                memberId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -5668,13 +5615,12 @@ export interface operations {
     changeRole: {
         parameters: {
             query: {
+                orgId: string;
+                memberId: string;
                 principal: components["schemas"]["PrabhixPrincipal"];
             };
             header?: never;
-            path: {
-                orgId: string;
-                memberId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -5694,13 +5640,14 @@ export interface operations {
             };
         };
     };
-    get: {
+    list_13: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                key?: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -5711,109 +5658,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["OrganizationView"];
-                };
-            };
-        };
-    };
-    update_2: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateOrganizationRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["OrganizationView"];
-                };
-            };
-        };
-    };
-    get_1: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ThreadDetail"];
-                };
-            };
-        };
-    };
-    update_3: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateThreadRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ThreadSummary"];
-                };
-            };
-        };
-    };
-    get_2: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                key: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TemplateDetailResponse"];
+                    "*/*": components["schemas"]["TemplateResponse"][];
                 };
             };
         };
@@ -5822,11 +5667,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 key: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -5842,80 +5686,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TemplateDetailResponse"];
-                };
-            };
-        };
-    };
-    get_3: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["MailboxDetailResponse"];
-                };
-            };
-        };
-    };
-    delete_2: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    update_5: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateMailboxRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["MailboxDetailResponse"];
                 };
             };
         };
@@ -5968,15 +5738,18 @@ export interface operations {
             };
         };
     };
-    get_4: {
+    list_15: {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
+                queue?: string;
+                status?: string;
+                cursor?: string;
+                limit?: number;
+                id?: string;
             };
             header?: never;
-            path: {
-                id: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -5987,7 +5760,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ConversationDetail"];
+                    "*/*": components["schemas"]["CursorPageConversationSummary"];
                 };
             };
         };
@@ -5996,11 +5769,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -6026,6 +5798,7 @@ export interface operations {
                 principal: components["schemas"]["PrabhixPrincipal"];
                 cursor?: string;
                 limit?: number;
+                id?: string;
             };
             header?: never;
             path?: never;
@@ -6044,39 +5817,14 @@ export interface operations {
             };
         };
     };
-    get_5: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["VisitorDetail"];
-                };
-            };
-        };
-    };
     delete_3: {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -6094,13 +5842,12 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
                 cursor?: string;
                 limit?: number;
             };
             header?: never;
-            path: {
-                id: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -6120,13 +5867,12 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
                 cursor?: string;
                 limit?: number;
             };
             header?: never;
-            path: {
-                id: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -6209,6 +5955,27 @@ export interface operations {
             };
         };
     };
+    revokeSession: {
+        parameters: {
+            query: {
+                principal: components["schemas"]["PrabhixPrincipal"];
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     unsubscribe: {
         parameters: {
             query: {
@@ -6255,7 +6022,9 @@ export interface operations {
     };
     careers: {
         parameters: {
-            query?: never;
+            query?: {
+                slug?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -6269,28 +6038,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["JobRoleSummary"][];
-                };
-            };
-        };
-    };
-    career: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                slug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["JobRoleDetail"];
                 };
             };
         };
@@ -6317,7 +6064,8 @@ export interface operations {
     };
     list_11: {
         parameters: {
-            query?: {
+            query: {
+                orgId: string;
                 cursor?: string;
                 limit?: number;
                 search?: string;
@@ -6326,9 +6074,7 @@ export interface operations {
                 department?: string;
             };
             header?: never;
-            path: {
-                orgId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -6344,42 +6090,11 @@ export interface operations {
             };
         };
     };
-    list_12: {
+    remove: {
         parameters: {
             query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-                mailboxId?: string;
-                status?: string;
-                priority?: string;
-                assigneeUserId?: string;
-                assigneeTeamId?: string;
-                tagId?: string;
-                unreadOnly?: boolean;
-                hasAttachment?: boolean;
-                q?: string;
-                cursor?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CursorPageThreadSummary"];
-                };
-            };
-        };
-    };
-    list_13: {
-        parameters: {
-            query: {
+                orgId: string;
+                memberId: string;
                 principal: components["schemas"]["PrabhixPrincipal"];
             };
             header?: never;
@@ -6393,19 +6108,17 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "*/*": components["schemas"]["TemplateResponse"][];
-                };
+                content?: never;
             };
         };
     };
     trackOpen: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 token: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -6423,11 +6136,11 @@ export interface operations {
     };
     trackClick: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 token: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -6467,11 +6180,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -6506,52 +6218,6 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["EffectiveFlags"];
                 };
-            };
-        };
-    };
-    download: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
-        };
-    };
-    delete_4: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
@@ -6619,32 +6285,6 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": components["schemas"]["SseEmitter"];
-                };
-            };
-        };
-    };
-    list_15: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-                queue?: string;
-                status?: string;
-                cursor?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CursorPageConversationSummary"];
                 };
             };
         };
@@ -6766,11 +6406,10 @@ export interface operations {
         parameters: {
             query: {
                 principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
                 id: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -6834,11 +6473,11 @@ export interface operations {
     };
     preview_1: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 token: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -6883,176 +6522,19 @@ export interface operations {
             };
         };
     };
-    revokeSession: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    removeMember: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-                userId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    revoke_1: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    remove: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                orgId: string;
-                memberId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    removeMember_1: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-                userId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    delete_5: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    deleteCannedReply: {
-        parameters: {
-            query: {
-                principal: components["schemas"]["PrabhixPrincipal"];
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     listPublicProducts: {
         parameters: {
-            query?: {
+            query: {
+                orgSlug: string;
                 search?: string;
                 type?: string;
                 category?: string;
                 cursor?: string;
                 limit?: number;
+                slug?: string;
             };
             header?: never;
-            path: {
-                orgSlug: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -7068,61 +6550,14 @@ export interface operations {
             };
         };
     };
-    getPublicProduct: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                orgSlug: string;
-                slug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ProductDetail"];
-                };
-            };
-        };
-    };
-    createPublicCart: {
-        parameters: {
-            query?: {
-                visitorId?: string;
-            };
-            header?: never;
-            path: {
-                orgSlug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CreateCartResponse"];
-                };
-            };
-        };
-    };
     getPublicCart: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 orgSlug: string;
                 cartToken: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -7138,14 +6573,37 @@ export interface operations {
             };
         };
     };
+    createPublicCart: {
+        parameters: {
+            query: {
+                orgSlug: string;
+                visitorId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CreateCartResponse"];
+                };
+            };
+        };
+    };
     addPublicCartItem: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 orgSlug: string;
                 cartToken: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -7167,12 +6625,12 @@ export interface operations {
     };
     checkoutPublicCart: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 orgSlug: string;
                 cartToken: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -7194,11 +6652,11 @@ export interface operations {
     };
     verifyPublicPayment: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 orgSlug: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -7220,12 +6678,12 @@ export interface operations {
     };
     getPublicOrder: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 orgSlug: string;
                 accessToken: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

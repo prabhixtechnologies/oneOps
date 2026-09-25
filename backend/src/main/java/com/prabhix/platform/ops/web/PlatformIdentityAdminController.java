@@ -9,7 +9,6 @@ import com.prabhix.platform.security.rbac.Authorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,7 +26,7 @@ import java.util.UUID;
  * service token and records who asked.
  */
 @RestController
-@RequestMapping("/api/v1/admin/platform/identity")
+@RequestMapping("/api/v1/oneops/admin/platform/identity")
 @RequiredArgsConstructor
 public class PlatformIdentityAdminController {
 
@@ -43,48 +42,48 @@ public class PlatformIdentityAdminController {
         return identity.searchUsers(principal.userId(), new UserSearch(q, status, cursor, limit));
     }
 
-    @GetMapping("/users/{id}")
+    @GetMapping(value = "/users", params = "id")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
-    public Object getUser(@CurrentUser PrabhixPrincipal principal, @PathVariable UUID id) {
+    public Object getUser(@CurrentUser PrabhixPrincipal principal, @RequestParam UUID id) {
         return identity.getUser(principal.userId(), id);
     }
 
-    @PostMapping("/users/{id}/disable")
+    @PostMapping("/users/disable")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public void disable(@CurrentUser PrabhixPrincipal principal,
-                        @PathVariable UUID id,
+                        @RequestParam UUID id,
                         @RequestBody(required = false) Map<String, String> body) {
         identity.disableUser(principal.userId(), id, reason(body));
     }
 
-    @PostMapping("/users/{id}/enable")
+    @PostMapping("/users/enable")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public void enable(@CurrentUser PrabhixPrincipal principal,
-                       @PathVariable UUID id,
+                       @RequestParam UUID id,
                        @RequestBody(required = false) Map<String, String> body) {
         identity.enableUser(principal.userId(), id, reason(body));
     }
 
-    @PostMapping("/users/{id}/unlock")
+    @PostMapping("/users/unlock")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public void unlock(@CurrentUser PrabhixPrincipal principal,
-                       @PathVariable UUID id,
+                       @RequestParam UUID id,
                        @RequestBody(required = false) Map<String, String> body) {
         identity.unlockUser(principal.userId(), id, reason(body));
     }
 
-    @PostMapping("/users/{id}/force-reset")
+    @PostMapping("/users/force-reset")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public void forceReset(@CurrentUser PrabhixPrincipal principal,
-                           @PathVariable UUID id,
+                           @RequestParam UUID id,
                            @RequestBody(required = false) Map<String, String> body) {
         identity.forcePasswordReset(principal.userId(), id, reason(body));
     }
 
-    @PostMapping("/users/{id}/revoke-sessions")
+    @PostMapping("/users/revoke-sessions")
     @PreAuthorize(Authorize.PLATFORM_ADMIN)
     public void revokeSessions(@CurrentUser PrabhixPrincipal principal,
-                               @PathVariable UUID id,
+                               @RequestParam UUID id,
                                @RequestBody(required = false) Map<String, String> body) {
         identity.revokeSessions(principal.userId(), id, reason(body));
     }

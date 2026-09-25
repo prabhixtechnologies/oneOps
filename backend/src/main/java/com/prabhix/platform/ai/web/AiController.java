@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,7 +30,7 @@ import java.util.UUID;
 
 @Tag(name = "AI", description = "Provider-agnostic AI assistance, usage, and configuration")
 @RestController
-@RequestMapping("/api/v1/ai")
+@RequestMapping("/api/v1/oneops/ai")
 @RequiredArgsConstructor
 public class AiController {
 
@@ -97,10 +96,10 @@ public class AiController {
                 .toList();
     }
 
-    @PutMapping("/prompts/{taskKey}")
+    @PutMapping("/prompts")
     @PreAuthorize(Authorize.AI_CONFIGURE)
     public AiDtos.PromptView updatePrompt(@CurrentUser PrabhixPrincipal principal,
-                                          @PathVariable String taskKey,
+                                          @RequestParam String taskKey,
                                           @Valid @RequestBody AiDtos.UpdatePromptRequest request) {
         UUID orgId = principal.requireOrganizationId();
         var saved = promptService.upsertOrgPrompt(
@@ -124,19 +123,19 @@ public class AiController {
                 principal.requireOrganizationId(), principal.userId(), request);
     }
 
-    @PostMapping("/leads/{leadId}/enrich")
+    @PostMapping("/leads/enrich")
     @PreAuthorize(Authorize.AI_USE)
     public AiDtos.LeadEnrichmentResult enrichLead(@CurrentUser PrabhixPrincipal principal,
-                                                  @PathVariable UUID leadId) {
+                                                  @RequestParam UUID leadId) {
         return leadAiService.enrichLead(
                 principal.requireOrganizationId(), principal.userId(), leadId);
     }
 
-    @PostMapping("/commerce/products/{productId}/description")
+    @PostMapping("/commerce/products/description")
     @PreAuthorize(Authorize.AI_USE)
     public AiDtos.ProductDescriptionResult draftProductDescription(
             @CurrentUser PrabhixPrincipal principal,
-            @PathVariable UUID productId) {
+            @RequestParam UUID productId) {
         return commerceAiService.draftDescription(
                 principal.requireOrganizationId(), principal.userId(), productId);
     }

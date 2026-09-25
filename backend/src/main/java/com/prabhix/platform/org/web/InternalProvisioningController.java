@@ -43,7 +43,7 @@ import java.util.UUID;
  */
 @Slf4j
 @RestController
-@RequestMapping("/internal")
+@RequestMapping("/internal/oneops")
 @RequiredArgsConstructor
 public class InternalProvisioningController {
 

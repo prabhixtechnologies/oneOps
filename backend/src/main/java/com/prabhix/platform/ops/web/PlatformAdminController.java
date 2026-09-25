@@ -19,13 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Cross-tenant operator endpoints.
  *
- * <p>{@code SecurityConfig} already gates the whole {@code /api/v1/admin/**} tree on
+ * <p>{@code SecurityConfig} already gates the whole {@code /api/v1/oneops/admin/**} tree on
  * PLATFORM_ADMIN. The annotations repeat it per method so that moving a handler out of this
  * prefix cannot silently drop the check. Fine-grained staff roles are checked through
  * {@link com.prabhix.platform.ops.service.PlatformStaffService}.
  */
 @RestController
-@RequestMapping("/api/v1/admin/platform")
+@RequestMapping("/api/v1/oneops/admin/platform")
 @RequiredArgsConstructor
 public class PlatformAdminController {
 

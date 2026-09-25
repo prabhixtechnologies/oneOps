@@ -8,7 +8,7 @@ export function useFiles() {
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ limit: "40" });
       if (pageParam) params.set("cursor", pageParam);
-      return apiRequest(`/files?${params}`, fileListPageSchema);
+      return apiRequest(`/oneops/files?${params}`, fileListPageSchema);
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
@@ -27,7 +27,7 @@ export function useUploadFile() {
 export function useDeleteFile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiRequestVoid(`/files/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiRequestVoid(`/oneops/files?id=${id}`, { method: "DELETE" }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["files"] }),
   });
 }

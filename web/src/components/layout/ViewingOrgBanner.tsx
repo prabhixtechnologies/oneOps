@@ -18,7 +18,7 @@ import { useViewingOrg } from "@/lib/use-viewing-org";
 function useViewedOrgName(id: string | undefined) {
   const query = useQuery({
     queryKey: ["viewed-organization", id],
-    queryFn: () => apiRequest(`/organizations/${id}`, organizationViewSchema),
+    queryFn: () => apiRequest(`/oneops/organizations?id=${id}`, organizationViewSchema),
     enabled: !!id,
     staleTime: 5 * 60_000,
     retry: false,

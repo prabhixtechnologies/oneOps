@@ -36,7 +36,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -49,7 +48,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/billing")
+@RequestMapping("/api/v1/oneops/billing")
 @RequiredArgsConstructor
 public class BillingController {
 
@@ -90,10 +89,10 @@ public class BillingController {
                 principal.requireOrganizationId(), principal.userId(), request);
     }
 
-    @PostMapping("/orders/{id}/dev-complete")
+    @PostMapping("/orders/dev-complete")
     @PreAuthorize(Authorize.BILLING_MANAGE)
     public OrderView completeDevOrder(@CurrentUser PrabhixPrincipal principal,
-                                      @PathVariable UUID id) {
+                                      @RequestParam UUID id) {
         return billingService.completeDevOrder(principal.requireOrganizationId(), id);
     }
 
@@ -143,10 +142,10 @@ public class BillingController {
         return invoiceService.listInvoices(principal.requireOrganizationId(), cursor, pageSize);
     }
 
-    @GetMapping("/invoices/{id}/download")
+    @GetMapping("/invoices/download")
     @PreAuthorize(Authorize.BILLING_INVOICE_DOWNLOAD)
     public ResponseEntity<byte[]> downloadInvoice(@CurrentUser PrabhixPrincipal principal,
-                                                  @PathVariable UUID id) {
+                                                  @RequestParam UUID id) {
         InvoiceDownload download = invoiceService.download(principal.requireOrganizationId(), id);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,

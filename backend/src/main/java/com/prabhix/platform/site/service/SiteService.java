@@ -128,7 +128,7 @@ public class SiteService {
         // The confirm endpoint is served by the API, not the marketing site, so this must
         // use the API base URL. Pointing it at the marketing host produces a dead link.
         String confirmUrl = properties.urls().api()
-                + "/api/v1/site/subscribers/confirm?token=" + confirmToken;
+                + "/api/v1/oneops/site/subscribers/confirm?token=" + confirmToken;
         mail.send(MailRequest.to(
                 email,
                 "site.newsletter-confirm",

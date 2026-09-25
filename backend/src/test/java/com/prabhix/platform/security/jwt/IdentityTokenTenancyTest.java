@@ -294,7 +294,7 @@ class IdentityTokenTenancyTest {
     }
 
     private MockHttpServletResponse invoke(String orgHeader) {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/auth/me");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/oneops/auth/me");
         request.addHeader("Authorization", "Bearer identity-token");
         if (orgHeader != null) {
             request.addHeader(JwtAuthenticationFilter.ORG_HEADER, orgHeader);

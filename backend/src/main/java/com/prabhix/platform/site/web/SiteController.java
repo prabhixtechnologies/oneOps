@@ -13,7 +13,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/site")
+@RequestMapping("/api/v1/oneops/site")
 @RequiredArgsConstructor
 public class SiteController {
 
@@ -56,8 +55,8 @@ public class SiteController {
         return siteService.listOpenRoles();
     }
 
-    @GetMapping("/careers/{slug}")
-    public JobRoleDetail career(@PathVariable String slug) {
+    @GetMapping(value = "/careers", params = "slug")
+    public JobRoleDetail career(@RequestParam String slug) {
         return siteService.getRole(slug);
     }
 
