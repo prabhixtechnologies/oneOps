@@ -50,6 +50,9 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "./src"),
       "@prabhix/oneops-api": path.resolve(import.meta.dirname, "../packages/oneops-api/src/index.ts"),
     },
+    // Keep the linked UI package inside this app's node_modules so it uses this React,
+    // not a second copy installed under the web-kit checkout.
+    preserveSymlinks: true,
     dedupe: ["react", "react-dom", "zod"],
   },
   optimizeDeps: {
