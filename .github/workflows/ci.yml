@@ -138,7 +138,10 @@ jobs:
           # behind. These are floors, not equalities: adding a table or a permission should not
           # fail the build, losing them should. Raise them when the schema grows.
           check() {
-            actual=$(psql -h localhost -U postgres -d schemacheck -tAc "$2")
+            if ! actual=$(psql -h localhost -U postgres -d schemacheck -v ON_ERROR_STOP=1 -tAc "$2"); then
+              echo "FAIL: $1 query failed"
+              exit 1
+            fi
             if [ "$actual" -lt "$3" ]; then
               echo "FAIL: $1 is $actual, expected at least $3"
               exit 1
@@ -152,7 +155,7 @@ jobs:
           # Without these two the schema loads and every user silently has no permissions at all.
           check permissions "SELECT count(*) FROM permissions" 60
           check role_permissions "SELECT count(*) FROM role_permissions" 130
-          check mail_templates "SELECT count(*) FROM mail_templates" 12
+          check mail_templates "SELECT count(*) FROM mail.mail_templates" 12
           check billing_plans "SELECT count(*) FROM billing_plans" 6
 
       # The baseline deliberately creates no user, so deploy/seed.sql is the whole difference between
@@ -181,10 +184,10 @@ jobs:
               (SELECT count(*) FROM users),
               (SELECT count(*) FROM organization_memberships),
               (SELECT count(*) FROM platform_staff_roles),
-              (SELECT count(*) FROM mail_domains),
-              (SELECT count(*) FROM mail_mailboxes),
-              (SELECT count(*) FROM mail_aliases),
-              (SELECT count(*) FROM mail_mailbox_members))"
+              (SELECT count(*) FROM mail.mail_domains),
+              (SELECT count(*) FROM mail.mail_mailboxes),
+              (SELECT count(*) FROM mail.mail_aliases),
+              (SELECT count(*) FROM mail.mail_mailbox_members))"
           }
 
           seed; first=$(counts)
@@ -236,9 +239,9 @@ jobs:
           # The citext case above, stated as a test. A mixed-case address must resolve to the mailbox
           # that already exists rather than looking absent and being created a second time.
           expect "addresses are case-insensitive" \
-            "SELECT count(*) FROM mail_mailboxes WHERE address = 'SUPPORT@prabhixtechnologies.com'" 1
+            "SELECT count(*) FROM mail.mail_mailboxes WHERE address = 'SUPPORT@prabhixtechnologies.com'" 1
           expect "every alias points at a real mailbox" \
-            "SELECT count(*) FROM mail_aliases a LEFT JOIN mail_mailboxes m ON m.id = a.mailbox_id WHERE m.id IS NULL" 0
+            "SELECT count(*) FROM mail.mail_aliases a LEFT JOIN mail.mail_mailboxes m ON m.id = a.mailbox_id WHERE m.id IS NULL" 0
 
       # Identity signs the token and this database is looked up by the uuid in its `sub`, so the two
       # seeds have to agree on the owner's id. They live in separate repositories and no foreign key

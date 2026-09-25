@@ -6,6 +6,9 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
+    // @prabhix/ui is a sibling checkout. Without this, tsc follows the real path into
+    // web-kit and cannot see the peer dependencies npm installed for this app.
+    "preserveSymlinks": true,
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
