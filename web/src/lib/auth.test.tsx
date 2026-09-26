@@ -34,7 +34,7 @@ vi.mock("@/lib/oidc", () => ({
   completeLogin: vi.fn(),
 }));
 
-const SESSION_TOKEN_PATH = "/auth/session/token";
+const SESSION_TOKEN_PATH = "/identity/auth/session/token";
 
 /** Paths passed to apiRequest, in order. */
 function requestedPaths(): string[] {
@@ -110,7 +110,7 @@ describe("AuthProvider when the browser has no usable session", () => {
 
     // Calling /auth/logout with an access token the server has already refused produced a run of
     // 401s in the browser console and told the user nothing.
-    expect(requestedPaths()).not.toContain("/auth/logout");
+    expect(requestedPaths()).not.toContain("/oneops/auth/logout");
   });
 
   it("stops retrying once the server has said there is no session", async () => {
@@ -150,7 +150,7 @@ describe("AuthProvider when the session cookie is good", () => {
         // for a cookie exchange.
         return Promise.resolve({ accessToken: "access-1", expiresInSeconds: 900 });
       }
-      if (path === "/auth/me") return Promise.resolve(AUTH_ME);
+      if (path === "/oneops/auth/me") return Promise.resolve(AUTH_ME);
       return Promise.resolve(null);
     });
   });
@@ -160,7 +160,7 @@ describe("AuthProvider when the session cookie is good", () => {
 
     expect(read().isAuthenticated).toBe(true);
     expect(countOf(SESSION_TOKEN_PATH)).toBe(1);
-    expect(requestedPaths()).toContain("/auth/me");
+    expect(requestedPaths()).toContain("/oneops/auth/me");
   });
 
   it("stores no session credential in localStorage", async () => {
@@ -199,7 +199,7 @@ describe("AuthProvider when the session cookie is good", () => {
 
     await signOut();
 
-    expect(requestedPaths()).toContain("/auth/logout");
+    expect(requestedPaths()).toContain("/oneops/auth/logout");
     expect(beginLogout).toHaveBeenCalledTimes(1);
   });
 
@@ -211,7 +211,7 @@ describe("AuthProvider when the session cookie is good", () => {
 
     await signOut();
 
-    expect(requestedPaths()).toContain("/auth/logout");
+    expect(requestedPaths()).toContain("/oneops/auth/logout");
     expect(beginLogout).not.toHaveBeenCalled();
   });
 });

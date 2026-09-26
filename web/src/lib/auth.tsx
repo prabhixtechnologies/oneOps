@@ -31,7 +31,7 @@ import {
  * demanded its own login; and anything in localStorage is readable by injected script, whereas the
  * cookie behind this endpoint is HttpOnly and cannot be read at all.
  */
-const SESSION_TOKEN_PATH = "/auth/session/token";
+const SESSION_TOKEN_PATH = "/identity/auth/session/token";
 
 interface AuthState {
   accessToken: string | null;
