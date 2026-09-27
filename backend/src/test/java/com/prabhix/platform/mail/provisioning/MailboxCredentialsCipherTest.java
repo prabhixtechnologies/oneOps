@@ -35,6 +35,7 @@ class MailboxCredentialsCipherTest {
     @Test
     void legacyPlaintextIsReturnedWithFallback() {
         mailbox.setImapPasswordEnc("plain-old-password");
+        assertFalse(cipher.isEncrypted(mailbox.getImapPasswordEnc()));
         assertEquals("plain-old-password", cipher.readImapPassword(mailbox));
     }
 

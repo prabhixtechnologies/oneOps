@@ -59,6 +59,10 @@ public class MailboxCredentialsCipher {
         }
     }
 
+    public boolean isEncrypted(String stored) {
+        return stored == null || stored.isBlank() || stored.startsWith(PREFIX);
+    }
+
     public void storeImapPassword(Mailbox mailbox, String plaintext) {
         mailbox.setImapPasswordEnc(encrypt(plaintext));
     }
