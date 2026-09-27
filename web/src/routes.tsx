@@ -1,5 +1,6 @@
 import { lazy } from "react";
-import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
+import { createBrowserRouter, type RouteObject } from "react-router";
+import { RouteError } from "@/components/RouteError";
 import { protectedShell, publicRoutes, SuspenseWrap, unguardedRoutes } from "@/routes-shell";
 import { tenantRoutes } from "@/routes-tenant";
 
@@ -26,6 +27,8 @@ const billingRoutes: RouteObject[] = [
 export const router = createBrowserRouter([
   publicRoutes,
   unguardedRoutes,
-  protectedShell([...tenantRoutes, ...billingRoutes]),
-  { path: "*", element: <Navigate to="/" replace /> },
+  // Inside the shell, so an unknown URL keeps the nav and the user can carry on. This used
+  // to redirect to "/", which hid every stale link instead of reporting it.
+  protectedShell([...tenantRoutes, ...billingRoutes, { path: "*", element: <RouteError /> }]),
+  { path: "*", element: <RouteError /> },
 ]);

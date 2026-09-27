@@ -14,8 +14,21 @@ import path from "node:path";
 const APP = process.env.APP === "admin" ? "admin" : "oneops";
 
 const ENTRY = {
-  oneops: { script: "/src/main.tsx", title: "Prabhix — Team Inbox &amp; Operations" },
-  admin: { script: "/src/main-admin.tsx", title: "Prabhix Admin" },
+  oneops: {
+    script: "/src/main.tsx",
+    title: "Prabhix — Team Inbox &amp; Operations",
+    // Must match a theme in web-kit/packages/brand/tokens.json.
+    brand: "oneops",
+    density: "comfortable",
+    themeColor: "#4338ca",
+  },
+  admin: {
+    script: "/src/main-admin.tsx",
+    title: "Prabhix Admin",
+    brand: "admin",
+    density: "compact",
+    themeColor: "#6d28d9",
+  },
 } as const;
 
 function appEntryPlugin(): Plugin {
@@ -28,11 +41,16 @@ function appEntryPlugin(): Plugin {
       order: "pre",
       handler(html) {
         if (APP === "oneops") return html;
+        const e = ENTRY[APP];
         return html
-          .replace(ENTRY.oneops.script, ENTRY[APP].script)
+          .replace(ENTRY.oneops.script, e.script)
           // Matched by element rather than by its text, which contains an em dash and so would
           // depend on this file and index.html agreeing about encoding.
-          .replace(/<title>[^<]*<\/title>/, `<title>${ENTRY[APP].title}</title>`);
+          .replace(/<title>[^<]*<\/title>/, `<title>${e.title}</title>`)
+          // Swaps the generated token theme: admin is violet + cyan and compact.
+          .replace(/data-brand="[^"]*"/, `data-brand="${e.brand}"`)
+          .replace(/data-density="[^"]*"/, `data-density="${e.density}"`)
+          .replace(/(<meta name="theme-color" content=")[^"]*/, `$1${e.themeColor}`);
       },
     },
   };

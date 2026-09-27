@@ -1,155 +1,80 @@
 @import "tailwindcss";
-@import "@prabhix/brand/prabhix-tokens.css";
+@import "@prabhix/brand/tailwind-preset.css";
 @source "../node_modules/@prabhix/ui/src";
 
 /*
-  Product aliases on top of @prabhix/brand tokens.
-  Teal/cyan accent · Fraunces display · Source Sans 3 body.
+  No colour is defined in this file. Every value comes from
+  web-kit/packages/brand/tokens.json via the generated preset above, selected by the
+  data-brand / data-theme / data-density attributes on <html> (set in index.html and
+  swapped for the admin build by vite.config.ts). OneOps is indigo + fuchsia; Admin is
+  violet + cyan and compact.
+
+  Contract: Infra/docs/UX-STANDARD.md
 */
 
-:root,
-[data-theme="light"] {
-  --px-accent-strong: #0f766e;
-  --px-radius: 0.75rem;
-
-  --ink: var(--px-ink);
-  --primary: var(--px-accent);
-  --primary-strong: var(--px-accent-strong);
-  --primary-foreground: var(--px-accent-ink);
-  --accent: var(--px-focus);
-  --surface: var(--px-surface);
-  --surface-muted: var(--px-bg);
-  --surface-elevated: color-mix(in srgb, var(--px-surface) 92%, transparent);
-  --border: var(--px-border);
-  --text: var(--px-ink);
-  --text-muted: var(--px-muted);
-  --destructive: var(--px-danger);
-  --success: var(--px-success);
-  --warning: #b45309;
-  --ring: var(--px-focus);
-  --radius: var(--px-radius);
-}
-
-.dark,
-[data-theme="dark"],
-:root[data-theme="dark"] {
-  --px-bg: #071018;
-  --px-bg-accent: #0f2a36;
-  --px-surface: #0d1a24;
-  --px-ink: #e8eef4;
-  --px-muted: #8fa3b5;
-  --px-border: #1c3342;
-  --px-accent: #22d3ee;
-  --px-accent-ink: #042f2e;
-  --px-accent-strong: #67e8f9;
-  --px-danger: #f97066;
-  --px-success: #32d583;
-  --px-focus: #67e8f9;
-  --px-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
-
-  --ink: var(--px-ink);
-  --primary: var(--px-accent);
-  --primary-strong: var(--px-accent-strong);
-  --primary-foreground: var(--px-accent-ink);
-  --accent: var(--px-focus);
-  --surface: var(--px-surface);
-  --surface-muted: var(--px-bg-accent);
-  --surface-elevated: color-mix(in srgb, var(--px-surface) 88%, transparent);
-  --border: var(--px-border);
-  --text: var(--px-ink);
-  --text-muted: var(--px-muted);
-  --destructive: var(--px-danger);
-  --success: var(--px-success);
-  --warning: #fbbf24;
-  --ring: var(--px-focus);
-}
-
-/* Admin console: same family, slightly cooler ink/border so staff surfaces feel distinct. */
-html[data-app="admin"] {
-  --px-border: #c5d4e0;
-  --border: var(--px-border);
-}
-
-html[data-app="admin"].dark,
-html[data-app="admin"][data-theme="dark"] {
-  --px-border: #243f50;
-  --border: var(--px-border);
-}
-
+/*
+  Bridge layer. These are the colour names this app used before the token system
+  existed; they are kept so ~900 existing call sites keep working, and they now
+  resolve to semantic roles instead of hardcoded hex. New code should use the
+  generated names directly — surface-raised, ink-muted, danger, accent-2 — and this
+  block shrinks as call sites move over.
+*/
 @theme {
-  --color-ink: var(--ink);
-  --color-primary: var(--primary);
-  --color-primary-strong: var(--primary-strong);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-accent: var(--accent);
-  --color-surface: var(--surface);
-  --color-surface-muted: var(--surface-muted);
-  --color-surface-elevated: var(--surface-elevated);
-  --color-border: var(--border);
-  --color-text: var(--text);
-  --color-text-muted: var(--text-muted);
-  --color-destructive: var(--destructive);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-ring: var(--ring);
+  --color-primary: var(--px-accent);
+  --color-primary-strong: var(--px-accent-hover);
+  --color-primary-foreground: var(--px-accent-ink);
+  --color-surface-muted: var(--px-bg);
+  --color-surface-elevated: var(--px-surface-raised);
+  --color-text: var(--px-ink);
+  --color-text-muted: var(--px-ink-muted);
+  --color-destructive: var(--px-danger);
+  --color-ring: var(--px-focus);
+  --shadow-px: var(--px-elevation-3);
   --font-sans: var(--px-font-body);
-  --font-display: var(--px-font-display);
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
-  --radius-xl: 0.9rem;
-  --shadow-px: var(--px-shadow);
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
   html {
     @apply antialiased;
-    font-family: var(--font-sans);
+    font-family: var(--px-font-body);
   }
 
   body {
-    @apply bg-surface text-text min-h-[100dvh] overflow-x-hidden;
+    @apply bg-surface text-ink min-h-[100dvh] overflow-x-hidden;
   }
 
   h1,
   h2,
   h3 {
-    font-family: var(--font-display);
+    font-family: var(--px-font-display);
   }
 
-  :focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
+  /*
+    A control's boundary has to clear 3:1 to be identifiable (WCAG 1.4.11), which the
+    divider-weight `border` token deliberately does not. Applied here rather than at
+    ~200 call sites, and scoped to controls so dividers stay quiet.
+  */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    border-color: var(--px-border-strong);
   }
 }
 
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--text-muted) 40%, transparent) transparent;
+    scrollbar-color: color-mix(in srgb, var(--px-ink-muted) 40%, transparent) transparent;
   }
 
   .font-display {
-    font-family: var(--font-display);
+    font-family: var(--px-font-display);
   }
 
+  /* The product's own accent pair, so this is indigo/fuchsia in OneOps and violet/cyan in Admin. */
   .mesh-bg {
-    background:
-      radial-gradient(ellipse 80% 55% at 18% -8%, rgb(14 116 144 / 0.16), transparent 52%),
-      radial-gradient(ellipse 55% 40% at 88% 8%, rgb(8 145 178 / 0.12), transparent 48%),
-      var(--surface-muted);
-  }
-
-  .dark .mesh-bg,
-  [data-theme="dark"] .mesh-bg {
-    background:
-      radial-gradient(ellipse 80% 55% at 18% -8%, rgb(34 211 238 / 0.18), transparent 52%),
-      radial-gradient(ellipse 55% 40% at 88% 8%, rgb(103 232 249 / 0.1), transparent 48%),
-      var(--surface-muted);
+    background-color: var(--px-bg);
+    background-image: var(--px-gradient-mesh);
   }
 }
 
@@ -163,7 +88,7 @@ html[data-app="admin"][data-theme="dark"] {
   inset: -20%;
   background:
     radial-gradient(ellipse 50% 40% at 20% 20%, color-mix(in srgb, var(--px-accent) 35%, transparent), transparent 55%),
-    radial-gradient(ellipse 45% 35% at 85% 15%, color-mix(in srgb, var(--px-focus) 28%, transparent), transparent 50%),
+    radial-gradient(ellipse 45% 35% at 85% 15%, color-mix(in srgb, var(--px-accent-2) 32%, transparent), transparent 50%),
     radial-gradient(ellipse 55% 45% at 60% 90%, color-mix(in srgb, var(--px-bg-accent) 90%, transparent), transparent 55%);
   filter: blur(8px);
   animation: auth-aurora-drift 18s ease-in-out infinite alternate;
@@ -173,8 +98,8 @@ html[data-app="admin"][data-theme="dark"] {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(color-mix(in srgb, var(--px-border) 55%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--px-border) 55%, transparent) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--px-border-strong) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--px-border-strong) 45%, transparent) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
   opacity: 0.45;
@@ -182,7 +107,7 @@ html[data-app="admin"][data-theme="dark"] {
 
 .auth-orb {
   position: absolute;
-  border-radius: 999px;
+  border-radius: var(--px-radius-full);
   filter: blur(40px);
   opacity: 0.55;
   animation: auth-orb-float 12s ease-in-out infinite;
@@ -201,7 +126,7 @@ html[data-app="admin"][data-theme="dark"] {
   height: 14rem;
   right: 8%;
   top: 8%;
-  background: color-mix(in srgb, var(--px-focus) 35%, transparent);
+  background: color-mix(in srgb, var(--px-accent-2) 38%, transparent);
   animation-delay: -4s;
 }
 
@@ -215,27 +140,30 @@ html[data-app="admin"][data-theme="dark"] {
 }
 
 .auth-brand-panel {
-  animation: auth-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: auth-rise 700ms var(--px-ease-spring) both;
 }
 
 .auth-panel {
-  animation: auth-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+  animation: auth-rise 700ms var(--px-ease-spring) 120ms both;
 }
 
 .auth-headline-accent {
-  background: linear-gradient(110deg, var(--px-accent), var(--px-focus) 55%, var(--px-accent-strong));
+  background-image: var(--px-gradient-brand);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .auth-panel-inner {
-  transition: transform var(--px-motion), box-shadow var(--px-motion), border-color var(--px-motion);
+  transition:
+    transform var(--px-duration-normal) var(--px-ease-out),
+    box-shadow var(--px-duration-normal) var(--px-ease-out),
+    border-color var(--px-duration-normal) var(--px-ease-out);
 }
 
 .auth-panel-inner:hover {
-  border-color: color-mix(in srgb, var(--px-accent) 35%, var(--px-border));
-  box-shadow: var(--px-shadow), 0 0 0 1px color-mix(in srgb, var(--px-accent) 12%, transparent);
+  border-color: var(--px-border-accent);
+  box-shadow: var(--px-elevation-3), 0 0 0 1px color-mix(in srgb, var(--px-accent) 12%, transparent);
 }
 
 .auth-pulse-bar {
