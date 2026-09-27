@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@prabhix/brand/tailwind-preset.css";
+@import "@prabhix/ui/preset.css";
 @source "../node_modules/@prabhix/ui/src";
 
 /*
@@ -13,22 +14,16 @@
 */
 
 /*
-  Bridge layer. These are the colour names this app used before the token system
-  existed; they are kept so ~900 existing call sites keep working, and they now
-  resolve to semantic roles instead of hardcoded hex. New code should use the
-  generated names directly — surface-raised, ink-muted, danger, accent-2 — and this
-  block shrinks as call sites move over.
+  The shadcn-style colour names this app's ~900 existing call sites are written against
+  now come from @prabhix/ui/preset.css, imported above, so the mapping is declared once
+  for every consumer rather than copied into each app's stylesheet. Only the two names
+  that are genuinely local to OneOps stay here.
+
+  New code should use the generated names directly — surface-raised, ink-muted, danger,
+  accent-2 — rather than the bridged aliases.
 */
 @theme {
-  --color-primary: var(--px-accent);
-  --color-primary-strong: var(--px-accent-hover);
-  --color-primary-foreground: var(--px-accent-ink);
-  --color-surface-muted: var(--px-bg);
   --color-surface-elevated: var(--px-surface-raised);
-  --color-text: var(--px-ink);
-  --color-text-muted: var(--px-ink-muted);
-  --color-destructive: var(--px-danger);
-  --color-ring: var(--px-focus);
   --shadow-px: var(--px-elevation-3);
   --font-sans: var(--px-font-body);
 }

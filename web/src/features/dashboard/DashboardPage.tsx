@@ -91,26 +91,33 @@ export default function DashboardPage() {
         <div className="rounded-lg border border-border bg-surface p-4">
           <h2 className="text-sm font-medium">Paid orders (14 days)</h2>
           <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <Sparkline
-              data={ordersTrend.map((p) => p.value)}
-              width={280}
-              height={48}
-              className="h-12 w-full max-w-[280px]"
-            />
-            <MiniBarChart
-              data={ordersTrend.slice(-7).map((p) => ({ label: p.date.slice(5), value: p.value }))}
-              className="h-12 w-full max-w-[200px]"
-            />
+              <Sparkline
+                  data={ordersTrend.map((p) => p.value)}
+                  width={280}
+                  height={48}
+                  color="var(--px-cat-1)"
+                  label="Paid orders over 14 days"
+                  className="h-12 w-full max-w-[280px]"
+                />
+                {/* One measure over seven days, so a single hue is correct here. Ten colours
+                    would imply the days are categories. */}
+                <MiniBarChart
+                  data={ordersTrend.slice(-7).map((p) => ({ label: p.date.slice(5), value: p.value }))}
+                  label="Paid orders per day, last 7 days"
+                  className="h-12 w-full max-w-[200px]"
+                />
           </div>
         </div>
         <div className="rounded-lg border border-border bg-surface p-4">
           <h2 className="text-sm font-medium">Visitor sessions (14 days)</h2>
           <div className="mt-4">
+            {/* A different series from paid orders, so a different categorical hue. */}
             <Sparkline
               data={visitorsTrend.map((p) => p.value)}
               width={280}
               height={48}
-              color="var(--accent)"
+              color="var(--px-cat-4)"
+              label="Visitor sessions over 14 days"
               className="h-12 w-full max-w-[280px]"
             />
           </div>

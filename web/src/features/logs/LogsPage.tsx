@@ -143,19 +143,27 @@ export default function LogsPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-border p-4">
             <p className="mb-2 text-sm font-medium">Errors (24h)</p>
+            {/* The one place a status hue is right for a series: the series *is* errors.
+                Anywhere the categories are arbitrary, danger would be misread as severity. */}
             <Sparkline
               data={statsQuery.data.errorsOverTime.map((b) => b.errorCount)}
+              color="var(--px-danger)"
+              label="Errors over the last 24 hours"
               className="w-full max-w-full"
             />
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="mb-2 text-sm font-medium">Top event codes</p>
+            {/* Six different event codes are genuinely six categories, which is what the
+                categorical palette is for. */}
             <MiniBarChart
               data={statsQuery.data.topEventCodes.slice(0, 6).map((e) => ({
                 label: e.eventCode.split(".").pop() ?? e.eventCode,
                 value: e.count,
               }))}
               width={280}
+              categorical
+              label="Most frequent event codes"
               className="h-12 w-full max-w-[280px]"
             />
           </div>

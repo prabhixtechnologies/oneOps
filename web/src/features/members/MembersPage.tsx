@@ -1,4 +1,4 @@
-import { Pencil, Plus, Trash2, UserMinus } from "lucide-react";
+import { Pencil, Plus, Trash2, UserCog, UserMinus } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -9,6 +9,8 @@ import { RelativeTime } from "@/components/shared/RelativeTime";
 import { ErrorState } from "@/components/shared/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RowActions, RowActionsTrigger, type RowAction } from "@/components/ui/actions";
+import { toneFor } from "@prabhix/ui";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -17,12 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -163,6 +159,53 @@ export default function MembersPage() {
     }
   };
 
+  // Defined once and handed to both layouts. The desktop row and the mobile card each used
+  // to spell out the same three verbs, which is how they drift: suspend had a pending state
+  // on mobile and not on desktop, and remove â€” which cannot be undone â€” asked for no
+  // confirmation in either.
+  const memberActions = (m: Member): RowAction[] => [
+    {
+      id: "role",
+      label: "Change role",
+      icon: <UserCog />,
+      onSelect: () => {
+        setRoleChangeMember(m);
+        setNewRoleId(m.roleId);
+      },
+    },
+    {
+      id: "suspend",
+      label: "Suspend",
+      icon: <UserMinus />,
+      disabled: suspendMember.isPending,
+      onSelect: () =>
+        suspendMember
+          .mutateAsync(m.id)
+          .then(() => toast.success("Member suspended"))
+          .catch((err) => toast.error(getApiErrorMessage(err))),
+    },
+    {
+      id: "remove",
+      label: "Remove from workspace",
+      icon: <Trash2 />,
+      group: "danger",
+      risk: "confirm",
+      disabled: removeMember.isPending,
+      confirm: {
+        title: `Remove ${m.displayName}?`,
+        message:
+          `${m.email} loses access to this workspace immediately and their ${m.roleName} role is released. ` +
+          "Re-adding them needs a fresh invitation. Work they have already done is kept.",
+        confirmLabel: "Remove member",
+      },
+      onSelect: () =>
+        removeMember
+          .mutateAsync(m.id)
+          .then(() => toast.success("Member removed"))
+          .catch((err) => toast.error(getApiErrorMessage(err))),
+    },
+  ];
+
   if (rolesQuery.isError) {
     return <ErrorState message="Failed to load members" onRetry={() => void rolesQuery.refetch()} />;
   }
@@ -189,7 +232,7 @@ export default function MembersPage() {
 
         <TabsContent value="members" className="mt-4">
           <Input
-            placeholder="Search by name or email…"
+            placeholder="Search by name or emailâ€¦"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="mb-4 max-w-sm"
@@ -207,47 +250,19 @@ export default function MembersPage() {
               emptyTitle="No members found"
               estimateSize={56}
               renderItem={(m) => (
-                <div className="flex items-center justify-between border-b border-border px-4 py-3 text-sm">
-                  <div>
-                    <p className="font-medium">{m.displayName}</p>
-                    <p className="break-all text-text-muted">{m.email}</p>
+                <RowActions actions={memberActions(m)} label={m.displayName}>
+                  <div className="flex items-center justify-between border-b border-border px-4 py-3 text-sm">
+                    <div>
+                      <p className="font-medium">{m.displayName}</p>
+                      <p className="break-all text-text-muted">{m.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge tone={toneFor(m.roleName)}>{m.roleName}</Badge>
+                      {m.lastActiveAt && <RelativeTime date={m.lastActiveAt} className="text-xs" />}
+                      <RowActionsTrigger />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{m.roleName}</Badge>
-                    {m.lastActiveAt && <RelativeTime date={m.lastActiveAt} className="text-xs" />}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">Actions</Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => { setRoleChangeMember(m); setNewRoleId(m.roleId); }}>
-                          Change role
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() =>
-                            void suspendMember
-                              .mutateAsync(m.id)
-                              .then(() => toast.success("Member suspended"))
-                              .catch((err) => toast.error(getApiErrorMessage(err)))
-                          }
-                        >
-                          Suspend
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onSelect={() =>
-                            void removeMember
-                              .mutateAsync(m.id)
-                              .then(() => toast.success("Member removed"))
-                              .catch((err) => toast.error(getApiErrorMessage(err)))
-                          }
-                        >
-                          Remove
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+                </RowActions>
               )}
             />
           </div>
@@ -263,40 +278,18 @@ export default function MembersPage() {
               emptyTitle="No members found"
               estimateSize={120}
               renderItem={(m) => (
-                <MobileCard>
-                  <p className="font-medium">{m.displayName}</p>
-                  <p className="break-all text-text-muted">{m.email}</p>
-                  <MobileCardRow label="Role" value={<Badge variant="secondary">{m.roleName}</Badge>} />
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button size="sm" variant="outline" onClick={() => { setRoleChangeMember(m); setNewRoleId(m.roleId); }}>Change role</Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={suspendMember.isPending}
-                      onClick={() =>
-                        void suspendMember
-                          .mutateAsync(m.id)
-                          .then(() => toast.success("Member suspended"))
-                          .catch((err) => toast.error(getApiErrorMessage(err)))
-                      }
-                    >
-                      Suspend
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={removeMember.isPending}
-                      onClick={() =>
-                        void removeMember
-                          .mutateAsync(m.id)
-                          .then(() => toast.success("Member removed"))
-                          .catch((err) => toast.error(getApiErrorMessage(err)))
-                      }
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </MobileCard>
+                <RowActions actions={memberActions(m)} label={m.displayName}>
+                  <MobileCard>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium">{m.displayName}</p>
+                        <p className="break-all text-text-muted">{m.email}</p>
+                      </div>
+                      <RowActionsTrigger />
+                    </div>
+                    <MobileCardRow label="Role" value={<Badge tone={toneFor(m.roleName)}>{m.roleName}</Badge>} />
+                  </MobileCard>
+                </RowActions>
               )}
             />
           </div>
@@ -448,7 +441,7 @@ export default function MembersPage() {
                   <li key={inv.id} className="flex items-center justify-between px-4 py-3 text-sm">
                     <div>
                       <p className="font-medium">{inv.email}</p>
-                      <p className="text-text-muted">Role: {inv.roleName} · Invited by {inv.invitedBy}</p>
+                      <p className="text-text-muted">Role: {inv.roleName} Â· Invited by {inv.invitedBy}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <RelativeTime date={inv.createdAt} className="text-xs" />
