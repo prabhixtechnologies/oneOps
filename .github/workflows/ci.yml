@@ -52,6 +52,14 @@ jobs:
           set -euo pipefail
           mvn -B verify -Pintegration 2>&1 | tee build.log
 
+      - name: Publish test failures
+        if: failure()
+        run: |
+          find target/surefire-reports target/failsafe-reports -name '*.txt' -type f -print0 2>/dev/null |
+            xargs -0 grep -hE '<<< FAILURE|<<< ERROR|Caused by:|IllegalStateException|AssertionError' |
+            tail -n 30 |
+            while IFS= read -r line; do echo "::error::$line"; done
+
       # Mockito's inline mock maker instruments classes with a Byte Buddy agent, and by default it
       # attaches that agent to the JVM it is already running in. The JDK has warned about that since
       # 21 and intends to refuse it, at which point 93 test files stop working at once.
