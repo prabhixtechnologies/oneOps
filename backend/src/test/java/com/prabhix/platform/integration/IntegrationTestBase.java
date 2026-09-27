@@ -26,7 +26,7 @@ public abstract class IntegrationTestBase {
             new PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"))
                     .withDatabaseName("oneops")
                     .withUsername("oneops")
-                    .withPassword("oneops");
+                    .withPassword("integration-test-db-password-not-oneops");
 
     static final GenericContainer<?> REDIS_CONTAINER =
             new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))

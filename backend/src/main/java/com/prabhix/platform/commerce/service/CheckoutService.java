@@ -10,7 +10,6 @@ import com.prabhix.platform.commerce.domain.CommerceCustomer;
 import com.prabhix.platform.commerce.domain.CommerceOrder;
 import com.prabhix.platform.commerce.domain.CommercePayment;
 import com.prabhix.platform.commerce.domain.CommerceSettings;
-import com.prabhix.platform.commerce.domain.DiscountCode;
 import com.prabhix.platform.commerce.domain.OrderAddress;
 import com.prabhix.platform.commerce.domain.OrderEvent;
 import com.prabhix.platform.commerce.domain.OrderItem;
@@ -24,7 +23,6 @@ import com.prabhix.platform.commerce.repository.CartItemRepository;
 import com.prabhix.platform.commerce.repository.CommerceCustomerRepository;
 import com.prabhix.platform.commerce.repository.CommerceOrderRepository;
 import com.prabhix.platform.commerce.repository.CommercePaymentRepository;
-import com.prabhix.platform.commerce.repository.DiscountCodeRepository;
 import com.prabhix.platform.commerce.repository.OrderAddressRepository;
 import com.prabhix.platform.commerce.repository.OrderEventRepository;
 import com.prabhix.platform.commerce.repository.OrderItemRepository;
@@ -61,8 +59,6 @@ public class CheckoutService {
     private final CommercePaymentRepository paymentRepository;
     private final ProductRepository productRepository;
     private final ProductVariantRepository variantRepository;
-    private final DiscountCodeRepository discountCodeRepository;
-    private final DiscountService discountService;
     private final CommerceSettingsService settingsService;
     private final OrderNumberService orderNumberService;
     private final StockService stockService;
@@ -160,12 +156,6 @@ public class CheckoutService {
         payment.setRazorpayOrderId(order.getRazorpayOrderId());
         orderRepository.save(order);
         paymentRepository.save(payment);
-
-        if (cart.getDiscountCodeId() != null) {
-            DiscountCode discount = discountCodeRepository.findById(cart.getDiscountCodeId()).orElseThrow();
-            discountService.recordRedemption(
-                    organizationId, discount, order.getId(), cart.getId(), customer.getId(), cart.getDiscountPaise());
-        }
 
         eventLogger.log(LogEventCode.COMMERCE_CHECKOUT_STARTED, Map.of(
                 "orderId", order.getId(), "orderNumber", order.getOrderNumber()));

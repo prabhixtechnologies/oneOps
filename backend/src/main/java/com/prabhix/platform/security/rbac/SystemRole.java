@@ -80,7 +80,8 @@ public enum SystemRole {
             EnumSet.of(
                     ORG_READ, ORG_MEMBER_READ, ORG_TEAM_READ,
                     MAIL_READ, MAIL_MAILBOX_READ,
-                    FILE_READ, FILE_UPLOAD)),
+                    FILE_READ, FILE_UPLOAD,
+                    DEVICE_PUSH_REGISTER, NOTIFICATION_PREFS_MANAGE)),
 
     /** Read-only. Useful for auditors, executives, and integrations. */
     VIEWER("Viewer", "Read-only access",

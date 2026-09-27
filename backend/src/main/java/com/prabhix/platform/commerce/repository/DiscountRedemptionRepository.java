@@ -4,9 +4,12 @@ import com.prabhix.platform.commerce.domain.DiscountRedemption;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface DiscountRedemptionRepository extends JpaRepository<DiscountRedemption, UUID> {
+
+    Optional<DiscountRedemption> findByOrderId(UUID orderId);
 
     @Query(value = """
             SELECT count(*) FROM commerce_discount_redemptions

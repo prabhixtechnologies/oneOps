@@ -33,6 +33,8 @@ public interface OrganizationMembershipRepository extends JpaRepository<Organiza
 
     List<OrganizationMembership> findByUserIdAndStatus(UUID userId, MembershipStatus status);
 
+    boolean existsByUserId(UUID userId);
+
     List<OrganizationMembership> findByOrganizationIdAndUserIdIn(UUID organizationId, Set<UUID> userIds);
 
     long countByOrganizationIdAndStatus(UUID organizationId, MembershipStatus status);

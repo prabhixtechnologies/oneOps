@@ -59,6 +59,7 @@ public class SiteService {
     private final ApplicationEventPublisher events;
     private final MailClient mail;
     private final PrabhixProperties properties;
+    private final SiteSubscribeRateLimiter subscribeRateLimiter;
 
     @Value("${prabhix.site.internal-organization-id:}")
     private String internalOrganizationId;
@@ -107,6 +108,9 @@ public class SiteService {
     @Transactional
     public GenericAck subscribe(SubscribeRequest request, String ipAddress) {
         String email = request.email().toLowerCase();
+        if (subscribeRateLimiter.isLimited(email, ipAddress)) {
+            return GenericAck.ok();
+        }
         subscriberRepository.findByEmail(email).ifPresent(existing -> {
             // Never reveal whether the address was already subscribed.
         });

@@ -44,9 +44,10 @@ describe("sanitizeEmailHtml", () => {
     expect(sanitizeEmailHtml('<iframe src="https://evil.test"></iframe>')).not.toContain("iframe");
   });
 
-  it("keeps remote images, which is a deliberate trade rather than an oversight", () => {
+  it("blocks remote image loads until the reader opts in", () => {
     const html = sanitizeEmailHtml('<img src="https://tracker.test/pixel.gif">');
-    expect(html).toContain("https://tracker.test/pixel.gif");
+    expect(html).toContain('data-remote-src="https://tracker.test/pixel.gif"');
+    expect(html).not.toMatch(/\ssrc="https:\/\/tracker\.test/);
   });
 });
 

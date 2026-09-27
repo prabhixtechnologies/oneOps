@@ -25,7 +25,7 @@ public class FeatureFlagController {
     private final FeatureFlagService featureFlagService;
 
     @GetMapping
-    @PreAuthorize(Authorize.AUTHENTICATED)
+    @PreAuthorize(Authorize.ORG_READ)
     public FlagDtos.EffectiveFlagsDetailed list(@CurrentUser PrabhixPrincipal principal) {
         return featureFlagService.effectiveFlagsDetailed(principal.requireOrganizationId());
     }

@@ -1,5 +1,6 @@
 package com.prabhix.platform.commerce.service;
 
+import com.prabhix.platform.commerce.domain.CommerceOrder;
 import com.prabhix.platform.commerce.domain.DiscountCode;
 import com.prabhix.platform.commerce.domain.CommerceEnums.DiscountType;
 import com.prabhix.platform.commerce.domain.Product;
@@ -98,6 +99,9 @@ public class DiscountService {
     @Transactional
     public void recordRedemption(UUID organizationId, DiscountCode discount, UUID orderId,
                                  UUID cartId, UUID customerId, long amountPaise) {
+        if (redemptionRepository.findByOrderId(orderId).isPresent()) {
+            return;
+        }
         discount.setUsesCount(discount.getUsesCount() + 1);
         discountCodeRepository.save(discount);
         var redemption = new com.prabhix.platform.commerce.domain.DiscountRedemption();
@@ -108,5 +112,33 @@ public class DiscountService {
         redemption.setCustomerId(customerId);
         redemption.setAmountPaise(amountPaise);
         redemptionRepository.save(redemption);
+    }
+
+    /**
+     * Redeems a cart discount only after payment capture. Idempotent per order id.
+     */
+    @Transactional
+    public void recordRedemptionOnCapture(CommerceOrder order) {
+        if (order.getDiscountCodeId() == null || order.getDiscountPaise() <= 0) {
+            return;
+        }
+        if (redemptionRepository.findByOrderId(order.getId()).isPresent()) {
+            return;
+        }
+        DiscountCode discount = discountCodeRepository.lockById(order.getDiscountCodeId())
+                .orElseThrow(() -> ApiException.of(ErrorCode.DISCOUNT_INVALID, "That discount code is not valid"));
+        validateRedemption(
+                order.getOrganizationId(),
+                discount,
+                order.getSubtotalPaise(),
+                List.of(),
+                order.getCustomerId());
+        recordRedemption(
+                order.getOrganizationId(),
+                discount,
+                order.getId(),
+                order.getCartId(),
+                order.getCustomerId(),
+                order.getDiscountPaise());
     }
 }

@@ -20,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -53,7 +54,7 @@ public class ChatStreamController {
     @GetMapping(value = "/public/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamVisitor(@RequestParam UUID organizationId,
                                     @RequestParam UUID conversationId,
-                                    @RequestParam String token) {
+                                    @RequestHeader("X-Chat-Token") String token) {
         return hub.subscribeVisitor(organizationId, conversationId, token);
     }
 

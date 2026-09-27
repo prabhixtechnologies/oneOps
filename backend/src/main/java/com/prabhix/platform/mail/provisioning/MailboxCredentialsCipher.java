@@ -80,6 +80,10 @@ public class MailboxCredentialsCipher {
             return stored;
         }
         if (!stored.startsWith(PREFIX)) {
+            if (properties.mail().credentials().rejectLegacyPlaintext()) {
+                throw ApiException.of(ErrorCode.MAIL_CREDENTIALS_UNREADABLE,
+                        "Mailbox credentials must be re-entered; legacy plaintext storage is disabled");
+            }
             warnLegacyOnce(legacyContextKey);
             return stored;
         }

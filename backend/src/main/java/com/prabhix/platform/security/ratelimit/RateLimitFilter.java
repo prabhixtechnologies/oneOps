@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.common.error.ApiError;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.security.TrustedClientIpResolver;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -54,13 +55,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
     private final PrabhixProperties.Security.RateLimit config;
+    private final TrustedClientIpResolver clientIpResolver;
+    private final java.util.concurrent.ConcurrentHashMap<String, WindowCounter> localFallback =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     public RateLimitFilter(StringRedisTemplate redis,
                            ObjectMapper objectMapper,
-                           PrabhixProperties properties) {
+                           PrabhixProperties properties,
+                           TrustedClientIpResolver clientIpResolver) {
         this.redis = redis;
         this.objectMapper = objectMapper;
         this.config = properties.security().rateLimit();
+        this.clientIpResolver = clientIpResolver;
     }
 
     @Override
@@ -91,7 +97,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 redis.expire(key, WINDOW);
             }
         } catch (RuntimeException ex) {
-            log.warn("Rate limiter unavailable, letting the request through: {}", ex.getMessage());
+            log.warn("Rate limiter unavailable, using in-memory fallback: {}", ex.getMessage());
+            used = localFallback
+                    .computeIfAbsent(key, ignored -> new WindowCounter())
+                    .increment();
+            long fallbackRemaining = Math.max(0, limit - used);
+            response.setHeader("X-RateLimit-Remaining", String.valueOf(fallbackRemaining));
+            response.setHeader("X-RateLimit-Reset", String.valueOf(WINDOW.toSeconds()));
+            if (used > limit) {
+                writeRateLimited(request, response);
+                return;
+            }
             chain.doFilter(request, response);
             return;
         }
@@ -102,14 +118,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         if (used > limit) {
             log.info("Rate limit hit on {} for {}", request.getRequestURI(), key);
-            response.setStatus(ErrorCode.RATE_LIMITED.status().value());
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.setCharacterEncoding("UTF-8");
-            response.setHeader("Retry-After", String.valueOf(WINDOW.toSeconds()));
-            objectMapper.writeValue(response.getOutputStream(), new ApiError(
-                    ErrorCode.RATE_LIMITED.name(),
-                    "Too many requests. Wait a moment and try again.",
-                    null, null, request.getRequestURI(), Instant.now()));
+            writeRateLimited(request, response);
             return;
         }
 
@@ -124,15 +133,33 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String authorization = request.getHeader("Authorization");
         if (authorization != null && authorization.startsWith("Bearer ")) {
             String token = authorization.substring(7);
-            // Hash of the token, not the token itself: Redis keys end up in logs and INFO output.
-            return "t" + Integer.toHexString(token.hashCode());
+            return "t" + RateLimitKeyHasher.hashToken(token);
         }
+        return "ip" + clientIpResolver.resolve(request);
+    }
 
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            // Left-most entry is the original client; the rest are our own proxies.
-            return "ip" + forwarded.split(",")[0].trim();
+    private void writeRateLimited(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setStatus(ErrorCode.RATE_LIMITED.status().value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Retry-After", String.valueOf(WINDOW.toSeconds()));
+        objectMapper.writeValue(response.getOutputStream(), new ApiError(
+                ErrorCode.RATE_LIMITED.name(),
+                "Too many requests. Wait a moment and try again.",
+                null, null, request.getRequestURI(), Instant.now()));
+    }
+
+    private static final class WindowCounter {
+        private long windowStartMs = System.currentTimeMillis();
+        private long count;
+
+        synchronized long increment() {
+            long now = System.currentTimeMillis();
+            if (now - windowStartMs >= WINDOW.toMillis()) {
+                windowStartMs = now;
+                count = 0;
+            }
+            return ++count;
         }
-        return "ip" + request.getRemoteAddr();
     }
 }

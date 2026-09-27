@@ -9,6 +9,7 @@ import com.prabhix.platform.org.service.InvitationService;
 import com.prabhix.platform.security.CurrentUser;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Authorize;
+import com.prabhix.platform.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,7 @@ import java.util.UUID;
 public class InvitationController {
 
     private final InvitationService invitationService;
+    private final UserService userService;
 
     @GetMapping("/api/v1/oneops/invites")
     @PreAuthorize(Authorize.ORG_MEMBER_READ)
@@ -56,8 +58,13 @@ public class InvitationController {
 
     @PostMapping("/api/v1/oneops/invites/accept")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, UUID> accept(@Valid @RequestBody AcceptInvitationRequest request) {
-        UUID orgId = invitationService.accept(request);
+    @PreAuthorize(Authorize.AUTHENTICATED)
+    public Map<String, UUID> accept(@CurrentUser PrabhixPrincipal principal,
+                                      @Valid @RequestBody AcceptInvitationRequest request) {
+        var user = userService.requireActive(principal.userId());
+        boolean verified = user.getEmailVerifiedAt() != null;
+        UUID orgId = invitationService.accept(
+                request, principal.userId(), principal.email(), verified);
         return Map.of("organizationId", orgId);
     }
 

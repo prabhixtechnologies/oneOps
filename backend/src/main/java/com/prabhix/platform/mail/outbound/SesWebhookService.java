@@ -92,6 +92,7 @@ public class SesWebhookService {
             throw ApiException.of(ErrorCode.MALFORMED_REQUEST, "SubscriptionConfirmation missing SubscribeURL");
         }
         try {
+            SnsSubscribeUrlValidator.requireAllowedSubscribeUrl(subscribeUrl);
             HttpRequest request = HttpRequest.newBuilder(URI.create(subscribeUrl))
                     .GET()
                     .timeout(Duration.ofSeconds(15))
@@ -104,6 +105,8 @@ public class SesWebhookService {
             log.info("Confirmed SNS subscription for topic {}", envelope.path("TopicArn").asText());
         } catch (ApiException ex) {
             throw ex;
+        } catch (IllegalArgumentException ex) {
+            throw ApiException.of(ErrorCode.FORBIDDEN, ex.getMessage());
         } catch (Exception ex) {
             throw ApiException.of(ErrorCode.DEPENDENCY_UNAVAILABLE,
                     "Could not confirm SNS subscription", ex);

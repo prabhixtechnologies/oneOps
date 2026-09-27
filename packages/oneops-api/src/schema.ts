@@ -6270,9 +6270,10 @@ export interface operations {
             query: {
                 organizationId: string;
                 conversationId: string;
-                token: string;
             };
-            header?: never;
+            header: {
+                "X-Chat-Token": string;
+            };
             path?: never;
             cookie?: never;
         };

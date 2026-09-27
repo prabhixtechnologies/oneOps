@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
-import { getApiErrorMessage } from "@/lib/api-client";
+import { apiRequest, getApiErrorMessage } from "@/lib/api-client";
+import { ackResponseSchema } from "@/lib/schemas/common";
 import { PERMISSIONS } from "@/lib/permissions";
 import { ACCOUNT_URL } from "@/lib/config";
 import {
@@ -37,6 +38,7 @@ export default function SettingsPage() {
       ? "api-keys"
       : (searchParams.get("tab") ?? "organization");
   const profileQuery = useProfile();
+  const profile = profileQuery.data;
   const orgQuery = useOrganization(organizationId);
   const apiKeysQuery = useApiKeys();
   const updateProfile = useUpdateProfile();
@@ -190,6 +192,24 @@ export default function SettingsPage() {
               <p className="text-sm text-text-muted">Identity is not configured in this build.</p>
             )}
           </div>
+          {profile && !profile.emailVerified ? (
+            <div className="max-w-md space-y-3 rounded-lg border border-border p-4">
+              <h3 className="font-medium">Email verification</h3>
+              <p className="text-sm text-text-muted">
+                Confirm {profile.email} to unlock invitations and other sensitive actions.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  void apiRequest("/identity/auth/email/verify/request", ackResponseSchema, { method: "POST" })
+                    .then(() => toast.success("Verification email sent."))
+                    .catch((err) => toast.error(getApiErrorMessage(err)))
+                }
+              >
+                Resend verification email
+              </Button>
+            </div>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="notifications" className="mt-4 max-w-md space-y-4">

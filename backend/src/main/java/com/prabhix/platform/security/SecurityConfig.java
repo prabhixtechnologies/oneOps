@@ -75,6 +75,7 @@ public class SecurityConfig {
             "/api/v1/oneops/visitor/public/**",
             "/api/v1/oneops/chat/public/**",
             "/api/v1/oneops/commerce/public/**",
+            "/api/v1/oneops/public/app-release",
             "/api/v1/oneops/mail/t/**",
             "/api/v1/oneops/billing/webhooks/**",
             "/api/v1/oneops/commerce/webhooks/**",
@@ -90,9 +91,6 @@ public class SecurityConfig {
             "/internal/**",
             "/actuator/health/**",
             "/actuator/info",
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/swagger-ui.html",
     };
 
     @Bean
@@ -143,6 +141,8 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_PATHS).permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
+                        .hasAuthority("PLATFORM_ADMIN")
                         .requestMatchers("/actuator/**").hasAuthority("PLATFORM_ADMIN")
                         .requestMatchers("/api/v1/oneops/admin/**").hasAuthority("PLATFORM_ADMIN")
                         .anyRequest().authenticated())

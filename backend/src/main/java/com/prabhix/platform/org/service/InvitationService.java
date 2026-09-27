@@ -139,11 +139,11 @@ public class InvitationService {
         }
         Organization org = organizationService.requireOrg(invitation.getOrganizationId());
         Role role = roleService.requireRole(invitation.getRoleId());
-        return new InvitationPreview(org.getName(), role.getName());
+        return new InvitationPreview(invitation.getEmail(), org.getName(), role.getName());
     }
 
     @Transactional
-    public UUID accept(AcceptInvitationRequest request) {
+    public UUID accept(AcceptInvitationRequest request, UUID actorUserId, String actorEmail, boolean emailVerified) {
         Invitation invitation = findByToken(request.token());
         if (invitation.getStatus() == InvitationStatus.ACCEPTED) {
             throw ApiException.of(ErrorCode.CONFLICT, "That invitation has already been accepted");
@@ -157,14 +157,22 @@ public class InvitationService {
             throw ApiException.of(ErrorCode.INVALID_STATE, "That invitation has expired");
         }
 
-        User user = userService.findByEmail(invitation.getEmail())
-                .orElseGet(() -> {
-                    String name = request.fullName() != null && !request.fullName().isBlank()
-                            ? request.fullName().trim()
-                            : invitation.getEmail();
-                    User created = userService.createPasswordlessUser(invitation.getEmail(), name);
-                    return created;
-                });
+        String inviteEmail = normalizeEmail(invitation.getEmail());
+        String signedInEmail = normalizeEmail(actorEmail);
+        if (!inviteEmail.equals(signedInEmail)) {
+            throw ApiException.of(ErrorCode.PERMISSION_DENIED,
+                    "Sign in with the email address this invitation was sent to.");
+        }
+        if (!emailVerified) {
+            throw ApiException.of(ErrorCode.EMAIL_NOT_VERIFIED,
+                    "Verify your email address before accepting an invitation.");
+        }
+
+        User user = userService.requireActive(actorUserId);
+        if (!normalizeEmail(user.getEmail()).equals(inviteEmail)) {
+            throw ApiException.of(ErrorCode.PERMISSION_DENIED,
+                    "Your account email does not match this invitation.");
+        }
 
         memberService.addMember(invitation.getOrganizationId(), user.getId(),
                 invitation.getRoleId(), invitation.getInvitedBy(), user);
@@ -257,5 +265,9 @@ public class InvitationService {
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-256 unavailable", ex);
         }
+    }
+
+    static String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
     }
 }

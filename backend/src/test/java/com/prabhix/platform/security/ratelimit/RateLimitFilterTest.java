@@ -2,6 +2,7 @@ package com.prabhix.platform.security.ratelimit;
 
 import tools.jackson.databind.ObjectMapper;
 import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.security.TrustedClientIpResolver;
 import com.prabhix.platform.support.TestProperties;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,8 +57,11 @@ class RateLimitFilterTest {
                 new PrabhixProperties.Security(
                         TestProperties.security().internalSigningSecret(),
                         java.time.Duration.ofMinutes(15),
-                        new PrabhixProperties.Security.RateLimit(true, AUTH_LIMIT, API_LIMIT)));
-        filter = new RateLimitFilter(redis, objectMapper, properties);
+                        new PrabhixProperties.Security.RateLimit(true, AUTH_LIMIT, API_LIMIT),
+                        java.util.List.of("127.0.0.1/32"),
+                        ""));
+        filter = new RateLimitFilter(redis, objectMapper, properties,
+                new TrustedClientIpResolver(properties));
     }
 
     /** Sends a request that has already been made {@code priorCalls} times in this window. */

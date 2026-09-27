@@ -42,6 +42,7 @@ class SiteServiceResumeTest {
     @Mock private FileStorageService fileStorageService;
     @Mock private ApplicationEventPublisher events;
     @Mock private MailClient mail;
+    @Mock private SiteSubscribeRateLimiter subscribeRateLimiter;
 
     private SiteService siteService;
 
@@ -60,7 +61,8 @@ class SiteServiceResumeTest {
                 new PrabhixProperties(
                         new PrabhixProperties.Urls("http://localhost:3000", "http://localhost:5173",
                                 "http://localhost:8080"),
-                        null, null, null, null, null, null));
+                        null, null, null, null, null, null),
+                subscribeRateLimiter);
     }
 
     @Test

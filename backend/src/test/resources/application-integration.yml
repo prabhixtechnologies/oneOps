@@ -12,9 +12,11 @@ prabhix:
     # filter refuses every bearer token, which is the intended production behaviour, and nothing in
     # the integration tests presents one. Keys are fetched lazily, on the first token that names a kid.
     issuer: http://identity.test
+    service-token: integration-identity-service-token-not-the-shipped-default-0123456789
   security:
     # Must clear the 64-character production minimum, which this profile is subject to.
     internal-signing-secret: integration-test-signing-key-not-the-shipped-default-0123456789abcdef
+    public-bff-credential: integration-public-bff-credential-not-the-shipped-default-0123456789
     rate-limit:
       enabled: false
   mail:
@@ -23,6 +25,8 @@ prabhix:
     transport: SELF_HOSTED_SMTP
     outbox:
       enabled: false
+    credentials:
+      secret: integration-mailbox-credential-secret-not-the-shipped-default-0123456789
     inbound:
       imap-enabled: false
   push:

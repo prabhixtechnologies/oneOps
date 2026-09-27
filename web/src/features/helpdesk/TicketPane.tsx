@@ -40,7 +40,7 @@ import {
   type ThreadStatus,
   type TicketEvent,
 } from "./api";
-import { hardenLinks, sanitizeEmailHtml } from "./sanitize";
+import { hardenLinks, revealRemoteImages, sanitizeEmailHtml } from "./sanitize";
 import { cn, initials } from "@/lib/utils";
 
 /**
@@ -557,16 +557,37 @@ function describeEvent(event: TicketEvent): string {
 
 function SanitizedMailHtml({ html, className }: { html: string; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [imagesRevealed, setImagesRevealed] = useState(false);
+  const sanitized = sanitizeEmailHtml(html);
+  const hasBlockedImages = sanitized.includes("data-remote-src=");
+
   useEffect(() => {
     if (ref.current) hardenLinks(ref.current);
-  }, [html]);
+  }, [html, imagesRevealed]);
+
+  useEffect(() => {
+    if (imagesRevealed && ref.current) revealRemoteImages(ref.current);
+  }, [imagesRevealed, html]);
+
   return (
-    <div
-      ref={ref}
-      className={className}
-      // Sanitised, never raw: this is attacker-controlled HTML from an inbound email.
-      dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(html) }}
-    />
+    <div className={className}>
+      {hasBlockedImages && !imagesRevealed ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="mb-2"
+          onClick={() => setImagesRevealed(true)}
+        >
+          Load remote images
+        </Button>
+      ) : null}
+      <div
+        ref={ref}
+        // Sanitised, never raw: this is attacker-controlled HTML from an inbound email.
+        dangerouslySetInnerHTML={{ __html: sanitized }}
+      />
+    </div>
   );
 }
 

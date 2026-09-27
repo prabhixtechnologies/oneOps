@@ -207,6 +207,7 @@ management:
         namespace: Prabhix
         step: 1m
 
+# Outside dev/test/local, ProductionSecurityStartupValidator refuses to boot when SWAGGER_ENABLED is true.
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -275,6 +276,8 @@ prabhix:
       enabled: ${RATE_LIMIT_ENABLED:true}
       auth-attempts-per-minute: 10
       api-requests-per-minute: 600
+    # Required for headless public BFF calls (visitor/chat/commerce ingest without Origin).
+    public-bff-credential: ${PUBLIC_BFF_CREDENTIAL:}
 
   mail:
     # Identity used for platform-generated mail (auth, billing, notifications).
@@ -295,6 +298,11 @@ prabhix:
       fetch-batch-size: 50
       # Shared secret Postfix/Dovecot use to push mail in over LMTP/HTTP.
       lmtp-token: ${MAIL_LMTP_TOKEN:}
+      # HMAC secret for X-Mail-Signature (Mailroom). Required when replay protection is on.
+      lmtp-hmac-secret: ${MAIL_LMTP_HMAC_SECRET:}
+      lmtp-replay-required: ${MAIL_LMTP_REPLAY_REQUIRED:false}
+      lmtp-max-timestamp-skew: PT5M
+      lmtp-nonce-ttl: PT15M
     tracking:
       enabled: ${MAIL_TRACKING_ENABLED:false}
       secret: ${MAIL_TRACKING_SECRET:dev-tracking-secret}
@@ -363,6 +371,49 @@ prabhix:
       start: ${CHAT_BH_START:09:00}
       end: ${CHAT_BH_END:18:00}
       timezone: ${CHAT_BH_TZ:Asia/Kolkata}
+
+  mobile:
+    app-release-cache-max-age-seconds: ${MOBILE_APP_RELEASE_CACHE_SECONDS:300}
+    app-release-rate-limit-per-minute: ${MOBILE_APP_RELEASE_RL:120}
+    oneops:
+      android:
+        min-native-build: ${MOBILE_ONEOPS_ANDROID_MIN_BUILD:1}
+        latest-native-build: ${MOBILE_ONEOPS_ANDROID_LATEST_BUILD:1}
+        force-native-update: ${MOBILE_ONEOPS_ANDROID_FORCE:false}
+        store-url: ${MOBILE_ONEOPS_ANDROID_STORE_URL:}
+        notes: ${MOBILE_ONEOPS_ANDROID_NOTES:}
+      ios:
+        min-native-build: ${MOBILE_ONEOPS_IOS_MIN_BUILD:1}
+        latest-native-build: ${MOBILE_ONEOPS_IOS_LATEST_BUILD:1}
+        force-native-update: ${MOBILE_ONEOPS_IOS_FORCE:false}
+        store-url: ${MOBILE_ONEOPS_IOS_STORE_URL:}
+        notes: ${MOBILE_ONEOPS_IOS_NOTES:}
+    admin:
+      android:
+        min-native-build: ${MOBILE_ADMIN_ANDROID_MIN_BUILD:1}
+        latest-native-build: ${MOBILE_ADMIN_ANDROID_LATEST_BUILD:1}
+        force-native-update: ${MOBILE_ADMIN_ANDROID_FORCE:false}
+        store-url: ${MOBILE_ADMIN_ANDROID_STORE_URL:}
+        notes: ${MOBILE_ADMIN_ANDROID_NOTES:}
+      ios:
+        min-native-build: ${MOBILE_ADMIN_IOS_MIN_BUILD:1}
+        latest-native-build: ${MOBILE_ADMIN_IOS_LATEST_BUILD:1}
+        force-native-update: ${MOBILE_ADMIN_IOS_FORCE:false}
+        store-url: ${MOBILE_ADMIN_IOS_STORE_URL:}
+        notes: ${MOBILE_ADMIN_IOS_NOTES:}
+    mailroom:
+      android:
+        min-native-build: ${MOBILE_MAILROOM_ANDROID_MIN_BUILD:1}
+        latest-native-build: ${MOBILE_MAILROOM_ANDROID_LATEST_BUILD:1}
+        force-native-update: ${MOBILE_MAILROOM_ANDROID_FORCE:false}
+        store-url: ${MOBILE_MAILROOM_ANDROID_STORE_URL:}
+        notes: ${MOBILE_MAILROOM_ANDROID_NOTES:}
+      ios:
+        min-native-build: ${MOBILE_MAILROOM_IOS_MIN_BUILD:1}
+        latest-native-build: ${MOBILE_MAILROOM_IOS_LATEST_BUILD:1}
+        force-native-update: ${MOBILE_MAILROOM_IOS_FORCE:false}
+        store-url: ${MOBILE_MAILROOM_IOS_STORE_URL:}
+        notes: ${MOBILE_MAILROOM_IOS_NOTES:}
 
   commerce:
     # Storefront currency is fixed per deployment; Razorpay settles in one currency.

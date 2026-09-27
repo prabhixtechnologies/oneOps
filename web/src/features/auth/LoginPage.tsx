@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLocation } from "react-router";
+import { useLocation, useSearchParams } from "react-router";
 import { beginLogin, isOidcEnabled } from "@/lib/oidc";
 import { safeAppPath } from "@/lib/safePath";
 
@@ -11,7 +11,9 @@ import { safeAppPath } from "@/lib/safePath";
  */
 export function LoginPage() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const from = safeAppPath((location.state as { from?: string } | null)?.from);
+  const securityUpdate = searchParams.get("reason") === "security-update";
 
   useEffect(() => {
     if (!isOidcEnabled()) return;
@@ -26,6 +28,11 @@ export function LoginPage() {
         Taking you to sign in
       </h1>
       <p className="text-sm text-text-muted">One Prabhix account for every product.</p>
+      {securityUpdate ? (
+        <p className="text-sm text-amber-700">
+          Your account had a security update. Sign in again through Identity to continue.
+        </p>
+      ) : null}
     </div>
   );
 }

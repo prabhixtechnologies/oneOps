@@ -4814,8 +4814,8 @@
             }
           },
           {
-            "name": "token",
-            "in": "query",
+            "name": "X-Chat-Token",
+            "in": "header",
             "required": true,
             "schema": {
               "type": "string"

@@ -60,7 +60,10 @@ public record PrabhixProperties(
              * session back in for the remainder.
              */
             @DefaultValue("PT15M") Duration denyListTtl,
-            @DefaultValue RateLimit rateLimit) {
+            @DefaultValue RateLimit rateLimit,
+            @DefaultValue({"127.0.0.1/32", "::1/128", "172.16.0.0/12", "10.0.0.0/8"})
+            List<String> trustedProxyCidrs,
+            @DefaultValue("") String publicBffCredential) {
 
         public record RateLimit(
                 @DefaultValue("true") boolean enabled,
@@ -93,7 +96,14 @@ public record PrabhixProperties(
                 @DefaultValue("false") boolean imapEnabled,
                 @DefaultValue("PT60S") Duration pollInterval,
                 @DefaultValue("50") int fetchBatchSize,
-                @DefaultValue("") String lmtpToken) {
+                @DefaultValue("") String lmtpToken,
+                @DefaultValue("2621440") int maxRawBytes,
+                /** HMAC key for LMTP replay protection; blank disables signatures in non-prod. */
+                @DefaultValue("") String lmtpHmacSecret,
+                /** When true, LMTP requests must include timestamp, nonce, and signature headers. */
+                @DefaultValue("false") boolean lmtpReplayRequired,
+                @DefaultValue("PT5M") Duration lmtpMaxTimestampSkew,
+                @DefaultValue("PT15M") Duration lmtpNonceTtl) {
         }
 
         public record Tracking(
@@ -127,7 +137,8 @@ public record PrabhixProperties(
          * makes existing ciphertext unreadable, so mailbox credentials must be re-entered.
          */
         public record Credentials(
-                @DefaultValue("dev-only-mailbox-credential-key-change-me") String secret) {
+                @DefaultValue("dev-only-mailbox-credential-key-change-me") String secret,
+                @DefaultValue("false") boolean rejectLegacyPlaintext) {
         }
 
         public record DomainVerification(

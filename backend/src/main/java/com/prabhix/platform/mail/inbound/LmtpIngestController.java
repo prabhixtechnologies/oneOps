@@ -32,10 +32,14 @@ public class LmtpIngestController {
     private final MailboxRepository mailboxRepository;
     private final MailAliasRepository aliasRepository;
     private final MailIngestionService ingestionService;
+    private final LmtpReplayGuard replayGuard;
 
     @PostMapping("/lmtp")
     public ResponseEntity<InboundDtos.LmtpResponse> ingest(
             @RequestHeader(value = "X-Mail-Token", required = false) String token,
+            @RequestHeader(value = "X-Mail-Timestamp", required = false) String mailTimestamp,
+            @RequestHeader(value = "X-Mail-Nonce", required = false) String mailNonce,
+            @RequestHeader(value = "X-Mail-Signature", required = false) String mailSignature,
             @Valid @RequestBody InboundDtos.LmtpRequest request) {
         String configured = properties.mail().inbound().lmtpToken();
         if (configured == null || configured.isBlank()) {
@@ -45,8 +49,15 @@ public class LmtpIngestController {
             throw ApiException.of(ErrorCode.FORBIDDEN, "Invalid LMTP token");
         }
 
+        replayGuard.verifyIfRequired(
+                request.recipient(), request.rawMimeBase64(), mailTimestamp, mailNonce, mailSignature);
+
+        int maxBytes = properties.mail().inbound().maxRawBytes();
         Mailbox mailbox = resolveMailbox(request.recipient());
         byte[] raw = Base64.getDecoder().decode(request.rawMimeBase64());
+        if (raw.length > maxBytes) {
+            throw ApiException.of(ErrorCode.MALFORMED_REQUEST, "Inbound message exceeds the size limit");
+        }
         var staged = ingestionService.stageRaw(
                 mailbox.getOrganizationId(), mailbox.getId(),
                 MailEnums.InboundSource.LMTP, null, raw);

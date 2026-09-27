@@ -155,7 +155,7 @@ public class OrganizationMemberService {
     }
 
     private void enforceSeatLimit(UUID orgId) {
-        Organization org = organizationRepository.findById(orgId)
+        Organization org = organizationRepository.lockById(orgId)
                 .orElseThrow(() -> ApiException.notFound("Organization"));
         int maxMembers = Math.min(org.getSeatLimit(), properties.limits().maxMembersPerOrganization());
         if (org.getMemberCount() >= maxMembers) {

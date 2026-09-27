@@ -4,6 +4,8 @@ import com.prabhix.platform.push.dto.PushDtos;
 import com.prabhix.platform.push.service.PushTokenService;
 import com.prabhix.platform.security.CurrentUser;
 import com.prabhix.platform.security.PrabhixPrincipal;
+import com.prabhix.platform.security.rbac.Authorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class PushTokenController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize(Authorize.DEVICE_PUSH_REGISTER)
     public PushDtos.RegisterPushTokenResponse register(@CurrentUser PrabhixPrincipal principal,
                                                        @Valid @RequestBody PushDtos.RegisterPushTokenRequest request) {
         return tokenService.register(principal, request);
@@ -36,11 +39,13 @@ public class PushTokenController {
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(Authorize.DEVICE_PUSH_REGISTER)
     public void deregister(@CurrentUser PrabhixPrincipal principal, @RequestParam String token) {
         tokenService.deregister(principal, token);
     }
 
     @GetMapping
+    @PreAuthorize(Authorize.DEVICE_PUSH_REGISTER)
     public List<PushDtos.DeviceView> list(@CurrentUser PrabhixPrincipal principal) {
         return tokenService.listMine(principal);
     }

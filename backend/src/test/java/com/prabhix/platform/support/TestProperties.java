@@ -46,7 +46,9 @@ public final class TestProperties {
         return new PrabhixProperties.Security(
                 "test-internal-signing-secret-long-enough-for-hmac-sha256-0123456789abcdefgh",
                 denyListTtl,
-                new PrabhixProperties.Security.RateLimit(true, 10, 600));
+                new PrabhixProperties.Security.RateLimit(true, 10, 600),
+                java.util.List.of("127.0.0.1/32"),
+                "");
     }
 
     public static PrabhixProperties.Limits limits() {
@@ -70,7 +72,9 @@ public final class TestProperties {
     }
 
     public static PrabhixProperties.Mail.Inbound inbound() {
-        return new PrabhixProperties.Mail.Inbound(false, Duration.ofSeconds(60), 50, "");
+        return new PrabhixProperties.Mail.Inbound(
+                false, Duration.ofSeconds(60), 50, "", 2621440, "", false,
+                Duration.ofMinutes(5), Duration.ofMinutes(15));
     }
 
     public static PrabhixProperties.Mail.Tracking tracking() {
@@ -86,7 +90,7 @@ public final class TestProperties {
     }
 
     public static PrabhixProperties.Mail.Credentials credentials() {
-        return new PrabhixProperties.Mail.Credentials("test-mailbox-credential-key");
+        return new PrabhixProperties.Mail.Credentials("test-mailbox-credential-key", false);
     }
 
     public static PrabhixProperties.Mail.DomainVerification domainVerification() {

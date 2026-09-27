@@ -37,6 +37,7 @@ public class TrackingController {
     private final MailDeliveryEventRepository deliveryEventRepository;
     private final MailOutboxRepository outboxRepository;
     private final StructuredEventLogger eventLogger;
+    private final MailTrackingRedirectPolicy redirectPolicy;
 
     @GetMapping("/o")
     public ResponseEntity<byte[]> trackOpen(@RequestParam String token) {
@@ -50,8 +51,9 @@ public class TrackingController {
     @GetMapping("/c")
     public ResponseEntity<Void> trackClick(@RequestParam String token) {
         String url = verifyAndRecord(token, MailEnums.DeliveryEventType.CLICKED);
+        var resolved = redirectPolicy.resolve(url != null ? url : properties.urls().console());
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(url != null ? url : properties.urls().console()))
+                .location(resolved.location())
                 .build();
     }
 

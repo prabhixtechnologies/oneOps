@@ -92,6 +92,10 @@ public enum Permission {
     LOG_READ("Search application and business logs"),
     LOG_EXPORT("Export logs"),
 
+    // --- Devices and notifications (self-service) ---
+    DEVICE_PUSH_REGISTER("Register mobile push notification devices"),
+    NOTIFICATION_PREFS_MANAGE("Update your notification preferences"),
+
     // --- Marketing site pipeline: Prabhix staff only, never granted to a customer role ---
     SITE_LEAD_READ("View marketing site leads"),
     SITE_LEAD_MANAGE("Update lead status and notes"),

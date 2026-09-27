@@ -58,7 +58,7 @@ public class UserController {
     }
 
     @PatchMapping("/me/notification-prefs")
-    @PreAuthorize(Authorize.AUTHENTICATED)
+    @PreAuthorize(Authorize.NOTIFICATION_PREFS_MANAGE)
     public UserProfile updateNotificationPrefs(@CurrentUser PrabhixPrincipal principal,
                                                @Valid @RequestBody NotificationPrefsRequest request) {
         return userService.updateNotificationPrefs(principal.userId(), request);

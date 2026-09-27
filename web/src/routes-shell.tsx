@@ -38,6 +38,9 @@ const VerifyEmailPage = lazy(() =>
 const OidcCallbackPage = lazy(() =>
   import("@/features/auth/OidcCallbackPage").then((m) => ({ default: m.OidcCallbackPage })),
 );
+const MailLinkWarningPage = lazy(() =>
+  import("@/features/mail/MailLinkWarningPage").then((m) => ({ default: m.MailLinkWarningPage })),
+);
 
 export function PageLoader() {
   return (
@@ -128,6 +131,7 @@ export const unguardedRoutes: RouteObject = {
       children: [
         { path: "/verify-email", element: <SuspenseWrap><VerifyEmailPage /></SuspenseWrap> },
         { path: "/auth/callback", element: <SuspenseWrap><OidcCallbackPage /></SuspenseWrap> },
+        { path: "/mail/link-warning", element: <SuspenseWrap><MailLinkWarningPage /></SuspenseWrap> },
       ],
     },
   ],

@@ -126,7 +126,7 @@ public class WebhookService {
         switch (eventType) {
             case "payment.captured" -> handlePaymentCaptured(event, entity);
             case "payment.failed" -> handlePaymentFailed(event, entity);
-            case "order.paid" -> handleOrderPaid(event, root.path("payload").path("order").path("entity"));
+            case "order.paid" -> handleOrderPaid(event, root);
             case "refund.processed" -> handleRefundProcessed(event, entity);
             case "subscription.charged" -> handleSubscriptionCharged(event, root);
             case "subscription.halted" -> handleSubscriptionHalted(event, root);
@@ -174,22 +174,36 @@ public class WebhookService {
         });
     }
 
-    private void handleOrderPaid(BillingWebhookEvent event, JsonNode orderNode) {
+    private void handleOrderPaid(BillingWebhookEvent event, JsonNode root) {
+        JsonNode payment = root.path("payload").path("payment").path("entity");
+        if (!payment.isMissingNode() && !payment.isNull() && payment.has("id")) {
+            handlePaymentCaptured(event, payment);
+            return;
+        }
+        JsonNode orderNode = root.path("payload").path("order").path("entity");
         String razorpayOrderId = orderNode.path("id").asText();
         orderRepository.findByRazorpayOrderId(razorpayOrderId).ifPresent(order -> {
             event.setOrganizationId(order.getOrganizationId());
             event.setOrderId(order.getId());
-            if (order.getStatus() != BillingEnums.OrderStatus.CAPTURED) {
-                String paymentId = order.getRazorpayPaymentId();
-                PaymentCompletionService.PaymentCaptureDetails capture =
-                        new PaymentCompletionService.PaymentCaptureDetails(
-                                paymentId,
-                                order.getTotalPaise(),
-                                order.getCurrency(),
-                                null, null, null, null, null,
-                                false);
-                paymentCompletionService.completeCapture(order, capture);
+            if (order.getStatus() == BillingEnums.OrderStatus.CAPTURED) {
+                return;
             }
+            String paymentId = orderNode.path("payment_id").asText(null);
+            if (paymentId == null || paymentId.isBlank()) {
+                paymentId = order.getRazorpayPaymentId();
+            }
+            if (paymentId == null || paymentId.isBlank()) {
+                log.warn("order.paid for {} without a payment id; waiting for payment.captured", razorpayOrderId);
+                return;
+            }
+            PaymentCompletionService.PaymentCaptureDetails capture =
+                    new PaymentCompletionService.PaymentCaptureDetails(
+                            paymentId,
+                            order.getTotalPaise(),
+                            order.getCurrency(),
+                            null, null, null, null, null,
+                            false);
+            paymentCompletionService.completeCapture(order, capture);
         });
     }
 

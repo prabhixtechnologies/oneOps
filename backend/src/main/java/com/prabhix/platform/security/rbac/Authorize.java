@@ -97,6 +97,10 @@ public final class Authorize {
     public static final String SITE_APPLICATION_READ = HAS + "SITE_APPLICATION_READ" + END;
     public static final String SITE_APPLICATION_MANAGE = HAS + "SITE_APPLICATION_MANAGE" + END;
 
+    // --- Devices ---
+    public static final String DEVICE_PUSH_REGISTER = HAS + "DEVICE_PUSH_REGISTER" + END;
+    public static final String NOTIFICATION_PREFS_MANAGE = HAS + "NOTIFICATION_PREFS_MANAGE" + END;
+
     // --- Platform ---
     public static final String PLATFORM_ADMIN = HAS + "PLATFORM_ADMIN" + END;
 

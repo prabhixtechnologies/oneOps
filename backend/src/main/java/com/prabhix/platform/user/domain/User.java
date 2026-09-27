@@ -73,6 +73,9 @@ public class User extends AuditableEntity {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    @Column(name = "reconciled_from_user_id")
+    private UUID reconciledFromUserId;
+
     public boolean isDeleted() {
         return deletedAt != null;
     }

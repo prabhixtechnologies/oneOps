@@ -75,13 +75,18 @@ class InvitationAcceptTest {
         User user = new User();
         user.setId(UUID.randomUUID());
         user.setEmail("invitee@example.com");
+        user.setEmailVerifiedAt(java.time.Instant.now());
 
         when(invitationRepository.findByTokenHash(InvitationService.sha256(rawToken)))
                 .thenReturn(Optional.of(invitation));
-        when(userService.findByEmail("invitee@example.com")).thenReturn(Optional.of(user));
+        when(userService.requireActive(user.getId())).thenReturn(user);
         when(invitationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UUID result = invitationService.accept(new AcceptInvitationRequest(rawToken, null, null));
+        UUID result = invitationService.accept(
+                new AcceptInvitationRequest(rawToken),
+                user.getId(),
+                user.getEmail(),
+                true);
 
         assertEquals(orgId, result);
         assertEquals(InvitationStatus.ACCEPTED, invitation.getStatus());
@@ -99,9 +104,29 @@ class InvitationAcceptTest {
         when(invitationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         ApiException ex = assertThrows(ApiException.class,
-                () -> invitationService.accept(new AcceptInvitationRequest(rawToken, null, null)));
+                () -> invitationService.accept(
+                        new AcceptInvitationRequest(rawToken),
+                        UUID.randomUUID(),
+                        "invitee@example.com",
+                        true));
         assertEquals(ErrorCode.INVALID_STATE, ex.getCode());
         verify(memberService, never()).addMember(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void wrongSignedInEmailIsRejected() {
+        String rawToken = "invite-token";
+        Invitation invitation = pendingInvite(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), rawToken);
+        when(invitationRepository.findByTokenHash(InvitationService.sha256(rawToken)))
+                .thenReturn(Optional.of(invitation));
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> invitationService.accept(
+                        new AcceptInvitationRequest(rawToken),
+                        UUID.randomUUID(),
+                        "other@example.com",
+                        true));
+        assertEquals(ErrorCode.PERMISSION_DENIED, ex.getCode());
     }
 
     @Test
@@ -114,7 +139,11 @@ class InvitationAcceptTest {
                 .thenReturn(Optional.of(invitation));
 
         ApiException ex = assertThrows(ApiException.class,
-                () -> invitationService.accept(new AcceptInvitationRequest(rawToken, null, null)));
+                () -> invitationService.accept(
+                        new AcceptInvitationRequest(rawToken),
+                        UUID.randomUUID(),
+                        "invitee@example.com",
+                        true));
         assertEquals(ErrorCode.CONFLICT, ex.getCode());
     }
 

@@ -47,6 +47,7 @@ class CommerceWebhookIdempotencyTest {
     @Mock private OrderDownloadRepository downloadRepository;
     @Mock private OrderItemRepository orderItemRepository;
     @Mock private StructuredEventLogger eventLogger;
+    @Mock private DiscountService discountService;
 
     private CommercePaymentCompletionService completionService;
 
@@ -73,7 +74,8 @@ class CommerceWebhookIdempotencyTest {
                 properties,
                 downloadRepository,
                 orderItemRepository,
-                eventLogger);
+                eventLogger,
+                discountService);
     }
 
     @Test

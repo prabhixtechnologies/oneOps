@@ -80,6 +80,7 @@ public class PaymentCompletionService {
             ensureInvoiceIssued(order);
             return order;
         }
+        validateCapture(order, capture);
 
         order.setStatus(BillingEnums.OrderStatus.CAPTURED);
         if (capture.razorpayPaymentId() != null) {
@@ -133,6 +134,17 @@ public class PaymentCompletionService {
                 null,
                 null,
                 false));
+    }
+
+    private void validateCapture(BillingOrder order, PaymentCaptureDetails capture) {
+        if (capture.amountPaise() > 0 && capture.amountPaise() != order.getTotalPaise()) {
+            throw ApiException.of(ErrorCode.PAYMENT_SIGNATURE_MISMATCH,
+                    "Payment amount did not match the order total");
+        }
+        if (capture.currency() != null && !capture.currency().equalsIgnoreCase(order.getCurrency())) {
+            throw ApiException.of(ErrorCode.PAYMENT_SIGNATURE_MISMATCH,
+                    "Payment currency did not match the order");
+        }
     }
 
     private void upsertPayment(BillingOrder order, PaymentCaptureDetails capture) {

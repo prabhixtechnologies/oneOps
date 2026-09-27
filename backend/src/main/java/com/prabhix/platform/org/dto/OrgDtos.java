@@ -138,14 +138,13 @@ public final class OrgDtos {
     }
 
     public record InvitationPreview(
+            String email,
             String organizationName,
             String roleName) {
     }
 
     public record AcceptInvitationRequest(
-            @NotBlank String token,
-            @Size(max = 160) String fullName,
-            @Size(min = 10, max = 128) String password) {
+            @NotBlank String token) {
     }
 
     public record InvitationView(

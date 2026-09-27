@@ -58,6 +58,7 @@ public class CommercePaymentCompletionService {
     private final OrderDownloadRepository downloadRepository;
     private final OrderItemRepository orderItemRepository;
     private final StructuredEventLogger eventLogger;
+    private final DiscountService discountService;
 
     public record CaptureDetails(
             String razorpayPaymentId,
@@ -79,6 +80,7 @@ public class CommercePaymentCompletionService {
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
             throw ApiException.of(ErrorCode.ORDER_NOT_PAYABLE, "That order cannot be paid");
         }
+        validateCapture(order, capture);
 
         order.setStatus(OrderStatus.PAID);
         order.setRazorpayPaymentId(capture.razorpayPaymentId());
@@ -86,6 +88,7 @@ public class CommercePaymentCompletionService {
         orderRepository.save(order);
 
         upsertPayment(order, capture);
+        discountService.recordRedemptionOnCapture(order);
         stockService.commitForOrder(order);
         if (order.getRenewalSubscriptionId() != null) {
             subscriptionRepository.findById(order.getRenewalSubscriptionId())
@@ -126,6 +129,17 @@ public class CommercePaymentCompletionService {
                 order.getCurrency(),
                 null,
                 true));
+    }
+
+    private void validateCapture(CommerceOrder order, CaptureDetails capture) {
+        if (capture.amountPaise() > 0 && capture.amountPaise() != order.getTotalPaise()) {
+            throw ApiException.of(ErrorCode.PAYMENT_SIGNATURE_MISMATCH,
+                    "Payment amount did not match the order total");
+        }
+        if (capture.currency() != null && !capture.currency().equalsIgnoreCase(order.getCurrency())) {
+            throw ApiException.of(ErrorCode.PAYMENT_SIGNATURE_MISMATCH,
+                    "Payment currency did not match the order");
+        }
     }
 
     private void upsertPayment(CommerceOrder order, CaptureDetails capture) {

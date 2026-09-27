@@ -3,6 +3,7 @@ package com.prabhix.platform.security;
 import com.prabhix.platform.chat.config.ChatProperties;
 import com.prabhix.platform.commerce.config.CommerceProperties;
 import com.prabhix.platform.common.error.ErrorCode;
+import com.prabhix.platform.config.PrabhixProperties;
 import com.prabhix.platform.visitor.config.VisitorProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -29,9 +30,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PublicOriginFilter extends OncePerRequestFilter {
 
+    private static final String BFF_HEADER = "X-Prabhix-Public-Bff";
+
     private final VisitorProperties visitorProperties;
     private final ChatProperties chatProperties;
     private final CommerceProperties commerceProperties;
+    private final PrabhixProperties prabhixProperties;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -47,6 +51,15 @@ public class PublicOriginFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String origin = request.getHeader("Origin");
         if (origin == null || origin.isBlank()) {
+            if (!bffCredentialPermits(request)) {
+                response.setStatus(HttpStatus.FORBIDDEN.value());
+                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+                response.getWriter().write("""
+                        {"code":"FORBIDDEN","message":"Origin or BFF credential is required for this endpoint"}
+                        """);
+                return;
+            }
             filterChain.doFilter(request, response);
             return;
         }
@@ -64,6 +77,15 @@ public class PublicOriginFilter extends OncePerRequestFilter {
         response.getWriter().write("""
                 {"code":"FORBIDDEN","message":"Origin is not allowed for this endpoint"}
                 """);
+    }
+
+    private boolean bffCredentialPermits(HttpServletRequest request) {
+        String configured = prabhixProperties.security().publicBffCredential();
+        if (configured == null || configured.isBlank()) {
+            return false;
+        }
+        String presented = request.getHeader(BFF_HEADER);
+        return configured.equals(presented);
     }
 
     private List<String> allowedOriginsFor(String path) {

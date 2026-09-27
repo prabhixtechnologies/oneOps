@@ -585,7 +585,7 @@ jobs:
           context: .
           file: ./web/Dockerfile
           build-contexts: |
-            webkit=https://github.com/prabhixtechnologies/web-kit.git#main
+            webkit=https://github.com/prabhixtechnologies/web-kit.git#6841e45aab52e52d4fb970ee08f4540e71c6c447
           push: true
           # Vite inlines these at build time; each must also be declared as an ARG in web/Dockerfile
           # or it is silently discarded.
@@ -609,7 +609,7 @@ jobs:
           context: .
           file: ./web/Dockerfile
           build-contexts: |
-            webkit=https://github.com/prabhixtechnologies/web-kit.git#main
+            webkit=https://github.com/prabhixtechnologies/web-kit.git#6841e45aab52e52d4fb970ee08f4540e71c6c447
           push: true
           build-args: |
             APP=admin

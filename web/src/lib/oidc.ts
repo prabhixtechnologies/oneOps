@@ -1,6 +1,7 @@
 import { IS_ADMIN_APP } from "./app-mode";
 import { safeAppPath } from "./safePath";
 import {
+  beginAccountSwitch,
   beginLogin,
   beginLogout,
   beginSignup,
@@ -25,6 +26,7 @@ configureOidc({
 });
 
 export {
+  beginAccountSwitch,
   beginLogin,
   beginLogout,
   beginSignup,
