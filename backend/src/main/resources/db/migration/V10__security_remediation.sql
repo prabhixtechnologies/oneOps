@@ -11,5 +11,7 @@ COMMENT ON COLUMN users.reconciled_from_user_id IS
     'When duplicate invite-era rows are merged, the surviving user id this row was folded into.';
 
 INSERT INTO permissions (code, category, description, assignable, created_at)
-VALUES ('DEVICE_PUSH_REGISTER', 'PLATFORM', 'Register mobile push notification devices', true, now())
+VALUES
+    ('DEVICE_PUSH_REGISTER', 'PLATFORM', 'Register mobile push notification devices', true, now()),
+    ('NOTIFICATION_PREFS_MANAGE', 'PLATFORM', 'Update your notification preferences', true, now())
 ON CONFLICT (code) DO NOTHING;
