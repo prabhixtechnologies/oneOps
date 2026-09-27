@@ -51,9 +51,12 @@ export function MessageBubble({
       {message.senderType !== "SYSTEM" && (
         <div className="mb-2 flex items-center gap-2 text-sm">
           <Avatar className="h-6 w-6">
-            <AvatarFallback className="text-[10px]">
-              {(isVisitor ? visitorLabel : agentLabel).slice(0, 2).toUpperCase()}
-            </AvatarFallback>
+              <AvatarFallback
+                seed={isVisitor ? visitorLabel : agentLabel}
+                className="text-[10px]"
+              >
+                {(isVisitor ? visitorLabel : agentLabel).slice(0, 2).toUpperCase()}
+              </AvatarFallback>
           </Avatar>
           <span className="font-medium">{isVisitor ? visitorLabel : agentLabel}</span>
           <Badge variant={isAgent ? "default" : "secondary"} className="text-[10px]">

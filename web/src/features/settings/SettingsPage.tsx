@@ -133,7 +133,9 @@ export default function SettingsPage() {
               {profileQuery.data?.avatarUrl ? (
                 <AvatarImage src={profileQuery.data.avatarUrl} alt={displayName} />
               ) : null}
-              <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                <AvatarFallback seed={me?.email ?? displayName}>
+                  {displayName.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
             </Avatar>
             <div>
               <input

@@ -52,11 +52,11 @@ export function OrgSwitcher() {
             onClick={() => void switchOrg(org.id)}
             className="gap-2"
           >
-            <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-[10px]">
-                {org.name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+              <Avatar className="h-6 w-6">
+                <AvatarFallback seed={org.id} className="text-[10px]">
+                  {org.name.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
             <div className="flex-1 truncate">
               <div className="truncate text-sm">{org.name}</div>
               <div className="text-xs text-text-muted">{org.slug}</div>

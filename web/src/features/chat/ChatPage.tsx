@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import { toneFor } from "@prabhix/ui";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -681,8 +682,11 @@ export default function ChatPage() {
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-1">
+                {/* A tag is a category the user invented, so it gets a swatch rather
+                    than a status colour. Seeded on the text, so "refund" is the same
+                    colour on every conversation. */}
                 {(conversation.tags ?? []).map((tag) => (
-                  <Badge key={tag} variant="outline" className="gap-1">
+                  <Badge key={tag} tone={toneFor(tag)} className="gap-1">
                     {tag}
                     <button type="button" className="ml-1 text-xs" onClick={() => void removeTag(tag)} aria-label={`Remove tag ${tag}`}>×</button>
                   </Badge>

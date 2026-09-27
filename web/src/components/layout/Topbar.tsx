@@ -33,7 +33,7 @@ export function Topbar({ onOpenNav }: TopbarProps) {
             {profile?.avatarUrl ? (
               <AvatarImage src={profile.avatarUrl} alt={displayName} />
             ) : null}
-            <AvatarFallback>{initials}</AvatarFallback>
+              <AvatarFallback seed={me.email ?? displayName}>{initials}</AvatarFallback>
           </Avatar>
           <div className="hidden text-sm sm:block">
             <div className="font-medium">{displayName}</div>

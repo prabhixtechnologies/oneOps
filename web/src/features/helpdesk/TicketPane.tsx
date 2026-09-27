@@ -333,7 +333,9 @@ export function TicketPane({
               >
                 <div className="mb-2 flex items-center gap-2 text-xs text-text-muted">
                   <Avatar>
-                    <AvatarFallback>{initials(m.fromName || m.fromAddress || "?")}</AvatarFallback>
+                      <AvatarFallback seed={m.fromAddress || m.fromName || "?"}>
+                        {initials(m.fromName || m.fromAddress || "?")}
+                      </AvatarFallback>
                   </Avatar>
                   {outbound ? (
                     <ArrowUpRight className="size-3" />
