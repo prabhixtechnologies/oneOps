@@ -1,135 +1,136 @@
-import {
-  Activity,
-  Briefcase,
-  Building2,
-  Cloud,
-  CreditCard,
-  FileText,
-  Flag,
-  FolderOpen,
-  Inbox,
-  KeyRound,
-  LayoutDashboard,
-  Mail,
-  MessageSquare,
-  Percent,
-  Receipt,
-  ScrollText,
-  Settings,
-  Shield,
-  ShoppingBag,
-  Sparkles,
-  Store,
-  Users,
-} from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { LogOut, Mail, Moon, Sun, UserPlus } from "lucide-react";
+import { useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router";
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from "@/components/ui/command";
+import { CommandPaletteProvider, useCommandPalette, type PaletteCommand } from "@prabhix/ui";
 import { IS_ADMIN_APP } from "@/lib/app-mode";
+import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
+import { useVisibleNav } from "./use-visible-nav";
 
-const tenantPages = [
-  { label: "Overview", to: "/", icon: LayoutDashboard },
-  { label: "Inbox", to: "/inbox", icon: Inbox },
-  { label: "Live Chat", to: "/chat", icon: MessageSquare },
-  { label: "Visitors", to: "/visitors", icon: Activity },
-  { label: "Shop dashboard", to: "/commerce", icon: Store },
-  { label: "Products", to: "/commerce/products", icon: ShoppingBag },
-  { label: "Orders", to: "/commerce/orders", icon: Receipt },
-  { label: "Discounts", to: "/commerce/discounts", icon: Percent },
-  { label: "Members", to: "/members", icon: Users },
-  { label: "Billing", to: "/billing", icon: CreditCard },
-  { label: "Org settings", to: "/settings", icon: Settings },
-  { label: "Mail settings", to: "/settings/mail", icon: Mail },
-  { label: "AI settings", to: "/ai/settings", icon: Sparkles },
-  { label: "AI usage", to: "/ai/usage", icon: Sparkles },
-  { label: "API keys", to: "/settings/api-keys", icon: KeyRound },
-  { label: "Flags", to: "/flags", icon: Flag },
-  { label: "Event logs", to: "/logs", icon: ScrollText },
-  { label: "Audit Log", to: "/audit", icon: FileText },
-  { label: "Files", to: "/files", icon: FolderOpen },
-];
+export { useCommands } from "@prabhix/ui";
+export { useCommandPalette };
 
-const adminPages = [
-  { label: "Overview", to: "/", icon: Briefcase },
-  { label: "Tenants and shops", to: "/tenants", icon: Building2 },
-  { label: "Identity", to: "/identity", icon: Shield },
-  { label: "Revenue", to: "/revenue", icon: CreditCard },
-  { label: "Infra", to: "/infra", icon: Cloud },
-  { label: "Mail health", to: "/mail", icon: Mail },
-  { label: "Staff", to: "/staff", icon: Users },
-  { label: "MobiStack ops", to: "/mobistack", icon: Store },
-  { label: "Commons review", to: "/commons", icon: Flag },
-  { label: "Event logs", to: "/logs", icon: ScrollText },
-];
+/**
+ * Words people type that are not the word on the link.
+ *
+ * <p>Nobody searches for "Commerce" when they want to change a price, and nobody types "Visitors"
+ * looking for who is on the site right now. Without these the palette only works for someone who
+ * already knows the menu, which is the one person who did not need it.
+ */
+const SYNONYMS: Record<string, string[]> = {
+  "/": ["home", "dashboard", "start"],
+  "/inbox": ["mail", "email", "tickets", "support", "threads", "replies"],
+  "/chat": ["livechat", "messages", "widget", "conversations"],
+  "/visitors": ["analytics", "traffic", "sessions", "who is online"],
+  "/commerce": ["shop", "store", "sales", "commerce"],
+  "/commerce/products": ["catalog", "catalogue", "stock", "inventory", "sku", "price", "pricing"],
+  "/commerce/orders": ["sales", "purchases", "refund", "fulfilment", "fulfillment", "shipping"],
+  "/commerce/customers": ["buyers", "contacts", "people", "accounts"],
+  "/commerce/discounts": ["coupons", "promo", "vouchers", "sale", "offer"],
+  "/commerce/settings": ["shipping", "tax", "payments", "checkout", "currency"],
+  "/members": ["team", "staff", "users", "invite", "roles", "permissions", "access"],
+  "/billing": ["invoice", "plan", "subscription", "payment", "card", "upgrade"],
+  "/settings": ["organisation", "organization", "org", "profile", "name", "logo", "branding"],
+  "/settings/mail": ["dns", "domain", "spf", "dkim", "mailbox", "smtp", "imap", "sending"],
+  "/settings/api-keys": ["token", "secret", "integration", "webhook", "developer"],
+  "/ai/settings": ["assistant", "model", "prompt", "openai", "automation"],
+  "/ai/usage": ["spend", "tokens", "cost", "quota"],
+  "/flags": ["feature flags", "toggles", "rollout", "experiments"],
+  "/logs": ["events", "activity", "history", "debug"],
+  "/audit": ["compliance", "who changed", "trail", "security"],
+  "/files": ["uploads", "attachments", "storage", "documents"],
+  "/tenants": ["customers", "orgs", "organisations", "accounts", "shops"],
+  "/identity": ["auth", "sso", "oidc", "login", "sessions", "mfa"],
+  "/revenue": ["mrr", "arr", "money", "income", "subscriptions"],
+  "/infra": ["servers", "health", "uptime", "deploys", "aws"],
+  "/mail": ["deliverability", "bounces", "queue", "smtp health"],
+  "/staff": ["employees", "platform team", "admins"],
+  "/mobistack": ["repairs", "fixflow", "workshop"],
+  "/commons": ["moderation", "reports", "review queue"],
+};
 
-const pages = IS_ADMIN_APP ? adminPages : tenantPages;
+const MAILROOM_URL: string = import.meta.env.VITE_MAILROOM_URL ?? "";
 
-interface CommandPaletteProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+/**
+ * Wraps the app so that any page can add commands while it is open.
+ *
+ * <p>Navigation is generated from the same filtered nav the sidebar renders, so the palette can no
+ * longer offer a page that is not there. What it adds on top is the things that were previously
+ * only reachable by finding the right button: switching theme, signing out, inviting someone.
+ */
+export function AppCommandPalette({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const groups = useVisibleNav();
 
-  const run = useCallback(
-    (to: string) => {
-      onOpenChange(false);
-      void navigate(to);
-    },
-    [navigate, onOpenChange],
-  );
+  const commands = useMemo<PaletteCommand[]>(() => {
+    const go = (to: string) => () => void navigate(to);
+
+    const pages: PaletteCommand[] = groups.flatMap((group, groupIndex) =>
+      group.items.map((item, itemIndex) => ({
+        id: `nav:${item.to}:${item.label}`,
+        label: item.label,
+        group: group.heading,
+        keywords: SYNONYMS[item.to],
+        icon: <item.icon className="h-4 w-4" aria-hidden="true" />,
+        // Keeps the palette in the sidebar's reading order rather than alphabetising it, so
+        // muscle memory built on the sidebar still applies.
+        order: groupIndex * 100 + itemIndex,
+        perform: go(item.to),
+      })),
+    );
+
+    const actions: PaletteCommand[] = [
+      {
+        id: "theme",
+        label: theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
+        group: "Preferences",
+        keywords: ["theme", "dark", "light", "appearance", "contrast"],
+        icon: theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />,
+        perform: toggleTheme,
+      },
+      {
+        id: "sign-out",
+        label: "Sign out",
+        group: "Preferences",
+        keywords: ["log out", "logout", "leave", "exit"],
+        icon: <LogOut className="h-4 w-4" />,
+        perform: () => void logout(),
+      },
+    ];
+
+    if (MAILROOM_URL) {
+      actions.unshift({
+        id: "mailroom",
+        label: "Open my mail",
+        description: "Prabhix Mailroom, in a new tab",
+        group: "Preferences",
+        keywords: ["mailroom", "personal", "my inbox"],
+        icon: <Mail className="h-4 w-4" />,
+        perform: () => window.open(MAILROOM_URL, "_blank", "noopener,noreferrer"),
+      });
+    }
+
+    // Only where the page exists to receive it. The admin console has no members page, and a
+    // command that navigates nowhere is worse than one that is absent.
+    if (!IS_ADMIN_APP && groups.some((g) => g.items.some((i) => i.to === "/members"))) {
+      actions.unshift({
+        id: "invite",
+        label: "Invite a team member",
+        group: "Create",
+        keywords: ["add user", "new member", "staff", "colleague"],
+        icon: <UserPlus className="h-4 w-4" />,
+        perform: go("/members?invite=true"),
+      });
+    }
+
+    return [...pages, ...actions];
+  }, [groups, navigate, logout, theme, toggleTheme]);
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search pages and actions…" />
-      <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Navigation">
-          {pages.map(({ label, to, icon: Icon }) => (
-            <CommandItem key={to} onSelect={() => run(to)}>
-              <Icon className="h-4 w-4" />
-              {label}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        {!IS_ADMIN_APP && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading="Actions">
-              <CommandItem onSelect={() => run("/members?invite=true")}>
-                <Users className="h-4 w-4" />
-                Invite team member
-              </CommandItem>
-            </CommandGroup>
-          </>
-        )}
-      </CommandList>
-    </CommandDialog>
+    <CommandPaletteProvider staticCommands={commands} placeholder="Search pages and actions…">
+      {children}
+    </CommandPaletteProvider>
   );
-}
-
-export function useCommandPalette() {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen((o) => !o);
-      }
-    };
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, []);
-
-  return { open, setOpen };
 }

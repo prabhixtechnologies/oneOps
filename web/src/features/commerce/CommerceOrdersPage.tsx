@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router";
-import { Eye } from "lucide-react";
-import { useState } from "react";
+import { Eye, Filter } from "lucide-react";
+import { useUrlString } from "@prabhix/ui";
+import { useCommands } from "@/components/layout/CommandPalette";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { MobileCard, MobileCardRow, ResponsiveTable } from "@/components/shared/ResponsiveTable";
 import { Money } from "@/components/shared/Money";
@@ -32,14 +33,43 @@ const STATUSES = [
   "PAYMENT_FAILED",
 ];
 
+/** `PENDING_PAYMENT` reads as "pending payment" in a command, not as a constant. */
+const spoken = (status: string) => status.toLowerCase().replace(/_/g, " ");
+
 export default function CommerceOrdersPage() {
   const navigate = useNavigate();
-  const [status, setStatus] = useState("");
-  const [search, setSearch] = useState("");
+  // Both in the URL. Searching this list is how support answers "where is my order", and the
+  // answer was previously not something you could paste to a colleague.
+  const [status, setStatus] = useUrlString("status");
+  const [search, setSearch] = useUrlString("q");
   const query = useCommerceOrders({
     status: status || undefined,
     search: search.trim() || undefined,
   });
+
+  useCommands(
+    [
+      ...STATUSES.filter(Boolean).map((value) => ({
+        id: `orders:status:${value}`,
+        label: `Show ${spoken(value)} orders`,
+        group: "Orders",
+        keywords: ["filter", "orders", spoken(value)],
+        icon: <Filter className="h-4 w-4" />,
+        perform: () => setStatus(value),
+      })),
+      {
+        id: "orders:clear",
+        label: "Clear order filters",
+        group: "Orders",
+        keywords: ["reset", "all orders", "show everything"],
+        perform: () => {
+          setStatus("");
+          setSearch("");
+        },
+      },
+    ],
+    [setStatus, setSearch],
+  );
 
   const orders = query.data?.pages.flatMap((p) => p.items) ?? [];
 

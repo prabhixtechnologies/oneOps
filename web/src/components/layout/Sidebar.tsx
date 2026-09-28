@@ -6,12 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
-import { useAuth } from "@/lib/auth";
 import { IS_ADMIN_APP } from "@/lib/app-mode";
-import { hasAnyPermission } from "@/lib/permissions";
-import { PermissionGate } from "@/components/shared/PermissionGate";
-import { navGroups, type NavItem } from "./nav-config";
-import { useStaffRoles } from "@/features/ops/api";
+import { type NavItem } from "./nav-config";
+import { useVisibleNav } from "./use-visible-nav";
 
 /**
  * Prabhix Mailroom, for a person's own mail as opposed to the shared inbox this console owns.
@@ -30,9 +27,8 @@ interface SidebarProps {
 
 export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
-  const { me, permissions } = useAuth();
-  const staff = useStaffRoles();
-  const groups = navGroups;
+  // Filtered by the same hook the command palette reads, so the two cannot list different pages.
+  const groups = useVisibleNav();
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -53,23 +49,6 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
     </NavLink>
   );
 
-  const renderItem = (item: NavItem) => {
-    if (item.platformAdminOnly && !me?.platformAdmin) return null;
-    if (item.staffRoles && staff.isSuccess) {
-      const roles = staff.data.roles ?? [];
-      const allowed = roles.includes("OWNER") || item.staffRoles.some((role) => roles.includes(role));
-      if (!allowed) return null;
-    }
-    if (item.anyPermission && !hasAnyPermission(permissions, item.anyPermission)) return null;
-    const link = navLink(item);
-    if (!item.permission) return link;
-    return (
-      <PermissionGate key={item.to} permission={item.permission}>
-        {link}
-      </PermissionGate>
-    );
-  };
-
   return (
     <aside
       className={cn(
@@ -89,9 +68,6 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
 
       <nav className="flex-1 overflow-y-auto p-2" aria-label="Main navigation">
         {groups.map((group) => {
-          const items = group.items.map(renderItem).filter(Boolean);
-          // A group whose every link is hidden by permissions would otherwise leave a stray heading.
-          if (items.length === 0) return null;
           return (
             <div key={group.heading} className="mb-3 space-y-1 last:mb-0">
               <p className={cn(
@@ -101,7 +77,7 @@ export function Sidebar({ onOpenCommand, onLogout, onNavigate, className }: Side
                 {group.heading}
               </p>
               <div className={group.nested ? "pl-2" : undefined}>
-                {items}
+                {group.items.map(navLink)}
               </div>
             </div>
           );

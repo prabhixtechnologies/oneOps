@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { Outlet } from "react-router";
-import { CommandPalette, useCommandPalette } from "@/components/layout/CommandPalette";
+import { AppCommandPalette, useCommandPalette } from "@/components/layout/CommandPalette";
 import { Sidebar, useCloseNavOnRouteChange } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { ViewingOrgBanner } from "@/components/layout/ViewingOrgBanner";
@@ -20,10 +20,23 @@ import { useEffect } from "react";
  */
 const useHandoff: typeof useStaffHandoff = IS_ADMIN_APP ? () => {} : useStaffHandoff;
 
+/**
+ * The palette provider has to sit above everything that might register a command, and the shell
+ * itself opens the palette, so the two cannot be the same component: a hook cannot read a context
+ * its own component provides.
+ */
 export function AppShell() {
+  return (
+    <AppCommandPalette>
+      <AppShellInner />
+    </AppCommandPalette>
+  );
+}
+
+function AppShellInner() {
   const { logout, accessToken, me } = useAuth();
   const { viewing } = useViewingOrg();
-  const { open, setOpen } = useCommandPalette();
+  const { open: openPalette } = useCommandPalette();
   const [navOpen, setNavOpen] = useState(false);
 
   useHandoff();
@@ -47,7 +60,7 @@ export function AppShell() {
         Skip to content
       </a>
       <div className="hidden lg:flex">
-        <Sidebar onOpenCommand={() => setOpen(true)} onLogout={() => void logout()} />
+        <Sidebar onOpenCommand={openPalette} onLogout={() => void logout()} />
       </div>
 
       <Dialog open={navOpen} onOpenChange={setNavOpen}>
@@ -59,7 +72,7 @@ export function AppShell() {
           <Sidebar
             onOpenCommand={() => {
               setNavOpen(false);
-              setOpen(true);
+              openPalette();
             }}
             onLogout={() => void logout()}
             onNavigate={closeNav}
@@ -77,7 +90,6 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
-      <CommandPalette open={open} onOpenChange={setOpen} />
     </div>
   );
 }
