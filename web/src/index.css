@@ -22,8 +22,12 @@
   New code should use the generated names directly — surface-raised, ink-muted, danger,
   accent-2 — rather than the bridged aliases.
 */
-@theme {
+/* `inline` so a `[data-brand]` scope reaches it. See build-tokens.mjs for why. */
+@theme inline {
   --color-surface-elevated: var(--px-surface-raised);
+}
+
+@theme {
   --shadow-px: var(--px-elevation-3);
   --font-sans: var(--px-font-body);
 }
