@@ -60,7 +60,7 @@
           `NoSuchMethod ognl.OgnlContext.<init>`. Move this when Thymeleaf supports 3.4, not
           before, and check the mail rendering tests rather than the build.
         -->
-        <ognl.version>3.3.4</ognl.version>
+        <ognl.version>3.3.5</ognl.version>
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
         <awssdk.version>2.55.6</awssdk.version>
         <logstash.encoder.version>9.0</logstash.encoder.version>
