@@ -35,7 +35,7 @@
         -->
         <java.version>25</java.version>
         <build.dir>${project.basedir}/target</build.dir>
-        <jjwt.version>0.12.6</jjwt.version>
+        <jjwt.version>0.13.0</jjwt.version>
         <!-- Published from Identity/client by that repository's CI; see <repositories> below. -->
         <identity.starter.version>1.0.0</identity.starter.version>
         <!--
@@ -44,16 +44,25 @@
           SwaggerConfig cannot be introspected and the context refuses to start. Not a compile error,
           since springdoc is only ever on the classpath — the integration tests are what catch it.
         -->
-        <springdoc.version>3.1.0</springdoc.version>
+        <springdoc.version>3.1.1</springdoc.version>
         <!--
           Testcontainers is version-managed by the Boot parent from 4.x on, so the pin is gone and the
           modules inherit it. Worth knowing that 2.x renamed every module to carry a testcontainers-
           prefix and dropped the self-referential generics.
         -->
-        <jsoup.version>1.18.3</jsoup.version>
+        <jsoup.version>1.23.2</jsoup.version>
+        <!--
+          Held on 3.3.x deliberately, and Dependabot is told to leave it alone in
+          .github/dependabot.yml. Thymeleaf 3.1's OGNL evaluator constructs
+          `new OgnlContext(MemberAccess, ClassResolver, TypeConverter, Map)`, and 3.4 changed that
+          constructor. The bump compiles and passes 481 of 483 tests: the two that fail are the
+          ones that actually render a mail template, and they fail at run time with
+          `NoSuchMethod ognl.OgnlContext.<init>`. Move this when Thymeleaf supports 3.4, not
+          before, and check the mail rendering tests rather than the build.
+        -->
         <ognl.version>3.3.4</ognl.version>
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
-        <awssdk.version>2.29.52</awssdk.version>
+        <awssdk.version>2.55.6</awssdk.version>
         <logstash.encoder.version>9.0</logstash.encoder.version>
     </properties>
 
