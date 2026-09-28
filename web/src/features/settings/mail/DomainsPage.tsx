@@ -187,12 +187,14 @@ export default function DomainsPage() {
           icon={<AlertTriangle className="size-8" />}
           title="Domains could not be loaded"
           description={adminErrorHint(domains.error) ?? getApiErrorMessage(domains.error)}
+          action={{ label: "Try again", onClick: () => void domains.refetch() }}
         />
       ) : (domains.data ?? []).length === 0 ? (
         <EmptyState
           icon={<Globe className="size-8" />}
           title="No sending domains yet"
           description="Add a domain to publish MX, SPF, DKIM and DMARC records."
+          action={{ label: "Add the first domain", onClick: () => setShowCreate(true) }}
         />
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">

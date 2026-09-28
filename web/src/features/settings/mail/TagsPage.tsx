@@ -139,12 +139,14 @@ export default function TagsPage() {
           icon={<AlertTriangle className="size-8" />}
           title="Tags could not be loaded"
           description={adminErrorHint(tags.error) ?? getApiErrorMessage(tags.error)}
+          action={{ label: "Try again", onClick: () => void tags.refetch() }}
         />
       ) : (tags.data ?? []).length === 0 ? (
         <EmptyState
           icon={<TagIcon className="size-8" />}
           title="No tags yet"
           description="Create tags to classify tickets in the inbox."
+          action={{ label: "Add the first tag", onClick: () => setShowCreate(true) }}
         />
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">

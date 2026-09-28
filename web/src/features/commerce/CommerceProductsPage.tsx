@@ -293,7 +293,21 @@ export default function CommerceProductsPage() {
             }}
           />
         ) : (
-          <EmptyState title="No products" description="Create a product to list it on the shop." />
+          <EmptyState
+            title="No products"
+            description={
+              canManage
+                ? "Create a product to list it on the shop."
+                : "Nothing is listed yet. Someone with catalogue access can add the first one."
+            }
+            // Only offered to someone who can act on it. A button that leads to a permission
+            // denial is worse than no button, because it costs a click to learn the same thing.
+            action={
+              canManage
+                ? { label: "New product", onClick: () => navigate("/commerce/products/new") }
+                : undefined
+            }
+          />
         )
       )}
 

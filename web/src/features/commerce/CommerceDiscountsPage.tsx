@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PermissionGate } from "@/components/shared/PermissionGate";
@@ -36,6 +36,7 @@ export default function CommerceDiscountsPage() {
   const query = useCommerceDiscounts();
   const create = useCreateDiscount();
 
+  const codeRef = useRef<HTMLInputElement>(null);
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
   const [discountType, setDiscountType] = useState("PERCENTAGE");
@@ -77,7 +78,7 @@ export default function CommerceDiscountsPage() {
           <h2 className="font-medium md:col-span-2">New discount</h2>
           <div className="space-y-2">
             <Label htmlFor="discount-code">Code</Label>
-            <Input id="discount-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
+            <Input ref={codeRef} id="discount-code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="discount-type">Type</Label>
@@ -131,7 +132,16 @@ export default function CommerceDiscountsPage() {
       {(query.data?.length ?? 0) === 0 && !query.isLoading && (
         <EmptyState
           title="No discount codes"
-          description="Create a code above, or wait until one exists for this store."
+          description="Codes appear here once you create one. The form above is where they start."
+          // The form is already on the page, so the useful action is to put the cursor in it
+          // rather than to repeat the button that is sitting at the bottom of it.
+          action={{
+            label: "Write the first code",
+            onClick: () => {
+              codeRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+              codeRef.current?.focus();
+            },
+          }}
         />
       )}
 

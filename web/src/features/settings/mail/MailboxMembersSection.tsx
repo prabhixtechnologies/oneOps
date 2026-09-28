@@ -209,6 +209,7 @@ export function MailboxMembersSection() {
           icon={<Users className="size-8" />}
           title="No members yet"
           description="Add users or teams who should see this mailbox in the inbox."
+          action={{ label: "Add the first member", onClick: () => setShowAdd(true) }}
         />
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">

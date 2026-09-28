@@ -193,7 +193,11 @@ export default function ChatSettingsPage() {
           {cannedQuery.isLoading ? (
             <Skeleton className="h-32" />
           ) : (cannedQuery.data?.length ?? 0) === 0 ? (
-            <EmptyState title="No canned replies yet" description="Save replies you send often." />
+            <EmptyState
+              title="No canned replies yet"
+              description="Save replies you send often."
+              action={{ label: "Write the first reply", onClick: () => setCannedOpen(true) }}
+            />
           ) : (
             <div className="space-y-3">
               {cannedQuery.data?.map((cr) => (

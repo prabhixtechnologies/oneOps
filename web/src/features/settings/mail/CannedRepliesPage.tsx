@@ -204,12 +204,14 @@ export default function CannedRepliesPage() {
           icon={<AlertTriangle className="size-8" />}
           title="Canned replies could not be loaded"
           description={adminErrorHint(replies.error) ?? getApiErrorMessage(replies.error)}
+          action={{ label: "Try again", onClick: () => void replies.refetch() }}
         />
       ) : (replies.data ?? []).length === 0 ? (
         <EmptyState
           icon={<MessageSquare className="size-8" />}
           title="No canned replies yet"
           description="Add saved responses your team uses often."
+          action={{ label: "Add the first reply", onClick: () => setShowCreate(true) }}
         />
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">

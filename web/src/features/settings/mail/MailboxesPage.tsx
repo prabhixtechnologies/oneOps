@@ -278,12 +278,14 @@ export default function MailboxesPage() {
           icon={<AlertTriangle className="size-8" />}
           title="Mailboxes could not be loaded"
           description={adminErrorHint(mailboxes.error) ?? getApiErrorMessage(mailboxes.error)}
+          action={{ label: "Try again", onClick: () => void mailboxes.refetch() }}
         />
       ) : (mailboxes.data ?? []).length === 0 ? (
         <EmptyState
           icon={<Inbox className="size-8" />}
           title="No mailboxes yet"
           description="Add a shared mailbox for the inbox, or create an address for a member."
+          action={{ label: "Add the first mailbox", onClick: () => setShowCreate(true) }}
         />
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">

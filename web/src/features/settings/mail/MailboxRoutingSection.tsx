@@ -119,6 +119,7 @@ export function MailboxRoutingSection() {
           icon={<GitBranch className="size-8" />}
           title="No routing rules"
           description="Add a rule to assign, tag, or auto-reply to incoming mail."
+          action={{ label: "Add the first rule", onClick: () => setEditing("new") }}
         />
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">
