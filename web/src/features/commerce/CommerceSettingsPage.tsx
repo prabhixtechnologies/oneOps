@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useDirtyTracker } from "@prabhix/ui";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { UnsavedChanges } from "@/components/shared/UnsavedChanges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,22 +30,51 @@ export default function CommerceSettingsPage() {
   const [flatShipping, setFlatShipping] = useState("");
   const [freeShippingAbove, setFreeShippingAbove] = useState("");
 
-  useEffect(() => {
+  /*
+    What the server last told us, in the same shape and formatting as the fields. Derived
+    from the query rather than captured on first load, so a successful save re-baselines
+    the form and stops it claiming to be dirty over changes that are now persisted.
+  */
+  const saved = useMemo(() => {
     const s = settingsQuery.data;
-    if (!s) return;
-    setSellerName(s.sellerName ?? "");
-    setSellerGstin(s.sellerGstin ?? "");
-    setSellerState(s.sellerState ?? "");
-    setSellerAddress(s.sellerAddress ?? "");
-    setOrderPrefix(s.orderNumberPrefix ?? "");
-    setGstPercent(String(s.gstPercent));
-    setFlatShipping(paiseToRupeesString(s.flatShippingPaise));
-    setFreeShippingAbove(
-      s.freeShippingAbovePaise != null
-        ? paiseToRupeesString(s.freeShippingAbovePaise)
-        : "",
-    );
+    return {
+      sellerName: s?.sellerName ?? "",
+      sellerGstin: s?.sellerGstin ?? "",
+      sellerState: s?.sellerState ?? "",
+      sellerAddress: s?.sellerAddress ?? "",
+      orderPrefix: s?.orderNumberPrefix ?? "",
+      gstPercent: s ? String(s.gstPercent) : "18",
+      flatShipping: s ? paiseToRupeesString(s.flatShippingPaise) : "",
+      freeShippingAbove:
+        s?.freeShippingAbovePaise != null ? paiseToRupeesString(s.freeShippingAbovePaise) : "",
+    };
   }, [settingsQuery.data]);
+
+  useEffect(() => {
+    if (!settingsQuery.data) return;
+    setSellerName(saved.sellerName);
+    setSellerGstin(saved.sellerGstin);
+    setSellerState(saved.sellerState);
+    setSellerAddress(saved.sellerAddress);
+    setOrderPrefix(saved.orderPrefix);
+    setGstPercent(saved.gstPercent);
+    setFlatShipping(saved.flatShipping);
+    setFreeShippingAbove(saved.freeShippingAbove);
+  }, [saved, settingsQuery.data]);
+
+  const dirty = useDirtyTracker(
+    {
+      sellerName,
+      sellerGstin,
+      sellerState,
+      sellerAddress,
+      orderPrefix,
+      gstPercent,
+      flatShipping,
+      freeShippingAbove,
+    },
+    saved,
+  );
 
   const save = async () => {
     try {
@@ -67,6 +98,10 @@ export default function CommerceSettingsPage() {
 
   return (
     <div className="space-y-6 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-6">
+      <UnsavedChanges
+        when={dirty}
+        description="The seller, tax and shipping details you changed have not been saved."
+      />
       <PageHeader
         title="Shop settings"
         description="Tax, shipping, and seller details for invoices and checkout."

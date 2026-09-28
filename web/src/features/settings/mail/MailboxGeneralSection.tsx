@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useDirtyTracker } from "@prabhix/ui";
+import { UnsavedChanges } from "@/components/shared/UnsavedChanges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,6 +63,41 @@ export function MailboxGeneralSection() {
     );
   };
 
+  /*
+    The saved state, in the same shape and formatting as the fields. `mailbox` comes from the
+    route loader and is refetched after a save, so this re-baselines itself and the form stops
+    calling itself dirty over changes that are now persisted.
+
+    `workingDays` is joined because useDirtyTracker compares values with `!==`, and two arrays
+    holding the same days are never equal that way - it would report every mailbox as dirty
+    the moment it loaded.
+  */
+  const persisted = {
+    name: mailbox.name,
+    description: mailbox.description ?? "",
+    signature: mailbox.signature ?? "",
+    slaFirst: mailbox.slaFirstResponseMins != null ? String(mailbox.slaFirstResponseMins) : "",
+    slaResolution: mailbox.slaResolutionMins != null ? String(mailbox.slaResolutionMins) : "",
+    timezone: mailbox.businessHours?.timezone ?? "",
+    workingDays: (mailbox.businessHours?.workingDays ?? [1, 2, 3, 4, 5]).join(","),
+    startTime: mailbox.businessHours?.startTime ?? "09:00",
+    endTime: mailbox.businessHours?.endTime ?? "18:00",
+  };
+  const dirty = useDirtyTracker(
+    {
+      name,
+      description,
+      signature,
+      slaFirst,
+      slaResolution,
+      timezone,
+      workingDays: workingDays.join(","),
+      startTime,
+      endTime,
+    },
+    persisted,
+  );
+
   const save = async () => {
     setError(undefined);
     setSaved(false);
@@ -104,6 +141,10 @@ export function MailboxGeneralSection() {
         void save();
       }}
     >
+      <UnsavedChanges
+        when={dirty}
+        description="The mailbox name, signature, SLA targets or business hours you changed have not been saved."
+      />
       {error ? (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
