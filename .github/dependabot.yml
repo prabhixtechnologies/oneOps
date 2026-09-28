@@ -53,21 +53,14 @@ updates:
         patterns: ["*"]
     labels: [dependencies, web]
 
-  - package-ecosystem: gradle
-    directory: /mobile/android
-    schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 3
-    groups:
-      android-minor-and-patch:
-        applies-to: version-updates
-        update-types: [minor, patch]
-      android-security:
-        applies-to: security-updates
-        patterns: ["*"]
-    labels: [dependencies, mobile]
-
+# There was a gradle entry for /mobile/android here. That directory is not in this repository, so
+# the weekly run failed every time with nothing to look at. A permanently red Dependabot job is
+# worse than a missing one: it trains you to ignore the update runs, which is where a real advisory
+# would show up.
+#
+# It also hid a real gap. The Android code lives in Mobile, and that repository had no Dependabot
+# configuration at all -- so this entry made Android look watched while nothing was watching it.
+# Mobile/.github/dependabot.yml now covers its four Gradle trees, its pubspecs and its workflows.
   # Actions pinned by tag drift out of support quietly, and a deprecated runner action fails the
   # whole pipeline the day it is switched off rather than warning first.
   - package-ecosystem: github-actions
