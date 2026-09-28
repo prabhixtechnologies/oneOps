@@ -10,35 +10,45 @@ import { useVisibleNav } from "./use-visible-nav";
 export { useCommands } from "@prabhix/ui";
 export { useCommandPalette };
 
-/**
- * Words people type that are not the word on the link.
- *
- * <p>Nobody searches for "Commerce" when they want to change a price, and nobody types "Visitors"
- * looking for who is on the site right now. Without these the palette only works for someone who
- * already knows the menu, which is the one person who did not need it.
- */
-const SYNONYMS: Record<string, string[]> = {
+/*
+  Words people type that are not the word on the link.
+
+  Nobody searches for "Commerce" when they want to change a price, and nobody types "Visitors"
+  looking for who is on the site right now. Without these the palette only works for someone who
+  already knows the menu, which is the one person who did not need it.
+
+  Split into two maps and chosen at module scope for the same reason nav-config.ts splits its
+  groups: the branch not taken is dropped from the bundle along with every route string in it.
+  Written as one map, this leaked `/commerce/orders` and `/commerce/products` into the admin
+  console's bundle, and CI caught it - the two builds are checked for each other's strings
+  precisely so that staff surfaces and customer surfaces cannot learn about each other.
+*/
+const tenantSynonyms: Record<string, string[]> = {
   "/": ["home", "dashboard", "start"],
   "/inbox": ["mail", "email", "tickets", "support", "threads", "replies"],
-  "/chat": ["livechat", "messages", "widget", "conversations"],
-  "/visitors": ["analytics", "traffic", "sessions", "who is online"],
-  "/commerce": ["shop", "store", "sales", "commerce"],
+  "/chat": ["livechat", "messages", "widget"],
+  "/visitors": ["traffic", "sessions", "who is online"],
+  "/commerce": ["shop", "store", "sales"],
   "/commerce/products": ["catalog", "catalogue", "stock", "inventory", "sku", "price", "pricing"],
-  "/commerce/orders": ["sales", "purchases", "refund", "fulfilment", "fulfillment", "shipping"],
+  "/commerce/orders": ["purchases", "refund", "fulfilment", "fulfillment", "shipping"],
   "/commerce/customers": ["buyers", "contacts", "people", "accounts"],
   "/commerce/discounts": ["coupons", "promo", "vouchers", "sale", "offer"],
   "/commerce/settings": ["shipping", "tax", "payments", "checkout", "currency"],
-  "/members": ["team", "staff", "users", "invite", "roles", "permissions", "access"],
-  "/billing": ["invoice", "plan", "subscription", "payment", "card", "upgrade"],
+  "/members": ["team", "users", "invite", "roles", "permissions", "access"],
+  "/billing": ["invoice", "plan", "payment", "card", "upgrade"],
   "/settings": ["organisation", "organization", "org", "profile", "name", "logo", "branding"],
   "/settings/mail": ["dns", "domain", "spf", "dkim", "mailbox", "smtp", "imap", "sending"],
   "/settings/api-keys": ["token", "secret", "integration", "webhook", "developer"],
-  "/ai/settings": ["assistant", "model", "prompt", "openai", "automation"],
+  "/ai/settings": ["assistant", "model", "prompt", "automation"],
   "/ai/usage": ["spend", "tokens", "cost", "quota"],
   "/flags": ["feature flags", "toggles", "rollout", "experiments"],
   "/logs": ["events", "activity", "history", "debug"],
   "/audit": ["compliance", "who changed", "trail", "security"],
   "/files": ["uploads", "attachments", "storage", "documents"],
+};
+
+const platformSynonyms: Record<string, string[]> = {
+  "/": ["home", "dashboard", "start"],
   "/tenants": ["customers", "orgs", "organisations", "accounts", "shops"],
   "/identity": ["auth", "sso", "oidc", "login", "sessions", "mfa"],
   "/revenue": ["mrr", "arr", "money", "income", "subscriptions"],
@@ -47,7 +57,10 @@ const SYNONYMS: Record<string, string[]> = {
   "/staff": ["employees", "platform team", "admins"],
   "/mobistack": ["repairs", "fixflow", "workshop"],
   "/commons": ["moderation", "reports", "review queue"],
+  "/logs": ["events", "activity", "history", "debug"],
 };
+
+const SYNONYMS = IS_ADMIN_APP ? platformSynonyms : tenantSynonyms;
 
 const MAILROOM_URL: string = import.meta.env.VITE_MAILROOM_URL ?? "";
 
