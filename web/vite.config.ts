@@ -1,7 +1,26 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import fs from "node:fs";
 import path from "node:path";
+
+/**
+ * Directories Vite may read outside this project, beyond the repository root below.
+ *
+ * `@prabhix/brand` and `@prabhix/ui` are `file:` dependencies on a sibling checkout, so their
+ * node_modules entries are links that leave this repository, and Vite resolves links to their
+ * real path before checking `server.fs.allow`. The brand entry point builds mark URLs with
+ * `new URL("../marks/...", import.meta.url)`, which Vite rewrites into asset imports resolving
+ * inside web-kit, so importing the package without this fails with "Denied ID". Nothing here hit
+ * it yet only because no test imports the one page that reads the tag swatches; Mailroom's
+ * accessibility suite did, and could not run for it.
+ *
+ * Absent before `npm install`, in which case there is nothing to allow.
+ */
+const linkedPackages = ["@prabhix/brand", "@prabhix/ui"]
+  .map((name) => path.resolve(import.meta.dirname, "node_modules", name))
+  .filter((dir) => fs.existsSync(dir))
+  .map((dir) => fs.realpathSync(dir));
 
 /**
  * Which of the two consoles to build: the OneOps product or the private admin app.
@@ -139,7 +158,7 @@ export default defineConfig({
     // one sign-in covers both. Both are in the backend's CORS allowlist.
     port: APP === "admin" ? 5174 : 5173,
     fs: {
-      allow: [path.resolve(import.meta.dirname, "..")],
+      allow: [path.resolve(import.meta.dirname, ".."), ...linkedPackages],
     },
     proxy: {
       "/api": {
