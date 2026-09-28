@@ -137,13 +137,13 @@ function OverviewTab() {
             Commerce & infra
           </h2>
           <div className="flex gap-2 text-xs">
-            <Link className="text-accent underline-offset-2 hover:underline" to="/tenants">
+            <Link className="text-accent-text underline-offset-2 hover:underline" to="/tenants">
               Tenants
             </Link>
-            <Link className="text-accent underline-offset-2 hover:underline" to="/revenue">
+            <Link className="text-accent-text underline-offset-2 hover:underline" to="/revenue">
               Revenue
             </Link>
-            <Link className="text-accent underline-offset-2 hover:underline" to="/infra">
+            <Link className="text-accent-text underline-offset-2 hover:underline" to="/infra">
               Infra
             </Link>
           </div>

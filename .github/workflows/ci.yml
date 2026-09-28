@@ -331,6 +331,18 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      # Colours come from the generated tokens or they do not ship. The checker lives in web-kit
+      # beside the tokens it enforces and is already cloned above, so there is one implementation
+      # and adding an escape hatch does not mean a pull request per repository. It scans whichever
+      # known source trees are present, which here is web/src.
+      #
+      # A failure names a file and line that wrote a hex or rgba() literal. Where a token genuinely
+      # cannot reach — a theme-color meta tag, a payment SDK that takes a string — the fix is a
+      # comment saying `px-allow-literal:` and why, which a reviewer can disagree with.
+      - name: No hard-coded colours
+        working-directory: ${{ github.workspace }}/../web-kit/packages/brand
+        run: node scripts/check-literals.mjs
+
       # The suite existed but nothing ran it here, so a failing test only showed up for whoever
       # happened to run vitest locally.
       - name: Test

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AlertTriangle, Plus, Tag as TagIcon, Trash2 } from "lucide-react";
+import { TAG_SWATCHES, TAG_TONES } from "@prabhix/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/shared/states";
@@ -15,7 +16,24 @@ import {
 import { adminErrorHint } from "./MailSettingsLayout";
 import { ConfirmDialog } from "./ConfirmDialog";
 
-const PRESET_COLOURS = ["#0e7490", "#22d3ee", "#10b981", "#f59e0b", "#ef4444", "#0891b2"];
+/**
+ * The presets offered in the colour picker.
+ *
+ * These were six hand-picked hexes that existed nowhere else in the portfolio and had never
+ * been through the contrast gate. They are now the shared tag swatches, so a tag the user
+ * creates here lands on the same palette as every seeded swatch elsewhere.
+ *
+ * Inks rather than backgrounds, because a tag renders as a small solid dot: the pale `bg` half
+ * of a swatch is nearly invisible against a card. The value is stored in the database and fed
+ * to `<input type="color">`, which is why this is the one place that needs literal hex instead
+ * of `var(--px-tag-*)`. The neutral swatch is skipped — it is the "no category" colour.
+ *
+ * Named, not just coloured: the old `aria-label` read "Colour #0e7490", which tells a screen
+ * reader nothing. It now says "Colour teal".
+ */
+const PRESET_COLOURS = TAG_TONES.filter((tone) => tone !== "neutral")
+  .slice(0, 8)
+  .map((tone) => ({ name: tone, hex: TAG_SWATCHES.light[tone].ink }));
 
 export default function TagsPage() {
   const tags = useTags();
@@ -25,7 +43,7 @@ export default function TagsPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState("");
-  const [colour, setColour] = useState(PRESET_COLOURS[0]);
+  const [colour, setColour] = useState(PRESET_COLOURS[0].hex);
   const [editing, setEditing] = useState<Tag | null>(null);
   const [editName, setEditName] = useState("");
   const [editColour, setEditColour] = useState("");
@@ -199,14 +217,15 @@ export default function TagsPage() {
 function ColourPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {PRESET_COLOURS.map((c) => (
+      {PRESET_COLOURS.map(({ name, hex }) => (
         <button
-          key={c}
+          key={name}
           type="button"
-          aria-label={`Colour ${c}`}
-          onClick={() => onChange(c)}
-          className={`size-7 rounded-full border-2 ${value === c ? "border-text" : "border-transparent"}`}
-          style={{ backgroundColor: c }}
+          aria-label={`Colour ${name}`}
+          aria-pressed={value === hex}
+          onClick={() => onChange(hex)}
+          className={`size-7 rounded-full border-2 ${value === hex ? "border-text" : "border-transparent"}`}
+          style={{ backgroundColor: hex }}
         />
       ))}
       <Input
