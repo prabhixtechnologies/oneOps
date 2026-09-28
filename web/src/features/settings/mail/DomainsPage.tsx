@@ -10,6 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest, apiRequestVoid, getApiErrorMessage } from "@/lib/api-client";
 import { PERMISSIONS } from "@/lib/permissions";
 import { PermissionGate } from "@/components/shared/PermissionGate";
+import { RowActions, RowActionsTrigger } from "@/components/ui/actions";
+import { copyVerb, verbs } from "@/lib/row-verbs";
+import { useAuth } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { adminErrorHint } from "./MailSettingsLayout";
 
@@ -57,6 +61,8 @@ function modeLabel(mode: MailDomain["mode"]): string {
 
 export default function DomainsPage() {
   const queryClient = useQueryClient();
+  const { permissions } = useAuth();
+  const canManage = hasPermission(permissions, PERMISSIONS.MAIL_DOMAIN_MANAGE);
   const domains = useQuery({
     queryKey: domainKeys.all,
     queryFn: () => apiRequest("/oneops/mail/domains", z.array(domainSchema)),
@@ -191,7 +197,28 @@ export default function DomainsPage() {
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">
           {(domains.data ?? []).map((row) => (
-            <li key={row.id} className="px-4 py-3">
+            <RowActions
+              key={row.id}
+              label={row.domain}
+              actions={verbs(
+                {
+                  id: "dns",
+                  label: expandedId === row.id ? "Hide DNS records" : "Show DNS records",
+                  onSelect: () => setExpandedId((id) => (id === row.id ? undefined : row.id)),
+                },
+                copyVerb("domain", "Copy domain", row.domain),
+                canManage && {
+                  id: "remove",
+                  label: "Remove domain",
+                  icon: <Trash2 />,
+                  // Deliberately not `risk: "confirm"`. This opens the page's own confirm
+                  // dialog, the same one the bin button opens, and marking it here as well
+                  // would ask twice for one act.
+                  onSelect: () => setConfirmDelete(row),
+                },
+              )}
+            >
+            <li className="px-4 py-3">
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{row.domain}</div>
@@ -218,9 +245,11 @@ export default function DomainsPage() {
                     <Trash2 className="size-4 text-destructive" />
                   </Button>
                 </PermissionGate>
+                <RowActionsTrigger />
               </div>
               {expandedId === row.id ? <DomainDns domainId={row.id} /> : null}
             </li>
+            </RowActions>
           ))}
         </ul>
       )}

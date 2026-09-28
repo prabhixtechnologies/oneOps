@@ -1,4 +1,5 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { Pencil, Star, StarOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -8,6 +9,8 @@ import { Money } from "@/components/shared/Money";
 import { EmptyState, ErrorState } from "@/components/shared/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RowActions, RowActionsTrigger, type RowAction } from "@/components/ui/actions";
+import { copyVerb, filterVerb, verbs } from "@/lib/row-verbs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -21,10 +24,14 @@ import {
 import { useCommerceProducts } from "@/features/commerce/api";
 import { apiRequest } from "@/lib/api-client";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { productDetailSchema } from "@/lib/schemas/commerce";
-import { PERMISSIONS } from "@/lib/permissions";
+import { productDetailSchema, type ProductSummary } from "@/lib/schemas/commerce";
+import { useAuth } from "@/lib/auth";
+import { PERMISSIONS, hasPermission } from "@/lib/permissions";
 
 export default function CommerceProductsPage() {
+  const navigate = useNavigate();
+  const { permissions } = useAuth();
+  const canManage = hasPermission(permissions, PERMISSIONS.COMMERCE_CATALOG_MANAGE);
   const [status, setStatus] = useState("");
   const [type, setType] = useState("");
   const [search, setSearch] = useState("");
@@ -53,6 +60,45 @@ export default function CommerceProductsPage() {
       else next.add(id);
       return next;
     });
+  };
+
+  // One list, handed to the desktop row and the mobile card. Writing it twice is how the two
+  // drift: in Members, suspend had a pending state on one and not the other.
+  //
+  // Featuring is here and publishing is not, because the list payload carries `featured` and
+  // not `status` — a menu cannot offer "Publish" when it does not know whether the product
+  // already is. That belongs on the detail page, which the first item goes to.
+  const productActions = (p: ProductSummary): RowAction[] =>
+    verbs(
+      { id: "edit", label: "Edit product", icon: <Pencil />, onSelect: () => void navigate(`/commerce/products/${p.id}`) },
+      canManage && {
+        id: "feature",
+        label: p.featured ? "Remove from featured" : "Feature on the shop",
+        icon: p.featured ? <StarOff /> : <Star />,
+        onSelect: () => void setFeatured(p),
+      },
+      {
+        id: "select",
+        label: selected.has(p.id) ? "Deselect" : "Select",
+        onSelect: () => toggle(p.id),
+      },
+      filterVerb("name", "Show only this product", p.name, setSearch),
+      copyVerb("name", "Copy name", p.name),
+      copyVerb("slug", "Copy slug", p.slug),
+      copyVerb("id", "Copy product ID", p.id),
+    );
+
+  const setFeatured = async (p: ProductSummary) => {
+    try {
+      await apiRequest(`/oneops/commerce/products?id=${p.id}`, productDetailSchema, {
+        method: "PUT",
+        body: { featured: !p.featured },
+      });
+      toast.success(p.featured ? `${p.name} is no longer featured` : `${p.name} is now featured`);
+      void query.refetch();
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
+    }
   };
 
   const applyBulk = async () => {
@@ -153,14 +199,19 @@ export default function CommerceProductsPage() {
 
       <ResponsiveTable
         mobile={filtered.map((p) => (
-          <MobileCard key={p.id}>
-            <p className="font-medium">{p.name}</p>
-            <MobileCardRow label="Type" value={<Badge variant="secondary">{p.productType}</Badge>} />
-            <MobileCardRow label="From" value={<Money amount={p.fromPricePaise} />} />
-            <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
-              <Link to={`/commerce/products/${p.id}`}>Edit</Link>
-            </Button>
-          </MobileCard>
+          <RowActions key={p.id} actions={productActions(p)} label={p.name}>
+            <MobileCard>
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 font-medium">{p.name}</p>
+                <RowActionsTrigger />
+              </div>
+              <MobileCardRow label="Type" value={<Badge variant="secondary">{p.productType}</Badge>} />
+              <MobileCardRow label="From" value={<Money amount={p.fromPricePaise} />} />
+              <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
+                <Link to={`/commerce/products/${p.id}`}>Edit</Link>
+              </Button>
+            </MobileCard>
+          </RowActions>
         ))}
       >
         <Table>
@@ -176,7 +227,10 @@ export default function CommerceProductsPage() {
           </TableHeader>
           <TableBody>
             {filtered.map((p) => (
-              <TableRow key={p.id}>
+              // `asChild` on the context-menu trigger inside RowActions, so this stays a plain
+              // `<tr>` — a wrapping element here would not be valid inside `<tbody>`.
+              <RowActions key={p.id} actions={productActions(p)} label={p.name}>
+                <TableRow>
                 <TableCell>
                   <PermissionGate permission={PERMISSIONS.COMMERCE_CATALOG_MANAGE}>
                     <input
@@ -196,11 +250,15 @@ export default function CommerceProductsPage() {
                 </TableCell>
                 <TableCell className="font-mono text-xs">{p.slug}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to={`/commerce/products/${p.id}`}>Edit</Link>
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to={`/commerce/products/${p.id}`}>Edit</Link>
+                    </Button>
+                    <RowActionsTrigger />
+                  </div>
                 </TableCell>
-              </TableRow>
+                </TableRow>
+              </RowActions>
             ))}
           </TableBody>
         </Table>

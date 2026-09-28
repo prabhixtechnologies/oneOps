@@ -1,6 +1,6 @@
-import { Activity, Globe, Users } from "lucide-react";
+import { Activity, Eye, Globe, Users } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { CursorList } from "@/components/shared/CursorList";
 import { MobileCard, MobileCardRow } from "@/components/shared/ResponsiveTable";
@@ -9,6 +9,8 @@ import { EmptyState, ErrorState } from "@/components/shared/states";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RowActions, RowActionsTrigger } from "@/components/ui/actions";
+import { copyVerb, verbs } from "@/lib/row-verbs";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,29 +26,82 @@ import type { LiveVisitor, VisitorSummary } from "@/lib/schemas/visitor";
 import { useLiveVisitors, useVisitorAnalytics, useVisitors } from "@/features/visitors/api";
 import { PERMISSIONS } from "@/lib/permissions";
 
+/**
+ * What a row on this screen can honestly offer.
+ *
+ * Nothing here mutates anything: a visitor is a record of somebody's behaviour, not a resource
+ * with verbs. What it has is identifiers, and the reason anyone is on this screen is to take
+ * one of them somewhere else — into a support thread, a CRM, a message.
+ */
+function useVisitorActions(label: string, id: string, email: string | null | undefined, path?: string | null) {
+  const navigate = useNavigate();
+  return verbs(
+    { id: "open", label: "View profile", icon: <Eye />, onSelect: () => void navigate(`/visitors/${id}`) },
+    email ? { id: "email", label: "Send an email", onSelect: () => { window.location.href = `mailto:${email}`; } } : null,
+    copyVerb("email", "Copy email", email),
+    copyVerb("name", "Copy name", label === "Anonymous" ? null : label),
+    copyVerb("path", "Copy current page", path),
+    copyVerb("id", "Copy visitor ID", id),
+  );
+}
+
 function LiveVisitorCard({ visitor }: { visitor: LiveVisitor }) {
   const label = visitor.displayName || visitor.email || visitor.externalKey || "Anonymous";
+  const actions = useVisitorActions(label, visitor.visitorId, visitor.email, visitor.currentPath);
   return (
+    <RowActions actions={actions} label={label}>
     <MobileCard>
-      <p className="font-medium">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 font-medium">{label}</p>
+        <RowActionsTrigger />
+      </div>
       <MobileCardRow label="Page" value={visitor.currentTitle || visitor.currentPath || "—"} />
       <MobileCardRow label="Since" value={<RelativeTime date={visitor.since} className="text-xs" />} />
       <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
         <Link to={`/visitors/${visitor.visitorId}`}>View profile</Link>
       </Button>
     </MobileCard>
+    </RowActions>
+  );
+}
+
+/** A component rather than a `.map` body, because the action list is a hook. */
+function LiveVisitorRow({ visitor }: { visitor: LiveVisitor }) {
+  const label = visitor.displayName || visitor.email || visitor.externalKey || "Anonymous";
+  const actions = useVisitorActions(label, visitor.visitorId, visitor.email, visitor.currentPath);
+  return (
+    <RowActions actions={actions} label={label}>
+      <TableRow>
+        <TableCell className="font-medium">{label}</TableCell>
+        <TableCell>{visitor.currentTitle || visitor.currentPath || "—"}</TableCell>
+        <TableCell>
+          <RelativeTime date={visitor.since} className="text-xs" />
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center justify-end gap-1">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/visitors/${visitor.visitorId}`}>View</Link>
+            </Button>
+            <RowActionsTrigger />
+          </div>
+        </TableCell>
+      </TableRow>
+    </RowActions>
   );
 }
 
 function VisitorDirectoryCard({ visitor }: { visitor: VisitorSummary }) {
   const label = visitor.displayName || visitor.email || "Anonymous";
+  const actions = useVisitorActions(label, visitor.id, visitor.email);
   return (
+    <RowActions actions={actions} label={label}>
     <MobileCard>
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium">{label}</p>
         <Badge variant={visitor.identified ? "success" : "secondary"}>
           {visitor.identified ? "Identified" : "Anonymous"}
         </Badge>
+        <RowActionsTrigger />
       </div>
       {visitor.email && <p className="text-text-muted">{visitor.email}</p>}
       <MobileCardRow label="Last seen" value={<RelativeTime date={visitor.lastSeenAt} className="text-xs" />} />
@@ -54,6 +109,7 @@ function VisitorDirectoryCard({ visitor }: { visitor: VisitorSummary }) {
         <Link to={`/visitors/${visitor.id}`}>View profile</Link>
       </Button>
     </MobileCard>
+    </RowActions>
   );
 }
 
@@ -181,21 +237,7 @@ export default function VisitorsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {liveQuery.data?.map((v) => {
-                      const label = v.displayName || v.email || v.externalKey || "Anonymous";
-                      return (
-                        <TableRow key={v.visitorId}>
-                          <TableCell className="font-medium">{label}</TableCell>
-                          <TableCell>{v.currentTitle || v.currentPath || "—"}</TableCell>
-                          <TableCell><RelativeTime date={v.since} className="text-xs" /></TableCell>
-                          <TableCell>
-                            <Button variant="outline" size="sm" asChild>
-                              <Link to={`/visitors/${v.visitorId}`}>View</Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {liveQuery.data?.map((v) => <LiveVisitorRow key={v.visitorId} visitor={v} />)}
                   </TableBody>
                 </Table>
               </div>

@@ -161,7 +161,7 @@ export default function MembersPage() {
 
   // Defined once and handed to both layouts. The desktop row and the mobile card each used
   // to spell out the same three verbs, which is how they drift: suspend had a pending state
-  // on mobile and not on desktop, and remove â€” which cannot be undone â€” asked for no
+  // on mobile and not on desktop, and remove — which cannot be undone — asked for no
   // confirmation in either.
   const memberActions = (m: Member): RowAction[] => [
     {
@@ -232,7 +232,7 @@ export default function MembersPage() {
 
         <TabsContent value="members" className="mt-4">
           <Input
-            placeholder="Search by name or emailâ€¦"
+            placeholder="Search by name or email…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="mb-4 max-w-sm"
@@ -441,7 +441,7 @@ export default function MembersPage() {
                   <li key={inv.id} className="flex items-center justify-between px-4 py-3 text-sm">
                     <div>
                       <p className="font-medium">{inv.email}</p>
-                      <p className="text-text-muted">Role: {inv.roleName} Â· Invited by {inv.invitedBy}</p>
+                      <p className="text-text-muted">Role: {inv.roleName} · Invited by {inv.invitedBy}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <RelativeTime date={inv.createdAt} className="text-xs" />

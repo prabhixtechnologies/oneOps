@@ -1,4 +1,5 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { Eye } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { MobileCard, MobileCardRow, ResponsiveTable } from "@/components/shared/ResponsiveTable";
@@ -7,6 +8,8 @@ import { RelativeTime } from "@/components/shared/RelativeTime";
 import { EmptyState, ErrorState } from "@/components/shared/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RowActions, RowActionsTrigger, type RowAction } from "@/components/ui/actions";
+import { copyVerb, filterVerb, verbs } from "@/lib/row-verbs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -30,6 +33,7 @@ const STATUSES = [
 ];
 
 export default function CommerceOrdersPage() {
+  const navigate = useNavigate();
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const query = useCommerceOrders({
@@ -38,6 +42,18 @@ export default function CommerceOrdersPage() {
   });
 
   const orders = query.data?.pages.flatMap((p) => p.items) ?? [];
+
+  // Fulfilment and refunds live on the order page, behind their own confirmations, so they are
+  // not repeated here. What a row can offer honestly is the three identifiers somebody is
+  // asked for on the phone — the order number, the customer's email, and the id support wants.
+  const orderActions = (o: (typeof orders)[number]): RowAction[] =>
+    verbs(
+      { id: "open", label: "View order", icon: <Eye />, onSelect: () => void navigate(`/commerce/orders/${o.id}`) },
+      filterVerb("customer", "Show this customer's orders", o.customerEmail, setSearch),
+      copyVerb("number", "Copy order number", o.orderNumber),
+      copyVerb("email", "Copy customer email", o.customerEmail),
+      copyVerb("id", "Copy order ID", o.id),
+    );
 
   return (
     <div className="space-y-6 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-6">
@@ -76,10 +92,12 @@ export default function CommerceOrdersPage() {
 
       <ResponsiveTable
         mobile={orders.map((o) => (
-          <MobileCard key={o.id}>
+          <RowActions key={o.id} actions={orderActions(o)} label={`Order ${o.orderNumber}`}>
+          <MobileCard>
             <div className="flex items-start justify-between gap-2">
               <p className="font-mono font-medium">{o.orderNumber}</p>
               <Badge variant="secondary">{o.status.replace(/_/g, " ")}</Badge>
+              <RowActionsTrigger />
             </div>
             <MobileCardRow label="Customer" value={o.customerEmail ?? "—"} />
             <MobileCardRow label="Total" value={<Money amount={o.totalPaise} />} />
@@ -88,6 +106,7 @@ export default function CommerceOrdersPage() {
               <Link to={`/commerce/orders/${o.id}`} data-testid="commerce-order-open">View</Link>
             </Button>
           </MobileCard>
+          </RowActions>
         ))}
       >
         <Table>
@@ -103,7 +122,10 @@ export default function CommerceOrdersPage() {
           </TableHeader>
           <TableBody>
             {orders.map((o) => (
-              <TableRow key={o.id} data-testid="commerce-order-row">
+              // `asChild` inside RowActions keeps this a plain `<tr>`; a wrapper would not be
+              // valid inside `<tbody>`.
+              <RowActions key={o.id} actions={orderActions(o)} label={`Order ${o.orderNumber}`}>
+              <TableRow data-testid="commerce-order-row">
                 <TableCell className="font-mono text-sm">{o.orderNumber}</TableCell>
                 <TableCell>
                   <Badge variant="secondary">{o.status.replace(/_/g, " ")}</Badge>
@@ -116,11 +138,15 @@ export default function CommerceOrdersPage() {
                   <RelativeTime date={o.createdAt} />
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to={`/commerce/orders/${o.id}`} data-testid="commerce-order-open">View</Link>
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to={`/commerce/orders/${o.id}`} data-testid="commerce-order-open">View</Link>
+                    </Button>
+                    <RowActionsTrigger />
+                  </div>
                 </TableCell>
               </TableRow>
+              </RowActions>
             ))}
           </TableBody>
         </Table>

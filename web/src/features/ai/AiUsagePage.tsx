@@ -8,6 +8,8 @@ import { PermissionGate } from "@/components/shared/PermissionGate";
 import { MobileCard, MobileCardRow, ResponsiveTable } from "@/components/shared/ResponsiveTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RowActions, RowActionsTrigger, type RowAction } from "@/components/ui/actions";
+import { copyVerb, verbs } from "@/lib/row-verbs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -28,6 +30,28 @@ export default function AiUsagePage() {
     () => usageQuery.data?.pages.flatMap((p) => p.items) ?? [],
     [usageQuery.data],
   );
+
+  // A usage row is a diagnostic: somebody is here because a call was slow, expensive or
+  // failed, and the next thing they do is quote it at a provider or in a ticket. The whole
+  // line first, because the model and the outcome only mean something together.
+  const callActions = (row: (typeof rows)[number]): RowAction[] =>
+    verbs(
+      copyVerb(
+        "line",
+        "Copy this call",
+        [
+          new Date(row.createdAt).toISOString(),
+          row.taskKey,
+          `${row.provider}/${row.model}`,
+          row.outcome,
+          `${row.totalTokens} tokens`,
+          `${row.latencyMs} ms`,
+        ].join(" · "),
+      ),
+      copyVerb("model", "Copy provider and model", `${row.provider}/${row.model}`),
+      copyVerb("task", "Copy task key", row.taskKey),
+      copyVerb("id", "Copy call ID", row.id),
+    );
 
   return (
     <PermissionGate
@@ -80,10 +104,12 @@ export default function AiUsagePage() {
 
         <ResponsiveTable
           mobile={rows.map((row) => (
-            <MobileCard key={row.id}>
+            <RowActions key={row.id} actions={callActions(row)} label={row.taskKey}>
+            <MobileCard>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-medium">{row.taskKey}</p>
                 <Badge variant="secondary" className="text-[10px]">{row.outcome}</Badge>
+                <RowActionsTrigger />
               </div>
               <MobileCardRow label="Feature" value={row.feature} />
               <MobileCardRow label="Provider" value={`${row.provider}/${row.model}`} />
@@ -95,6 +121,7 @@ export default function AiUsagePage() {
                 <Badge variant="outline" className="mt-2 text-[10px]">PII redacted</Badge>
               )}
             </MobileCard>
+            </RowActions>
           ))}
         >
           <Table>
@@ -112,7 +139,8 @@ export default function AiUsagePage() {
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
-                <TableRow key={row.id}>
+                <RowActions key={row.id} actions={callActions(row)} label={row.taskKey}>
+                <TableRow>
                   <TableCell className="font-medium">{row.taskKey}</TableCell>
                   <TableCell>{row.feature}</TableCell>
                   <TableCell className="text-sm text-text-muted">{row.provider}/{row.model}</TableCell>
@@ -122,8 +150,14 @@ export default function AiUsagePage() {
                   <TableCell>
                     <Badge variant="secondary" className="text-[10px]">{row.outcome}</Badge>
                   </TableCell>
-                  <TableCell><RelativeTime date={row.createdAt} /></TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-between gap-1">
+                      <RelativeTime date={row.createdAt} />
+                      <RowActionsTrigger />
+                    </div>
+                  </TableCell>
                 </TableRow>
+                </RowActions>
               ))}
             </TableBody>
           </Table>

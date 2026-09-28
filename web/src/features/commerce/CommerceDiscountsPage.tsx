@@ -7,6 +7,8 @@ import { Money } from "@/components/shared/Money";
 import { EmptyState, ErrorState } from "@/components/shared/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RowActions, RowActionsTrigger, type RowAction } from "@/components/ui/actions";
+import { copyVerb, verbs } from "@/lib/row-verbs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,7 +28,8 @@ import {
 } from "@/features/commerce/api";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { rupeesToPaise, paiseToRupeesString } from "@prabhix/oneops-api";
-import { PERMISSIONS } from "@/lib/permissions";
+import { useAuth } from "@/lib/auth";
+import { PERMISSIONS, hasPermission } from "@/lib/permissions";
 import type { DiscountView } from "@/lib/schemas/commerce";
 
 export default function CommerceDiscountsPage() {
@@ -159,10 +162,56 @@ export default function CommerceDiscountsPage() {
   );
 }
 
-function DiscountRow({ discount }: { discount: DiscountView }) {
+/**
+ * One action list for the desktop row and the mobile card.
+ *
+ * A hook rather than a function because the mutation is one, and because both layouts had
+ * already written the same `onCheckedChange` twice — with different feedback. The row toasted
+ * on success and the card said nothing.
+ */
+function useDiscountActions(discount: DiscountView): RowAction[] {
+  const { permissions } = useAuth();
+  const canManage = hasPermission(permissions, PERMISSIONS.COMMERCE_DISCOUNT_MANAGE);
   const update = useUpdateDiscount(discount.id);
 
+  const setActive = async (active: boolean) => {
+    try {
+      await update.mutateAsync({ active });
+      toast.success(active ? `${discount.code} is live` : `${discount.code} is switched off`);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
+    }
+  };
+
+  return verbs(
+    canManage && {
+      id: "active",
+      label: discount.active ? "Switch off" : "Switch on",
+      // Turning a live code off can strand a customer mid-checkout, so it asks. Turning one on
+      // cannot hurt anybody and does not.
+      ...(discount.active
+        ? {
+            risk: "confirm" as const,
+            confirm: {
+              title: `Switch off ${discount.code}?`,
+              message:
+                "Anyone part-way through checkout with this code loses the discount at the last step. Switching it back on takes effect immediately.",
+              confirmLabel: "Switch off",
+            },
+          }
+        : {}),
+      onSelect: () => setActive(!discount.active),
+    },
+    copyVerb("code", "Copy code", discount.code),
+  );
+}
+
+function DiscountRow({ discount }: { discount: DiscountView }) {
+  const update = useUpdateDiscount(discount.id);
+  const actions = useDiscountActions(discount);
+
   return (
+    <RowActions actions={actions} label={`Discount ${discount.code}`}>
     <TableRow>
       <TableCell className="font-mono font-medium">{discount.code}</TableCell>
       <TableCell>{discount.discountType}</TableCell>
@@ -183,24 +232,34 @@ function DiscountRow({ discount }: { discount: DiscountView }) {
         </Badge>
       </TableCell>
       <TableCell>
-        <PermissionGate permission={PERMISSIONS.COMMERCE_DISCOUNT_MANAGE}>
-          <Switch
-            checked={discount.active}
-            onCheckedChange={(active) => {
-              void update.mutateAsync({ active }).then(() => toast.success("Updated"));
-            }}
-          />
-        </PermissionGate>
+        <div className="flex items-center justify-end gap-2">
+          <PermissionGate permission={PERMISSIONS.COMMERCE_DISCOUNT_MANAGE}>
+            <Switch
+              checked={discount.active}
+              aria-label={`${discount.code} active`}
+              onCheckedChange={(active) => {
+                void update.mutateAsync({ active }).then(() => toast.success("Updated"));
+              }}
+            />
+          </PermissionGate>
+          <RowActionsTrigger />
+        </div>
       </TableCell>
     </TableRow>
+    </RowActions>
   );
 }
 
 function DiscountMobileCard({ discount }: { discount: DiscountView }) {
   const update = useUpdateDiscount(discount.id);
+  const actions = useDiscountActions(discount);
   return (
+    <RowActions actions={actions} label={`Discount ${discount.code}`}>
     <MobileCard>
-      <p className="font-mono font-medium">{discount.code}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-mono font-medium">{discount.code}</p>
+        <RowActionsTrigger />
+      </div>
       <MobileCardRow label="Type" value={discount.discountType} />
       <MobileCardRow
         label="Value"
@@ -217,6 +276,7 @@ function DiscountMobileCard({ discount }: { discount: DiscountView }) {
         <div className="mt-3 flex items-center gap-2">
           <Switch
             checked={discount.active}
+            aria-label={`${discount.code} active`}
             onCheckedChange={(active) => {
               void update.mutateAsync({ active });
             }}
@@ -225,5 +285,6 @@ function DiscountMobileCard({ discount }: { discount: DiscountView }) {
         </div>
       </PermissionGate>
     </MobileCard>
+    </RowActions>
   );
 }
