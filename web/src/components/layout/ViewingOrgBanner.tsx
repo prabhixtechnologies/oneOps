@@ -46,9 +46,9 @@ export function ViewingOrgBanner() {
   return (
     <div
       role="status"
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm lg:px-4"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-warning-subtle-border bg-warning-subtle px-3 py-2 text-sm lg:px-4"
     >
-      <Eye className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+      <Eye className="h-4 w-4 shrink-0 text-warning-subtle-ink" aria-hidden="true" />
       <span className="min-w-0">
         Viewing <span className="font-semibold">{resolvedName ?? viewing.name}</span> as platform
         staff. This access is recorded.

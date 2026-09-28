@@ -12,7 +12,7 @@ export function MailLinkWarningPage() {
     return (
       <div className="mx-auto max-w-lg space-y-4 p-8 text-center">
         <h1 className="text-xl font-semibold">Link could not be opened</h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-text-muted">
           This tracking link does not point to a safe https destination. You can close this tab.
         </p>
       </div>
@@ -23,12 +23,12 @@ export function MailLinkWarningPage() {
     <div className="mx-auto max-w-lg space-y-6 p-8">
       <div className="space-y-2 text-center">
         <h1 className="text-xl font-semibold">You are leaving Prabhix mail</h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-text-muted">
           The message linked to an external site. We only show the destination host here — not the full URL —
           so you can decide before continuing.
         </p>
       </div>
-      <div className="rounded-md border bg-muted/40 px-4 py-3 text-center font-mono text-sm">{parsed.host}</div>
+      <div className="rounded-md border bg-surface-muted px-4 py-3 text-center font-mono text-sm">{parsed.host}</div>
       {!confirmed ? (
         <Button className="w-full" type="button" onClick={() => setConfirmed(true)}>
           Continue to this site

@@ -365,7 +365,7 @@ export function TicketPane({
             return (
               <article
                 key={entry.note.id}
-                className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4"
+                className="rounded-lg border border-warning-subtle-border bg-warning-subtle p-4"
               >
                 <div className="mb-1 flex items-center gap-2 text-xs text-warning">
                   <StickyNote className="size-3" />

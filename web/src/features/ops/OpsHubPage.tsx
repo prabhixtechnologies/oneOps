@@ -308,23 +308,23 @@ function statusClass(status: string) {
     case "CONFIRMED":
     case "WON":
     case "HIRED":
-      return "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400";
+      return "border-success-subtle-border bg-success-subtle text-success-subtle-ink";
     case "SUSPENDED":
     case "BOUNCED":
     case "LOST":
     case "SPAM":
     case "REJECTED":
-      return "border-destructive/30 bg-destructive/15 text-destructive";
+      return "border-danger-subtle-border bg-danger-subtle text-danger-subtle-ink";
     case "TRIAL":
     case "PENDING":
     case "NEW":
     case "RECEIVED":
-      return "border-primary/20 bg-primary/10 text-primary";
+      return "border-info-subtle-border bg-info-subtle text-info-subtle-ink";
     case "CANCELLED":
     case "UNSUBSCRIBED":
     case "WITHDRAWN":
-      return "border-border bg-muted text-text-muted";
+      return "border-border bg-surface-muted text-text-muted";
     default:
-      return "border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-400";
+      return "border-warning-subtle-border bg-warning-subtle text-warning-subtle-ink";
   }
 }

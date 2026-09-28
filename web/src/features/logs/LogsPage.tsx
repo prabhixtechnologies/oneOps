@@ -58,13 +58,13 @@ function severityClass(severity: string) {
   switch (severity) {
     case "ERROR":
     case "FATAL":
-      return "bg-destructive/15 text-destructive border-destructive/30";
+      return "bg-danger-subtle text-danger-subtle-ink border-danger-subtle-border";
     case "WARN":
-      return "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30";
+      return "bg-warning-subtle text-warning-subtle-ink border-warning-subtle-border";
     case "INFO":
-      return "bg-primary/10 text-primary border-primary/20";
+      return "bg-info-subtle text-info-subtle-ink border-info-subtle-border";
     default:
-      return "bg-muted text-text-muted border-border";
+      return "bg-surface-muted text-text-muted border-border";
   }
 }
 

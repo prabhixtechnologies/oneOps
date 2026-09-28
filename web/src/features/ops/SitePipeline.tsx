@@ -159,7 +159,7 @@ function LeadDialog({ id, onClose }: { id: string | null; onClose: () => void })
             {data.message && (
               <div>
                 <p className="mb-1 text-text-muted">Message</p>
-                <p className="whitespace-pre-wrap rounded-md bg-muted p-3">{data.message}</p>
+                <p className="whitespace-pre-wrap rounded-md bg-surface-muted p-3">{data.message}</p>
               </div>
             )}
 
@@ -356,7 +356,7 @@ function ApplicationDialog({ id, onClose }: { id: string | null; onClose: () => 
             {data.coverLetter && (
               <div>
                 <p className="mb-1 text-text-muted">Cover letter</p>
-                <p className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-md bg-muted p-3">
+                <p className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-md bg-surface-muted p-3">
                   {data.coverLetter}
                 </p>
               </div>

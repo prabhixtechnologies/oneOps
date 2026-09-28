@@ -29,7 +29,7 @@ export function LoginPage() {
       </h1>
       <p className="text-sm text-text-muted">One Prabhix account for every product.</p>
       {securityUpdate ? (
-        <p className="text-sm text-amber-700">
+        <p className="text-sm text-warning-subtle-ink">
           Your account had a security update. Sign in again through Identity to continue.
         </p>
       ) : null}

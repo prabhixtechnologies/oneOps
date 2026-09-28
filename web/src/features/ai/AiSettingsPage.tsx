@@ -291,7 +291,7 @@ export default function AiSettingsPage() {
         )}
 
         {editingKey && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-scrim/60 p-0 sm:items-center sm:p-4">
             <div className="flex max-h-[90dvh] w-full max-w-2xl flex-col rounded-t-lg border border-border bg-surface sm:rounded-lg">
               <div className="border-b border-border p-4">
                 <h3 className="font-semibold">Edit prompt: {editingKey}</h3>

@@ -745,7 +745,7 @@ export default function ChatPage() {
                     size="sm"
                     className={cn(
                       "flex-1",
-                      composerMode === "note" && "border-warning bg-warning text-white hover:bg-warning/90",
+                      composerMode === "note" && "border-warning bg-warning text-warning-ink hover:bg-warning/90",
                     )}
                     onClick={() => setComposerMode("note")}
                   >
