@@ -1,1 +1,1 @@
-export { Input } from "@prabhix/ui";
+export { Input } from "@prabhixtechnologies/ui";

@@ -1,1 +1,1 @@
-export { Tabs, TabsList, TabsTrigger, TabsContent } from "@prabhix/ui";
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "@prabhixtechnologies/ui";

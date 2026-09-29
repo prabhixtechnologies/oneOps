@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AlertTriangle, Plus, Tag as TagIcon, Trash2 } from "lucide-react";
-import { TAG_SWATCHES, TAG_TONES } from "@prabhix/brand";
+import { TAG_SWATCHES, TAG_TONES } from "@prabhixtechnologies/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/shared/states";

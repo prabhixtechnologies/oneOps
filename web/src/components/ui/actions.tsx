@@ -4,4 +4,4 @@ export {
   type RowAction,
   type RowActionsProps,
   type ActionRisk,
-} from "@prabhix/ui";
+} from "@prabhixtechnologies/ui";

@@ -1,5 +1,5 @@
 {
-  "name": "@prabhix/oneops-api",
+  "name": "@prabhixtechnologies/oneops-api",
   "version": "0.1.0",
   "private": true,
   "description": "Generated TypeScript types for the oneOps / Prabhix Platform API, plus shared commerce Zod schemas and money helpers.",

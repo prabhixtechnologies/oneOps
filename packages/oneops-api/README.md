@@ -1,4 +1,4 @@
-# @prabhix/oneops-api
+# @prabhixtechnologies/oneops-api
 
 TypeScript client types for the oneOps / Prabhix Platform API.
 

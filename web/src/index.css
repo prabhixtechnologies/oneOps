@@ -1,7 +1,7 @@
 @import "tailwindcss";
-@import "@prabhix/brand/tailwind-preset.css";
-@import "@prabhix/ui/preset.css";
-@source "../node_modules/@prabhix/ui/src";
+@import "@prabhixtechnologies/brand/tailwind-preset.css";
+@import "@prabhixtechnologies/ui/preset.css";
+@source "../node_modules/@prabhixtechnologies/ui/src";
 
 /*
   No colour is defined in this file. Every value comes from
@@ -15,7 +15,7 @@
 
 /*
   The shadcn-style colour names this app's ~900 existing call sites are written against
-  now come from @prabhix/ui/preset.css, imported above, so the mapping is declared once
+  now come from @prabhixtechnologies/ui/preset.css, imported above, so the mapping is declared once
   for every consumer rather than copied into each app's stylesheet. Only the two names
   that are genuinely local to OneOps stay here.
 

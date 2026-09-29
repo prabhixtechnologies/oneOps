@@ -1,1 +1,1 @@
-export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor } from "@prabhix/ui";
+export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor } from "@prabhixtechnologies/ui";

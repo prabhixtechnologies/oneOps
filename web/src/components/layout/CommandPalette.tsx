@@ -1,13 +1,13 @@
 import { LogOut, Mail, Moon, Sun, UserPlus } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router";
-import { CommandPaletteProvider, useCommandPalette, type PaletteCommand } from "@prabhix/ui";
+import { CommandPaletteProvider, useCommandPalette, type PaletteCommand } from "@prabhixtechnologies/ui";
 import { IS_ADMIN_APP } from "@/lib/app-mode";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { useVisibleNav } from "./use-visible-nav";
 
-export { useCommands } from "@prabhix/ui";
+export { useCommands } from "@prabhixtechnologies/ui";
 export { useCommandPalette };
 
 /*

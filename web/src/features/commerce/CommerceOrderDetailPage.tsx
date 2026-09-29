@@ -22,7 +22,7 @@ import {
   useReissueDownload,
 } from "@/features/commerce/api";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { paiseToRupeesString, rupeesToPaise } from "@prabhix/oneops-api";
+import { paiseToRupeesString, rupeesToPaise } from "@prabhixtechnologies/oneops-api";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export default function CommerceOrderDetailPage() {

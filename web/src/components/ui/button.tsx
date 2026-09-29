@@ -1,1 +1,1 @@
-export { Button, buttonVariants, type ButtonProps } from "@prabhix/ui";
+export { Button, buttonVariants, type ButtonProps } from "@prabhixtechnologies/ui";

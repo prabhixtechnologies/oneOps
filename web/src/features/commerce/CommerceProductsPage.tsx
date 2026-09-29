@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Pencil, Plus, Star, StarOff } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useList, useUrlString } from "@prabhix/ui";
+import { useList, useUrlString } from "@prabhixtechnologies/ui";
 import { useCommands } from "@/components/layout/CommandPalette";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PermissionGate } from "@/components/shared/PermissionGate";

@@ -1,5 +1,5 @@
 import { useBlocker } from "react-router";
-import { useBeforeUnload } from "@prabhix/ui";
+import { useBeforeUnload } from "@prabhixtechnologies/ui";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 
 /*
-  The react-router half of @prabhix/ui's unsaved-changes guard.
+  The react-router half of @prabhixtechnologies/ui's unsaved-changes guard.
 
   The package hook is router-agnostic and asks the caller to wrap each navigation, because a
   shared package cannot depend on a router. That covers explicit "Back" buttons and misses the

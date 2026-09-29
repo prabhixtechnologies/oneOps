@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useDirtyTracker } from "@prabhix/ui";
+import { useDirtyTracker } from "@prabhixtechnologies/ui";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PermissionGate } from "@/components/shared/PermissionGate";
 import { UnsavedChanges } from "@/components/shared/UnsavedChanges";
@@ -14,7 +14,7 @@ import {
   useUpdateCommerceSettings,
 } from "@/features/commerce/api";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { paiseToRupeesString, rupeesToPaise } from "@prabhix/oneops-api";
+import { paiseToRupeesString, rupeesToPaise } from "@prabhixtechnologies/oneops-api";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export default function CommerceSettingsPage() {

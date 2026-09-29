@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import { Eye, Filter } from "lucide-react";
-import { useUrlString } from "@prabhix/ui";
+import { useUrlString } from "@prabhixtechnologies/ui";
 import { useCommands } from "@/components/layout/CommandPalette";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { MobileCard, MobileCardRow, ResponsiveTable } from "@/components/shared/ResponsiveTable";

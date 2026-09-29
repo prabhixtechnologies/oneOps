@@ -1,1 +1,1 @@
-export { Skeleton } from "@prabhix/ui";
+export { Skeleton } from "@prabhixtechnologies/ui";

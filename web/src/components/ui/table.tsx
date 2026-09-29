@@ -1,1 +1,1 @@
-export { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@prabhix/ui";
+export { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@prabhixtechnologies/ui";

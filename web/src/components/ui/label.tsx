@@ -1,1 +1,1 @@
-export { Label } from "@prabhix/ui";
+export { Label } from "@prabhixtechnologies/ui";

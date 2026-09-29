@@ -17,10 +17,10 @@ COPY packages/oneops-api /packages/oneops-api
 COPY web/package.json ./
 # Host lockfiles are npm 8 / lockfileVersion 2. node:22-alpine ships npm 10, which
 # rejects those on `npm ci` and crashes on `npm install` if the old lock is present.
-RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const m={'@prabhix/brand':'file:./vendor/web-kit/packages/brand','@prabhix/ui':'file:./vendor/web-kit/packages/ui','@prabhix/oidc-client':'file:./vendor/web-kit/packages/oidc-client'};for (const [k,v] of Object.entries(m)){if(p.dependencies?.[k]?.startsWith('file:'))p.dependencies[k]=v;}fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const m={'@prabhixtechnologies/brand':'file:./vendor/web-kit/packages/brand','@prabhixtechnologies/ui':'file:./vendor/web-kit/packages/ui','@prabhixtechnologies/oidc-client':'file:./vendor/web-kit/packages/oidc-client'};for (const [k,v] of Object.entries(m)){if(p.dependencies?.[k]?.startsWith('file:'))p.dependencies[k]=v;}fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 RUN npm install --no-audit --no-fund
 COPY web/ ./
-RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const m={'@prabhix/brand':'file:./vendor/web-kit/packages/brand','@prabhix/ui':'file:./vendor/web-kit/packages/ui','@prabhix/oidc-client':'file:./vendor/web-kit/packages/oidc-client'};for (const [k,v] of Object.entries(m)){if(p.dependencies?.[k]?.startsWith('file:'))p.dependencies[k]=v;}fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const m={'@prabhixtechnologies/brand':'file:./vendor/web-kit/packages/brand','@prabhixtechnologies/ui':'file:./vendor/web-kit/packages/ui','@prabhixtechnologies/oidc-client':'file:./vendor/web-kit/packages/oidc-client'};for (const [k,v] of Object.entries(m)){if(p.dependencies?.[k]?.startsWith('file:'))p.dependencies[k]=v;}fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 # Selects which of the two consoles to build: "oneops" (the product) or "admin" (private). One
 # source tree, two images — see the entry plugin in vite.config.ts.
 ARG APP=oneops

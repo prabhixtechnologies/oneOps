@@ -14,4 +14,4 @@ export {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuRadioGroup,
-} from "@prabhix/ui";
+} from "@prabhixtechnologies/ui";

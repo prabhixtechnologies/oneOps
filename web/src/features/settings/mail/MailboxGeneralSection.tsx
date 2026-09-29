@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useDirtyTracker } from "@prabhix/ui";
+import { useDirtyTracker } from "@prabhixtechnologies/ui";
 import { UnsavedChanges } from "@/components/shared/UnsavedChanges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -1,1 +1,1 @@
-export { Switch } from "@prabhix/ui";
+export { Switch } from "@prabhixtechnologies/ui";

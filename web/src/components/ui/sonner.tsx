@@ -1,1 +1,1 @@
-export { Toaster } from "@prabhix/ui";
+export { Toaster } from "@prabhixtechnologies/ui";

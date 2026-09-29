@@ -1,5 +1,5 @@
 /**
- * Commerce response schemas. The definitions live in `@prabhix/oneops-api` (generated from
+ * Commerce response schemas. The definitions live in `@prabhixtechnologies/oneops-api` (generated from
  * oneOps/backend/apidocs.json plus shared Zod at the response boundary). This file re-exports
  * so existing `@/lib/schemas/commerce` imports keep working.
  */
@@ -43,4 +43,4 @@ export {
   type ProductSummary,
   type ProductType,
   type VariantView,
-} from "@prabhix/oneops-api";
+} from "@prabhixtechnologies/oneops-api";

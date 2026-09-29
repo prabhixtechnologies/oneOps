@@ -1,1 +1,1 @@
-export { Badge, badgeVariants, type BadgeProps } from "@prabhix/ui";
+export { Badge, badgeVariants, type BadgeProps } from "@prabhixtechnologies/ui";

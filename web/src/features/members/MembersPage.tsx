@@ -10,7 +10,7 @@ import { ErrorState } from "@/components/shared/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RowActions, RowActionsTrigger, type RowAction } from "@/components/ui/actions";
-import { toneFor } from "@prabhix/ui";
+import { toneFor } from "@prabhixtechnologies/ui";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,

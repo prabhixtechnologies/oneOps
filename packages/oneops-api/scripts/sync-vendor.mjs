@@ -42,7 +42,7 @@ delete pkg.devDependencies;
 fs.writeFileSync(path.join(dest, "package.json"), `${JSON.stringify(pkg, null, 2)}\n`);
 fs.writeFileSync(
   path.join(dest, "VENDOR.md"),
-  `Vendored snapshot of \`@prabhix/oneops-api\` from the oneOps repository.
+  `Vendored snapshot of \`@prabhixtechnologies/oneops-api\` from the oneOps repository.
 
 Refresh from a workspace that has both repos:
 
@@ -52,4 +52,4 @@ npm run sync:vendor
 \`\`\`
 `,
 );
-console.log(`Synced @prabhix/oneops-api -> ${dest}`);
+console.log(`Synced @prabhixtechnologies/oneops-api -> ${dest}`);

@@ -7,7 +7,7 @@ import path from "node:path";
 /**
  * Directories Vite may read outside this project, beyond the repository root below.
  *
- * `@prabhix/brand` and `@prabhix/ui` are `file:` dependencies on a sibling checkout, so their
+ * `@prabhixtechnologies/brand` and `@prabhixtechnologies/ui` are `file:` dependencies on a sibling checkout, so their
  * node_modules entries are links that leave this repository, and Vite resolves links to their
  * real path before checking `server.fs.allow`. The brand entry point builds mark URLs with
  * `new URL("../marks/...", import.meta.url)`, which Vite rewrites into asset imports resolving
@@ -17,7 +17,7 @@ import path from "node:path";
  *
  * Absent before `npm install`, in which case there is nothing to allow.
  */
-const linkedPackages = ["@prabhix/brand", "@prabhix/ui"]
+const linkedPackages = ["@prabhixtechnologies/brand", "@prabhixtechnologies/ui"]
   .map((name) => path.resolve(import.meta.dirname, "node_modules", name))
   .filter((dir) => fs.existsSync(dir))
   .map((dir) => fs.realpathSync(dir));
@@ -85,7 +85,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
-      "@prabhix/oneops-api": path.resolve(import.meta.dirname, "../packages/oneops-api/src/index.ts"),
+      "@prabhixtechnologies/oneops-api": path.resolve(import.meta.dirname, "../packages/oneops-api/src/index.ts"),
     },
     // Keep the linked UI package inside this app's node_modules so it uses this React,
     // not a second copy installed under the web-kit checkout.
@@ -93,7 +93,7 @@ export default defineConfig({
     dedupe: ["react", "react-dom", "zod"],
   },
   optimizeDeps: {
-    include: ["@prabhix/ui", "@prabhix/oidc-client"],
+    include: ["@prabhixtechnologies/ui", "@prabhixtechnologies/oidc-client"],
   },
   build: {
     rolldownOptions: {

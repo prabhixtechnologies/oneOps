@@ -1,1 +1,1 @@
-export { Separator } from "@prabhix/ui";
+export { Separator } from "@prabhixtechnologies/ui";

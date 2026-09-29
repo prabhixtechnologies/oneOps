@@ -1,1 +1,1 @@
-export { Checkbox } from "@prabhix/ui";
+export { Checkbox } from "@prabhixtechnologies/ui";

@@ -1,1 +1,1 @@
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@prabhix/ui";
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@prabhixtechnologies/ui";

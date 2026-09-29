@@ -13,10 +13,10 @@ import {
   isOidcEnabled,
   redirectUri,
   rememberIdToken,
-} from "@prabhix/oidc-client";
+} from "@prabhixtechnologies/oidc-client";
 
 /**
- * Product wrapper: PKCE lives in `@prabhix/oidc-client`. This file only picks the Identity client
+ * Product wrapper: PKCE lives in `@prabhixtechnologies/oidc-client`. This file only picks the Identity client
  * id for this bundle (admin vs console) and the in-app return-path rules.
  */
 configureOidc({
@@ -39,4 +39,4 @@ export {
   rememberIdToken,
 };
 
-export type { OidcTokens } from "@prabhix/oidc-client";
+export type { OidcTokens } from "@prabhixtechnologies/oidc-client";

@@ -1,1 +1,1 @@
-export { Textarea } from "@prabhix/ui";
+export { Textarea } from "@prabhixtechnologies/ui";
