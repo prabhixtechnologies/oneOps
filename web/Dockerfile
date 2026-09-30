@@ -10,17 +10,26 @@
 # Build stage
 FROM public.ecr.aws/docker/library/node:26-alpine AS build
 WORKDIR /app
-# Vendor web-kit under /app so Vite resolves UI peers from /app/node_modules.
-# Keep oneops-api at /packages/oneops-api — web/package.json and source imports use file:../packages/oneops-api.
-COPY --from=webkit packages ./vendor/web-kit/packages
+# oneops-api sits at /packages/oneops-api because web/package.json depends on it as
+# file:../packages/oneops-api, and that resolves relative to /app. It is generated from this
+# repository's own OpenAPI spec and is not published, so it stays a link.
+#
+# web-kit used to be vendored here too, as `COPY --from=webkit packages ./vendor/web-kit/packages`
+# followed by two `node -e` scripts that rewrote package.json to point the three file: links at
+# the vendored copy. brand, ui and oidc-client are versioned dependencies now, so the lockfile
+# resolves them and none of that is needed.
 COPY packages/oneops-api /packages/oneops-api
-COPY web/package.json ./
-# Host lockfiles are npm 8 / lockfileVersion 2. node:22-alpine ships npm 10, which
-# rejects those on `npm ci` and crashes on `npm install` if the old lock is present.
-RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const m={'@prabhixtechnologies/brand':'file:./vendor/web-kit/packages/brand','@prabhixtechnologies/ui':'file:./vendor/web-kit/packages/ui','@prabhixtechnologies/oidc-client':'file:./vendor/web-kit/packages/oidc-client'};for (const [k,v] of Object.entries(m)){if(p.dependencies?.[k]?.startsWith('file:'))p.dependencies[k]=v;}fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
-RUN npm install --no-audit --no-fund
+# .npmrc maps the @prabhixtechnologies scope to GitHub Packages. It holds no credential; see the
+# file itself.
+COPY web/package.json web/package-lock.json web/.npmrc ./
+# The token is mounted for this layer only. GitHub Packages demands one even though the packages
+# are public, and writing it into the image would put a credential in a layer that gets pushed to
+# ECR, so the file is created and deleted inside a single RUN.
+RUN --mount=type=secret,id=gh_token \
+    printf '//npm.pkg.github.com/:_authToken=%s\n' "$(cat /run/secrets/gh_token)" > /root/.npmrc \
+ && npm ci --no-audit --no-fund \
+ && rm -f /root/.npmrc
 COPY web/ ./
-RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const m={'@prabhixtechnologies/brand':'file:./vendor/web-kit/packages/brand','@prabhixtechnologies/ui':'file:./vendor/web-kit/packages/ui','@prabhixtechnologies/oidc-client':'file:./vendor/web-kit/packages/oidc-client'};for (const [k,v] of Object.entries(m)){if(p.dependencies?.[k]?.startsWith('file:'))p.dependencies[k]=v;}fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 # Selects which of the two consoles to build: "oneops" (the product) or "admin" (private). One
 # source tree, two images — see the entry plugin in vite.config.ts.
 ARG APP=oneops

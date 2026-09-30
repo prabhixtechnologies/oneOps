@@ -17,6 +17,12 @@ jobs:
   npm:
     name: npm audit (${{ matrix.app }})
     runs-on: ubuntu-latest
+    # Reading @prabhixtechnologies/* from GitHub Packages. Until this change those three were
+    # `file:` links to a sibling checkout that does not exist on a runner, so `npm ci` left them
+    # as dangling symlinks and the audit silently covered everything except them.
+    permissions:
+      contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -33,9 +39,13 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: ${{ matrix.app }}/package-lock.json
+          registry-url: https://npm.pkg.github.com
+          scope: "@prabhixtechnologies"
 
       - name: Install dependencies
         run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # High and critical only. Including moderate means auditing development-only transitive
       # packages that cannot be reached by anything a visitor sends, and the report stops being read.

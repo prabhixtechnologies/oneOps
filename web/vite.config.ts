@@ -1,26 +1,7 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import fs from "node:fs";
 import path from "node:path";
-
-/**
- * Directories Vite may read outside this project, beyond the repository root below.
- *
- * `@prabhixtechnologies/brand` and `@prabhixtechnologies/ui` are `file:` dependencies on a sibling checkout, so their
- * node_modules entries are links that leave this repository, and Vite resolves links to their
- * real path before checking `server.fs.allow`. The brand entry point builds mark URLs with
- * `new URL("../marks/...", import.meta.url)`, which Vite rewrites into asset imports resolving
- * inside web-kit, so importing the package without this fails with "Denied ID". Nothing here hit
- * it yet only because no test imports the one page that reads the tag swatches; Mailroom's
- * accessibility suite did, and could not run for it.
- *
- * Absent before `npm install`, in which case there is nothing to allow.
- */
-const linkedPackages = ["@prabhixtechnologies/brand", "@prabhixtechnologies/ui"]
-  .map((name) => path.resolve(import.meta.dirname, "node_modules", name))
-  .filter((dir) => fs.existsSync(dir))
-  .map((dir) => fs.realpathSync(dir));
 
 /**
  * Which of the two consoles to build: the OneOps product or the private admin app.
@@ -87,13 +68,19 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "./src"),
       "@prabhixtechnologies/oneops-api": path.resolve(import.meta.dirname, "../packages/oneops-api/src/index.ts"),
     },
-    // Keep the linked UI package inside this app's node_modules so it uses this React,
-    // not a second copy installed under the web-kit checkout.
-    preserveSymlinks: true,
+    // react and react-dom for the usual reason: hooks read a dispatcher off a module-level
+    // singleton, so a second copy fails as "Cannot read properties of null". zod because two
+    // copies make `instanceof ZodError` false across the boundary.
+    //
+    // `preserveSymlinks: true` used to sit here, and a `server.fs.allow` entry pointing at the
+    // real path of a sibling web-kit checkout. Both existed because brand and ui were `file:`
+    // links leaving this repository: Vite resolves a link to its real path before checking
+    // fs.allow, and brand's entry builds mark URLs with `new URL("../marks/…", import.meta.url)`,
+    // which then resolved outside the allowed roots and failed as "Denied ID". They are ordinary
+    // packages under this app's node_modules now, so there is no link to preserve and nothing
+    // outside the root to allow. `optimizeDeps.include` went with them — it was there because
+    // Vite excludes linked packages from pre-bundling, which does not apply to a registry install.
     dedupe: ["react", "react-dom", "zod"],
-  },
-  optimizeDeps: {
-    include: ["@prabhixtechnologies/ui", "@prabhixtechnologies/oidc-client"],
   },
   build: {
     rolldownOptions: {
@@ -157,8 +144,10 @@ export default defineConfig({
     // Distinct ports so both consoles can run at once, which is the only way to check locally that
     // one sign-in covers both. Both are in the backend's CORS allowlist.
     port: APP === "admin" ? 5174 : 5173,
+    // The repository root, because @prabhixtechnologies/oneops-api is aliased to its source in
+    // ../packages. Nothing outside this repository is read any more; see resolve.dedupe above.
     fs: {
-      allow: [path.resolve(import.meta.dirname, ".."), ...linkedPackages],
+      allow: [path.resolve(import.meta.dirname, "..")],
     },
     proxy: {
       "/api": {
