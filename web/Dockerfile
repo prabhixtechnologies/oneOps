@@ -42,11 +42,11 @@ ARG VITE_GOOGLE_SSO_ENABLED=false
 # Admin build only: where "View as" sends staff. Unused by the OneOps build, which is the place
 # being sent to.
 ARG VITE_ONEOPS_URL=
-# Blank until identity is the auth upstream. Set, this app stops rendering a password form at all and
-# redirects to the hosted login page instead — so setting it before identity is actually serving
-# /oauth2/authorize makes signing in impossible rather than merely different.
-# Local laptop default: Identity on :8081. Production compose overrides to https://api.…
-ARG VITE_IDENTITY_ISSUER=http://localhost:8081
+# Vite inlines this, so a compose variable at container start cannot change it. CI and
+# Infra/deploy/aws/build-push.ps1 pass https://api.prabhixtechnologies.com; local compose passes
+# http://localhost:8081. Left blank on purpose: the old localhost default was what a production
+# image shipped when CI forgot the arg, and every login then left the site for the builder's laptop.
+ARG VITE_IDENTITY_ISSUER=
 # Prabhix Mailroom. Unset hides the "My mail" link, which is the right default for a build that has
 # no idea whether a Mailroom is running.
 ARG VITE_MAILROOM_URL=
