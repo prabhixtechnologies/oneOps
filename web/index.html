@@ -4,12 +4,12 @@
   both for the admin build. Set here rather than from React so the first paint is already
   the right colour.
 -->
-<html lang="en" data-brand="oneops" data-density="comfortable">
+<html lang="en" data-brand="oneops" data-density="comfortable" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#4338ca" />
     <title>Prabhix — Team Inbox & Operations</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,12 +22,7 @@
       (function () {
         try {
           var stored = localStorage.getItem("prabhix-theme");
-          var theme =
-            stored === "light" || stored === "dark"
-              ? stored
-              : window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "dark"
-                : "light";
+          var theme = stored === "dark" ? "dark" : "light";
           document.documentElement.classList.toggle("dark", theme === "dark");
           document.documentElement.dataset.theme = theme;
           document.documentElement.style.colorScheme = theme;
