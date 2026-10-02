@@ -114,7 +114,7 @@ public class MimeParser {
         return !part.isMimeType("text/plain") && !part.isMimeType("text/html");
     }
 
-    static String sanitizeHtml(String html) {
+    public static String sanitizeHtml(String html) {
         if (html == null || html.isBlank()) {
             return html;
         }

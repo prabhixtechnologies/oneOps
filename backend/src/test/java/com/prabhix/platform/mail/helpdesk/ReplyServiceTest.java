@@ -9,6 +9,7 @@ import com.prabhix.platform.files.service.AttachmentValidationService;
 import com.prabhix.platform.mail.domain.*;
 import com.prabhix.platform.mail.dto.ThreadDtos;
 import com.prabhix.platform.mail.outbound.MailDispatcher;
+import com.prabhix.platform.mail.mailbox.MailboxAccess;
 import com.prabhix.platform.mail.repository.*;
 import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.security.PrabhixPrincipal;
@@ -37,7 +38,6 @@ class ReplyServiceTest {
     @Mock MailThreadRepository threadRepository;
     @Mock MailMessageRepository messageRepository;
     @Mock MailAttachmentRepository attachmentRepository;
-    @Mock MailboxRepository mailboxRepository;
     @Mock MailAliasRepository aliasRepository;
     @Mock StoredFileRepository storedFileRepository;
     @Mock MailDispatcher mailDispatcher;
@@ -45,6 +45,7 @@ class ReplyServiceTest {
     @Mock CannedReplyService cannedReplyService;
     @Mock SlaService slaService;
     @Mock AttachmentValidationService attachmentValidationService;
+    @Mock MailboxAccess mailboxAccess;
 
     ReplyService replyService;
     UUID orgId = UUID.randomUUID();
@@ -57,8 +58,9 @@ class ReplyServiceTest {
     void setUp() {
         PrabhixProperties props = TestProperties.defaults();
         replyService = new ReplyService(threadRepository, messageRepository, attachmentRepository,
-                mailboxRepository, aliasRepository, storedFileRepository, mailDispatcher,
-                assignmentService, cannedReplyService, slaService, attachmentValidationService, props);
+                aliasRepository, storedFileRepository, mailDispatcher,
+                assignmentService, cannedReplyService, slaService, attachmentValidationService,
+                mailboxAccess, props);
     }
 
     @Test
@@ -72,11 +74,12 @@ class ReplyServiceTest {
                 .thenReturn(Optional.of(source));
         when(aliasRepository.findByMailboxIdAndOrganizationId(mailboxId, orgId))
                 .thenReturn(List.of(alias("alias@acme.com")));
-        when(attachmentValidationService.requireCleanAttachments(eq(orgId), any())).thenReturn(List.of());
+        when(attachmentValidationService.requireOwnedMailAttachments(eq(principal), eq(orgId), any()))
+                .thenReturn(List.of());
         when(messageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ThreadDtos.ReplyRequest request = new ThreadDtos.ReplyRequest(
-                MailEnums.ReplyMode.REPLY_ALL, null, null, null, "<p>Thanks</p>", List.of(), null);
+                MailEnums.ReplyMode.REPLY_ALL, null, null, null, null, "<p>Thanks</p>", List.of(), null);
         replyService.reply(principal, threadId, request);
 
         ArgumentCaptor<MailOutbox> outboxCaptor = ArgumentCaptor.forClass(MailOutbox.class);
@@ -96,11 +99,12 @@ class ReplyServiceTest {
         source.setReplyToAddress("support@example.com");
         when(messageRepository.findFirstByThreadIdAndDeletedAtIsNullOrderByOccurredAtDesc(threadId))
                 .thenReturn(Optional.of(source));
-        when(attachmentValidationService.requireCleanAttachments(eq(orgId), any())).thenReturn(List.of());
+        when(attachmentValidationService.requireOwnedMailAttachments(eq(principal), eq(orgId), any()))
+                .thenReturn(List.of());
         when(messageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ThreadDtos.ReplyRequest request = new ThreadDtos.ReplyRequest(
-                MailEnums.ReplyMode.REPLY, null, null, null, "<p>Hi</p>", List.of(), null);
+                MailEnums.ReplyMode.REPLY, null, null, null, null, "<p>Hi</p>", List.of(), null);
         replyService.reply(principal, threadId, request);
 
         ArgumentCaptor<MailOutbox> outboxCaptor = ArgumentCaptor.forClass(MailOutbox.class);
@@ -116,7 +120,7 @@ class ReplyServiceTest {
                 .thenReturn(Optional.of(inboundMessage()));
 
         ThreadDtos.ReplyRequest request = new ThreadDtos.ReplyRequest(
-                MailEnums.ReplyMode.FORWARD, List.of(), null, null, "<p>Fwd</p>", List.of(), null);
+                MailEnums.ReplyMode.FORWARD, List.of(), null, null, null, "<p>Fwd</p>", List.of(), null);
 
         ApiException ex = assertThrows(ApiException.class,
                 () -> replyService.reply(principal, threadId, request));
@@ -146,11 +150,12 @@ class ReplyServiceTest {
         file.setSizeBytes(100);
         when(storedFileRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(fileId, orgId))
                 .thenReturn(Optional.of(file));
-        when(attachmentValidationService.requireCleanAttachments(eq(orgId), any())).thenReturn(List.of());
+        when(attachmentValidationService.requireOwnedMailAttachments(eq(principal), eq(orgId), any()))
+                .thenReturn(List.of());
         when(messageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ThreadDtos.ReplyRequest request = new ThreadDtos.ReplyRequest(
-                MailEnums.ReplyMode.FORWARD, List.of("dest@example.com"), null, null,
+                MailEnums.ReplyMode.FORWARD, List.of("dest@example.com"), null, null, null,
                 "<p>See below</p>", List.of(), null);
         replyService.reply(principal, threadId, request);
 
@@ -175,12 +180,13 @@ class ReplyServiceTest {
         source.setFromAddress("customer@example.com");
         when(messageRepository.findFirstByThreadIdAndDeletedAtIsNullOrderByOccurredAtDesc(threadId))
                 .thenReturn(Optional.of(source));
-        when(attachmentValidationService.requireCleanAttachments(eq(orgId), any())).thenReturn(List.of());
+        when(attachmentValidationService.requireOwnedMailAttachments(eq(principal), eq(orgId), any()))
+                .thenReturn(List.of());
         when(messageRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         UUID cannedReplyId = UUID.randomUUID();
 
         replyService.reply(principal, threadId, new ThreadDtos.ReplyRequest(
-                MailEnums.ReplyMode.REPLY, null, null, null, "<p>Edited text</p>",
+                MailEnums.ReplyMode.REPLY, null, null, null, null, "<p>Edited text</p>",
                 List.of(), cannedReplyId));
 
         verify(cannedReplyService).recordUse(orgId, cannedReplyId);
@@ -196,14 +202,13 @@ class ReplyServiceTest {
         thread.setMailboxId(mailboxId);
         thread.setSubject("Help");
         thread.setMessageCount(1);
-        when(threadRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(threadId, orgId))
-                .thenReturn(Optional.of(thread));
+        when(mailboxAccess.requireThread(principal, threadId)).thenReturn(thread);
         Mailbox mailbox = new Mailbox();
         mailbox.setId(mailboxId);
         mailbox.setOrganizationId(orgId);
         mailbox.setAddress("support@acme.com");
         mailbox.setName("Support");
-        when(mailboxRepository.findById(mailboxId)).thenReturn(Optional.of(mailbox));
+        when(mailboxAccess.requireMailbox(principal, mailboxId)).thenReturn(mailbox);
     }
 
     private MailMessage inboundMessage() {

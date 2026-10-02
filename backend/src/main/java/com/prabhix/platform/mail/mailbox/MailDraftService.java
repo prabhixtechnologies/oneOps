@@ -3,6 +3,7 @@ package com.prabhix.platform.mail.mailbox;
 import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.domain.MailThreadDraft;
+import com.prabhix.platform.files.service.AttachmentValidationService;
 import com.prabhix.platform.mail.repository.MailThreadDraftRepository;
 import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.security.PrabhixPrincipal;
@@ -32,6 +33,7 @@ public class MailDraftService {
 
     private final MailThreadDraftRepository draftRepository;
     private final MailboxAccess access;
+    private final AttachmentValidationService attachmentValidation;
 
     @Transactional(readOnly = true)
     public List<MailboxDtos.DraftView> mine(PrabhixPrincipal principal) {
@@ -86,11 +88,12 @@ public class MailDraftService {
         draft.setCcAddresses(Json.toJson(clean(request.cc())));
         draft.setBccAddresses(Json.toJson(clean(request.bcc())));
         draft.setSubject(request.subject());
-        draft.setBodyHtml(request.bodyHtml());
-        draft.setAttachmentIds(Json.toJson(
-                request.attachmentIds() != null
-                        ? request.attachmentIds().stream().map(UUID::toString).toList()
-                        : List.of()));
+        draft.setBodyHtml(MailOutboundHtml.sanitize(request.bodyHtml()));
+        List<UUID> attachmentIds = request.attachmentIds() != null ? request.attachmentIds() : List.of();
+        if (!attachmentIds.isEmpty()) {
+            attachmentValidation.requireOwnedMailAttachments(principal, orgId, attachmentIds);
+        }
+        draft.setAttachmentIds(Json.toJson(attachmentIds.stream().map(UUID::toString).toList()));
         return toView(draftRepository.save(draft));
     }
 

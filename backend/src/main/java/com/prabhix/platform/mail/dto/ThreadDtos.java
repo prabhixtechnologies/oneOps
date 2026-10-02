@@ -109,6 +109,7 @@ public final class ThreadDtos {
             MailEnums.ReplyMode replyMode,
             List<String> to,
             List<String> cc,
+            List<String> bcc,
             String subject,
             @NotBlank String bodyHtml,
             List<UUID> attachmentIds,

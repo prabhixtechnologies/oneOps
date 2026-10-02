@@ -1,5 +1,6 @@
 package com.prabhix.platform.mail.mailbox;
 
+import com.prabhix.platform.files.domain.StoredFile;
 import com.prabhix.platform.mail.domain.MailEnums;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
@@ -67,14 +68,15 @@ public final class MailboxDtos {
             MailEnums.MessageDirection lastMessageDirection) {
     }
 
-    public record FlagRequest(Boolean read, Boolean starred, Instant snoozeUntil) {
+    public record FlagRequest(Boolean read, Boolean starred, Instant snoozeUntil, Boolean clearSnooze) {
     }
 
     public record BulkFlagRequest(
             @NotEmpty List<UUID> threadIds,
             Boolean read,
             Boolean starred,
-            Instant snoozeUntil) {
+            Instant snoozeUntil,
+            Boolean clearSnooze) {
     }
 
     // -----------------------------------------------------------------------------------------------
@@ -152,6 +154,8 @@ public final class MailboxDtos {
             MailEnums.MessageDirection direction,
             String fromAddress,
             String fromName,
+            List<String> to,
+            List<String> cc,
             String subject,
             String snippet,
             String bodyText,
@@ -159,5 +163,42 @@ public final class MailboxDtos {
             MailEnums.DeliveryStatus deliveryStatus,
             Instant occurredAt,
             int attachmentCount) {
+    }
+
+    // -----------------------------------------------------------------------------------------------
+    // Attachments
+    // -----------------------------------------------------------------------------------------------
+
+    /** A file already linked to a stored message (inbound or sent). */
+    public record AttachmentMetadataView(
+            UUID id,
+            UUID messageId,
+            UUID fileId,
+            String filename,
+            String contentType,
+            long sizeBytes,
+            boolean inline,
+            String contentId,
+            StoredFile.ScanStatus scanStatus) {
+    }
+
+    /** A compose/draft upload that is not on a message yet — referenced by {@code fileId} only. */
+    public record PendingAttachmentView(
+            UUID fileId,
+            String filename,
+            String contentType,
+            long sizeBytes,
+            StoredFile.ScanStatus scanStatus) {
+    }
+
+    public record FolderThreadListQuery(
+            UUID folderId,
+            String q,
+            boolean unreadOnly,
+            boolean hasAttachment,
+            Instant from,
+            Instant to,
+            String cursor,
+            Integer limit) {
     }
 }

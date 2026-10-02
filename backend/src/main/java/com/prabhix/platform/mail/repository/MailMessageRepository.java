@@ -21,4 +21,6 @@ public interface MailMessageRepository extends JpaRepository<MailMessage, UUID> 
     List<MailMessage> findByMessageIdHeaders(List<String> refs);
 
     Optional<MailMessage> findFirstByThreadIdAndDeletedAtIsNullOrderByOccurredAtDesc(UUID threadId);
+
+    Optional<MailMessage> findByIdAndOrganizationIdAndDeletedAtIsNull(UUID id, UUID organizationId);
 }

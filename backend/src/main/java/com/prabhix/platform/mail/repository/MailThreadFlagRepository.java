@@ -31,6 +31,16 @@ public interface MailThreadFlagRepository
             """)
     List<MailThreadFlag> findStarred(@Param("orgId") UUID orgId, @Param("userId") UUID userId);
 
+    @Query("""
+            select f from MailThreadFlag f
+            where f.organizationId = :orgId and f.id.userId = :userId
+              and f.snoozedUntil is not null and f.snoozedUntil > :now
+            order by f.snoozedUntil asc
+            """)
+    List<MailThreadFlag> findActiveSnoozes(@Param("orgId") UUID orgId,
+                                           @Param("userId") UUID userId,
+                                           @Param("now") Instant now);
+
     /**
      * Marks a thread unread for everybody who had read it, because a new message has arrived.
      *

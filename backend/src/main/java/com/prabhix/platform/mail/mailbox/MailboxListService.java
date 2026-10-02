@@ -1,11 +1,19 @@
 package com.prabhix.platform.mail.mailbox;
 
+import com.prabhix.platform.common.error.ApiException;
+import com.prabhix.platform.common.web.Cursor;
+import com.prabhix.platform.common.web.CursorPage;
+import com.prabhix.platform.config.PrabhixProperties;
+import com.prabhix.platform.mail.domain.MailFolder;
 import com.prabhix.platform.mail.domain.MailMessage;
 import com.prabhix.platform.mail.domain.MailThread;
 import com.prabhix.platform.mail.domain.MailThreadFlag;
 import com.prabhix.platform.mail.domain.Mailbox;
+import com.prabhix.platform.mail.repository.MailFolderRepository;
 import com.prabhix.platform.mail.repository.MailMessageRepository;
 import com.prabhix.platform.mail.repository.MailThreadRepository;
+import com.prabhix.platform.common.util.Json;
+import com.prabhix.platform.mail.util.ThreadCursor;
 import com.prabhix.platform.org.domain.OrganizationMembership;
 import com.prabhix.platform.org.repository.OrganizationMembershipRepository;
 import com.prabhix.platform.security.PrabhixPrincipal;
@@ -27,14 +35,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MailboxListService {
 
-    private static final int MAX_PAGE = 100;
-
     private final MailThreadRepository threadRepository;
     private final MailMessageRepository messageRepository;
+    private final MailFolderRepository folderRepository;
     private final MailFolderService folders;
     private final MailFlagService flags;
     private final MailboxAccess access;
     private final OrganizationMembershipRepository membershipRepository;
+    private final PrabhixProperties properties;
 
     /**
      * Every mailbox this person can open in the requested mode, each with its folders and unread counts.
@@ -61,27 +69,51 @@ public class MailboxListService {
                 .toList();
     }
 
-    /** What is in a folder, newest activity first. */
+    /** Keyset-paged folder listing with server-side filters. */
     @Transactional(readOnly = true)
-    public List<MailboxDtos.MailThreadView> threadsIn(PrabhixPrincipal principal, UUID folderId,
-                                                      Integer limit, Integer offset) {
-        int size = limit != null ? Math.min(Math.max(limit, 1), MAX_PAGE) : 50;
-        int skip = offset != null ? Math.max(offset, 0) : 0;
+    public CursorPage<MailboxDtos.MailThreadView> threadsInPage(PrabhixPrincipal principal,
+                                                                MailboxDtos.FolderThreadListQuery query) {
+        requireFolder(principal, query.folderId());
+        UUID orgId = principal.requireOrganizationId();
+        Cursor decoded = ThreadCursor.decode(query.cursor());
+        Cursor cursor = decoded != null ? decoded : Cursor.beginning();
+        int limit = properties.limits().clampPageSize(query.limit()) + 1;
 
-        List<MailThread> threads = threadRepository.findInFolder(
-                principal.requireOrganizationId(), folderId, size, skip);
-        if (threads.isEmpty()) {
-            return List.of();
+        List<MailThread> fetched;
+        String q = query.q() != null ? query.q().trim() : "";
+        if (!q.isBlank()) {
+            fetched = threadRepository.searchInFolderWithCursor(
+                    orgId, query.folderId(), principal.userId(),
+                    query.unreadOnly(), query.hasAttachment(),
+                    query.from(), query.to(), q,
+                    cursor.timestamp(), cursor.id(), limit);
+        } else {
+            fetched = threadRepository.listInFolderWithCursor(
+                    orgId, query.folderId(), principal.userId(),
+                    query.unreadOnly(), query.hasAttachment(),
+                    query.from(), query.to(),
+                    cursor.timestamp(), cursor.id(), limit);
         }
-        // The folder was reached by id, so access is checked against the first thread's mailbox — all
-        // threads in a folder are in the same mailbox by construction, enforced in MailFolderService.move.
-        access.requireMailbox(principal, threads.get(0).getMailboxId());
 
-        List<UUID> ids = threads.stream().map(MailThread::getId).toList();
-        Map<UUID, MailThreadFlag> byThread = flags.flagsFor(principal.userId(), ids);
-        return threads.stream()
-                .map(t -> flags.view(t, folderId, byThread.get(t.getId())))
+        boolean hasMore = fetched.size() > limit - 1;
+        List<MailThread> window = hasMore ? fetched.subList(0, limit - 1) : fetched;
+        Map<UUID, MailThreadFlag> byThread = flags.flagsFor(
+                principal.userId(), window.stream().map(MailThread::getId).toList());
+        List<MailboxDtos.MailThreadView> items = window.stream()
+                .map(t -> flags.view(t, query.folderId(), byThread.get(t.getId())))
                 .toList();
+        return new CursorPage<>(
+                items,
+                hasMore && !window.isEmpty() ? ThreadCursor.encode(window.get(window.size() - 1)) : null,
+                hasMore);
+    }
+
+    private MailFolder requireFolder(PrabhixPrincipal principal, UUID folderId) {
+        MailFolder folder = folderRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(
+                        folderId, principal.requireOrganizationId())
+                .orElseThrow(() -> ApiException.notFound("Folder"));
+        access.requireMailbox(principal, folder.getMailboxId());
+        return folder;
     }
 
     /** A single thread as a mail client sees it, with the reader's own flags. */
@@ -137,6 +169,8 @@ public class MailboxListService {
     private MailboxDtos.MessageView toMessage(MailMessage m) {
         return new MailboxDtos.MessageView(
                 m.getId(), m.getDirection(), m.getFromAddress(), m.getFromName(),
+                Json.parseStringList(m.getToAddresses()),
+                Json.parseStringList(m.getCcAddresses()),
                 m.getSubject(), m.getSnippet(), m.getBodyText(), m.getBodyHtml(),
                 m.getDeliveryStatus(), m.getOccurredAt(), m.getAttachmentCount());
     }

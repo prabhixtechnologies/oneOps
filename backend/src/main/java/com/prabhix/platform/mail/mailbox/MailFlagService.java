@@ -43,7 +43,7 @@ public class MailFlagService {
                                             MailboxDtos.FlagRequest request) {
         MailThread thread = access.requireThread(principal, threadId);
         MailThreadFlag flag = mutate(thread, principal.userId(), request.read(), request.starred(),
-                request.snoozeUntil());
+                request.snoozeUntil(), request.clearSnooze());
         UUID folderId = folders.foldersFor(List.of(threadId)).get(threadId);
         return view(thread, folderId, flag);
     }
@@ -57,7 +57,8 @@ public class MailFlagService {
         for (UUID threadId : request.threadIds()) {
             try {
                 MailThread thread = access.requireThread(principal, threadId);
-                mutate(thread, principal.userId(), request.read(), request.starred(), request.snoozeUntil());
+                mutate(thread, principal.userId(), request.read(), request.starred(),
+                        request.snoozeUntil(), request.clearSnooze());
                 touched++;
             } catch (ApiException skip) {
                 // A selection can outlive a permission change or a delete. Skipping is the right answer:
@@ -84,6 +85,24 @@ public class MailFlagService {
             byThread.put(flag.getId().getThreadId(), flag);
         }
         return byThread;
+    }
+
+    @Transactional(readOnly = true)
+    public List<MailboxDtos.MailThreadView> snoozed(PrabhixPrincipal principal) {
+        List<MailThreadFlag> flags = flagRepository.findActiveSnoozes(
+                principal.requireOrganizationId(), principal.userId(), Instant.now());
+        if (flags.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> threadIds = flags.stream().map(f -> f.getId().getThreadId()).toList();
+        Map<UUID, UUID> placements = folders.foldersFor(threadIds);
+        Map<UUID, MailThreadFlag> byThread = new HashMap<>();
+        flags.forEach(f -> byThread.put(f.getId().getThreadId(), f));
+
+        return threadRepository.findAllById(threadIds).stream()
+                .filter(t -> t.getDeletedAt() == null)
+                .map(t -> view(t, placements.get(t.getId()), byThread.get(t.getId())))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -130,7 +149,7 @@ public class MailFlagService {
     }
 
     private MailThreadFlag mutate(MailThread thread, UUID userId, Boolean read, Boolean starred,
-                                  Instant snoozeUntil) {
+                                  Instant snoozeUntil, Boolean clearSnooze) {
         MailThreadFlag flag = flagRepository.findByIdThreadIdAndIdUserId(thread.getId(), userId)
                 .orElseGet(() -> MailThreadFlag.of(thread.getId(), userId, thread.getOrganizationId()));
 
@@ -140,7 +159,9 @@ public class MailFlagService {
         if (starred != null) {
             flag.setStarredAt(starred ? Instant.now() : null);
         }
-        if (snoozeUntil != null) {
+        if (Boolean.TRUE.equals(clearSnooze)) {
+            flag.setSnoozedUntil(null);
+        } else if (snoozeUntil != null) {
             if (snoozeUntil.isBefore(Instant.now())) {
                 throw ApiException.invalidState("Pick a time in the future to snooze until");
             }

@@ -78,8 +78,8 @@ public class ComposeService {
             throw ApiException.invalidState("A message can go to at most " + MAX_RECIPIENTS + " people");
         }
 
-        List<StoredFile> attachments = attachmentValidation.requireCleanAttachments(
-                orgId, request.attachmentIds() != null ? request.attachmentIds() : List.of());
+        List<StoredFile> attachments = attachmentValidation.requireOwnedMailAttachments(
+                principal, orgId, request.attachmentIds() != null ? request.attachmentIds() : List.of());
 
         String subject = request.subject() != null && !request.subject().isBlank()
                 ? request.subject().trim() : "(no subject)";
@@ -105,10 +105,8 @@ public class ComposeService {
         String taggedSubject = MailSubjectUtil.injectToken(
                 subject, properties.mail().threading().tokenPrefix(), thread.getReferenceKey());
 
-        String bodyHtml = request.bodyHtml() != null ? request.bodyHtml() : "";
-        if (mailbox.getSignatureHtml() != null && !mailbox.getSignatureHtml().isBlank()) {
-            bodyHtml = bodyHtml + "<br><br>" + mailbox.getSignatureHtml();
-        }
+        String bodyHtml = MailOutboundHtml.sanitize(request.bodyHtml());
+        bodyHtml = MailOutboundHtml.appendSignature(bodyHtml, mailbox.getSignatureHtml());
 
         MailMessage outbound = new MailMessage();
         outbound.setOrganizationId(orgId);

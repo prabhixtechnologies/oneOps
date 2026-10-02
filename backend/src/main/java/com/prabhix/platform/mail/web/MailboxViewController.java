@@ -1,5 +1,6 @@
 package com.prabhix.platform.mail.web;
 
+import com.prabhix.platform.common.web.CursorPage;
 import com.prabhix.platform.mail.mailbox.ComposeService;
 import com.prabhix.platform.mail.mailbox.MailAliasService;
 import com.prabhix.platform.mail.mailbox.MailDraftService;
@@ -13,6 +14,7 @@ import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Authorize;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,13 +60,21 @@ public class MailboxViewController {
         return list.sidebar(principal, MailboxAccess.Visibility.fromQuery(mode));
     }
 
-    @GetMapping("/folders/threads")
+    @GetMapping("/folders/threads/page")
     @PreAuthorize(Authorize.MAIL_READ)
-    public List<MailboxDtos.MailThreadView> threadsIn(@CurrentUser PrabhixPrincipal principal,
-                                                      @RequestParam UUID folderId,
-                                                      @RequestParam(required = false) Integer limit,
-                                                      @RequestParam(required = false) Integer offset) {
-        return list.threadsIn(principal, folderId, limit, offset);
+    public CursorPage<MailboxDtos.MailThreadView> threadsInPage(
+            @CurrentUser PrabhixPrincipal principal,
+            @RequestParam UUID folderId,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") boolean unreadOnly,
+            @RequestParam(required = false, defaultValue = "false") boolean hasAttachment,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer limit) {
+        var query = new MailboxDtos.FolderThreadListQuery(
+                folderId, q, unreadOnly, hasAttachment, from, to, cursor, limit);
+        return list.threadsInPage(principal, query);
     }
 
     @GetMapping("/threads")
@@ -84,6 +95,12 @@ public class MailboxViewController {
     @PreAuthorize(Authorize.MAIL_READ)
     public List<MailboxDtos.MailThreadView> starred(@CurrentUser PrabhixPrincipal principal) {
         return flags.starred(principal);
+    }
+
+    @GetMapping("/snoozed")
+    @PreAuthorize(Authorize.MAIL_READ)
+    public List<MailboxDtos.MailThreadView> snoozed(@CurrentUser PrabhixPrincipal principal) {
+        return flags.snoozed(principal);
     }
 
     // -----------------------------------------------------------------------------------------------

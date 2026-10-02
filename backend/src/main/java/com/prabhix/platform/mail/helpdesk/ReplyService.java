@@ -13,6 +13,8 @@ import com.prabhix.platform.mail.domain.Mailbox;
 import com.prabhix.platform.mail.domain.MailEnums;
 import com.prabhix.platform.mail.dto.ThreadDtos;
 import com.prabhix.platform.mail.outbound.MailDispatcher;
+import com.prabhix.platform.mail.mailbox.MailOutboundHtml;
+import com.prabhix.platform.mail.mailbox.MailboxAccess;
 import com.prabhix.platform.mail.repository.*;
 import com.prabhix.platform.common.util.Json;
 import com.prabhix.platform.mail.util.MailSubjectUtil;
@@ -42,7 +44,6 @@ public class ReplyService {
     private final MailThreadRepository threadRepository;
     private final MailMessageRepository messageRepository;
     private final MailAttachmentRepository attachmentRepository;
-    private final MailboxRepository mailboxRepository;
     private final MailAliasRepository aliasRepository;
     private final StoredFileRepository storedFileRepository;
     private final MailDispatcher mailDispatcher;
@@ -50,24 +51,22 @@ public class ReplyService {
     private final CannedReplyService cannedReplyService;
     private final SlaService slaService;
     private final AttachmentValidationService attachmentValidationService;
+    private final MailboxAccess mailboxAccess;
     private final PrabhixProperties properties;
 
     @Transactional
     public ThreadDtos.MessageSummary reply(PrabhixPrincipal principal, UUID threadId,
                                            ThreadDtos.ReplyRequest request) {
         UUID orgId = principal.requireOrganizationId();
-        MailThread thread = threadRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(threadId, orgId)
-                .orElseThrow(() -> ApiException.notFound("Thread"));
-        Mailbox mailbox = mailboxRepository.findById(thread.getMailboxId())
-                .orElseThrow(() -> ApiException.of(com.prabhix.platform.common.error.ErrorCode.MAILBOX_NOT_FOUND,
-                        "Mailbox not found"));
+        MailThread thread = mailboxAccess.requireThread(principal, threadId);
+        Mailbox mailbox = mailboxAccess.requireMailbox(principal, thread.getMailboxId());
 
         MailEnums.ReplyMode mode = request.replyMode() != null ? request.replyMode() : MailEnums.ReplyMode.REPLY;
         MailMessage source = messageRepository.findFirstByThreadIdAndDeletedAtIsNullOrderByOccurredAtDesc(threadId)
                 .orElseThrow(() -> ApiException.invalidState("Thread has no message to reply to"));
 
         Recipients recipients = resolveRecipients(mode, request, source, mailbox, orgId);
-        List<StoredFile> attachments = resolveAttachments(mode, orgId, request, source);
+        List<StoredFile> attachments = resolveAttachments(principal, mode, orgId, request, source);
 
         assignmentService.claimIfUnassigned(thread.getId(), principal.userId());
 
@@ -75,10 +74,9 @@ public class ReplyService {
         String subject = buildSubject(mode, request.subject(), thread, source);
         subject = MailSubjectUtil.injectToken(subject, prefix, thread.getReferenceKey());
 
-        String bodyHtml = buildBodyHtml(mode, request.bodyHtml(), source);
-        if (mailbox.getSignatureHtml() != null && !mailbox.getSignatureHtml().isBlank()
-                && mode != MailEnums.ReplyMode.FORWARD) {
-            bodyHtml = bodyHtml + "<br><br>" + mailbox.getSignatureHtml();
+        String bodyHtml = MailOutboundHtml.sanitize(buildBodyHtml(mode, request.bodyHtml(), source));
+        if (mode != MailEnums.ReplyMode.FORWARD) {
+            bodyHtml = MailOutboundHtml.appendSignature(bodyHtml, mailbox.getSignatureHtml());
         }
 
         MailMessage outbound = new MailMessage();
@@ -94,6 +92,7 @@ public class ReplyService {
         outbound.setFromAddress(mailbox.getAddress());
         outbound.setToAddresses(Json.toJson(recipients.to()));
         outbound.setCcAddresses(Json.toJson(recipients.cc()));
+        outbound.setBccAddresses(Json.toJson(recipients.bcc()));
         outbound.setSubject(subject);
         outbound.setBodyHtml(bodyHtml);
         outbound.setBodyText(com.prabhix.platform.mail.inbound.MimeParser.htmlToText(bodyHtml));
@@ -128,6 +127,7 @@ public class ReplyService {
         outbox.setReplyTo(mailbox.getReplyTo() != null ? mailbox.getReplyTo() : mailbox.getAddress());
         outbox.setToAddresses(Json.toJson(recipients.to()));
         outbox.setCcAddresses(Json.toJson(recipients.cc()));
+        outbox.setBccAddresses(Json.toJson(recipients.bcc()));
         outbox.setSubject(subject);
         outbox.setBodyHtml(bodyHtml);
         outbox.setBodyText(outbound.getBodyText());
@@ -160,7 +160,8 @@ public class ReplyService {
                 String to = primaryRecipient(source);
                 List<String> toList = request.to() != null && !request.to().isEmpty()
                         ? request.to() : List.of(to);
-                yield new Recipients(toList, request.cc() != null ? request.cc() : List.of());
+                List<String> bcc = request.bcc() != null ? request.bcc() : List.of();
+                yield new Recipients(toList, request.cc() != null ? request.cc() : List.of(), bcc);
             }
             case REPLY_ALL -> {
                 String to = primaryRecipient(source);
@@ -181,21 +182,24 @@ public class ReplyService {
                 if (request.cc() != null) {
                     request.cc().forEach(a -> cc.add(a.toLowerCase(Locale.ROOT)));
                 }
-                yield new Recipients(toList, List.copyOf(cc));
+                List<String> bcc = request.bcc() != null ? request.bcc() : List.of();
+                yield new Recipients(toList, List.copyOf(cc), bcc);
             }
             case FORWARD -> {
                 if (request.to() == null || request.to().isEmpty()) {
                     throw ApiException.invalidState("Forward requires at least one recipient");
                 }
-                yield new Recipients(request.to(), request.cc() != null ? request.cc() : List.of());
+                List<String> bcc = request.bcc() != null ? request.bcc() : List.of();
+                yield new Recipients(request.to(), request.cc() != null ? request.cc() : List.of(), bcc);
             }
         };
     }
 
-    private List<StoredFile> resolveAttachments(MailEnums.ReplyMode mode, UUID orgId,
-                                                ThreadDtos.ReplyRequest request, MailMessage source) {
-        List<StoredFile> uploaded = attachmentValidationService.requireCleanAttachments(
-                orgId, request.attachmentIds() != null ? request.attachmentIds() : List.of());
+    private List<StoredFile> resolveAttachments(PrabhixPrincipal principal, MailEnums.ReplyMode mode,
+                                                UUID orgId, ThreadDtos.ReplyRequest request,
+                                                MailMessage source) {
+        List<StoredFile> uploaded = attachmentValidationService.requireOwnedMailAttachments(
+                principal, orgId, request.attachmentIds() != null ? request.attachmentIds() : List.of());
         if (mode != MailEnums.ReplyMode.FORWARD) {
             return uploaded;
         }
@@ -300,6 +304,6 @@ public class ReplyService {
         return headers;
     }
 
-    private record Recipients(List<String> to, List<String> cc) {
+    private record Recipients(List<String> to, List<String> cc, List<String> bcc) {
     }
 }

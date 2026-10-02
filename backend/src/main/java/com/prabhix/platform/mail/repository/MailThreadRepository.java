@@ -71,22 +71,54 @@ public interface MailThreadRepository extends JpaRepository<MailThread, UUID> {
     List<MailThread> searchWithCursor(UUID orgId, boolean readAll, UUID[] mailboxIds, UUID tagId,
                                       String query, Instant cursorAt, UUID cursorId, int limit);
 
-    /**
-     * What is in a folder, newest activity first.
-     *
-     * <p>Offset paging rather than the keyset paging the helpdesk list uses: a mail client's folder view
-     * has a scrollbar and jumps to page 40, which a cursor cannot express. Folders are bounded by one
-     * mailbox, so the offsets stay small enough that the difference does not matter.
-     */
     @Query(value = """
             SELECT t.* FROM mail.mail_threads t
                      JOIN mail.mail_thread_folders tf ON tf.thread_id = t.id
             WHERE t.organization_id = :orgId AND t.deleted_at IS NULL
               AND tf.folder_id = :folderId
+              AND (:unreadOnly = false OR NOT EXISTS (
+                  SELECT 1 FROM mail.mail_thread_flags fl
+                  WHERE fl.thread_id = t.id AND fl.user_id = :userId AND fl.read_at IS NOT NULL))
+              AND (:hasAttachment = false OR t.has_attachments = true)
+              AND (:fromAt IS NULL OR t.last_message_at >= :fromAt)
+              AND (:toAt IS NULL OR t.last_message_at <= :toAt)
+              AND (t.last_message_at < :cursorAt
+                   OR (t.last_message_at = :cursorAt AND t.id < :cursorId))
             ORDER BY t.last_message_at DESC, t.id DESC
-            LIMIT :limit OFFSET :skip
+            LIMIT :limit
             """, nativeQuery = true)
-    List<MailThread> findInFolder(UUID orgId, UUID folderId, int limit, int skip);
+    List<MailThread> listInFolderWithCursor(UUID orgId, UUID folderId, UUID userId,
+                                            boolean unreadOnly, boolean hasAttachment,
+                                            Instant fromAt, Instant toAt,
+                                            Instant cursorAt, UUID cursorId, int limit);
+
+    @Query(value = """
+            SELECT t.* FROM mail.mail_threads t
+                     JOIN mail.mail_thread_folders tf ON tf.thread_id = t.id
+            WHERE t.organization_id = :orgId AND t.deleted_at IS NULL
+              AND tf.folder_id = :folderId
+              AND (:unreadOnly = false OR NOT EXISTS (
+                  SELECT 1 FROM mail.mail_thread_flags fl
+                  WHERE fl.thread_id = t.id AND fl.user_id = :userId AND fl.read_at IS NOT NULL))
+              AND (:hasAttachment = false OR t.has_attachments = true)
+              AND (:fromAt IS NULL OR t.last_message_at >= :fromAt)
+              AND (:toAt IS NULL OR t.last_message_at <= :toAt)
+              AND (
+                  to_tsvector('simple', coalesce(t.subject, '') || ' ' || coalesce(t.snippet, ''))
+                      @@ plainto_tsquery('simple', :query)
+                  OR EXISTS (
+                      SELECT 1 FROM mail.mail_messages m
+                      WHERE m.thread_id = t.id AND m.deleted_at IS NULL
+                        AND m.search_vector @@ plainto_tsquery('simple', :query)))
+              AND (t.last_message_at < :cursorAt
+                   OR (t.last_message_at = :cursorAt AND t.id < :cursorId))
+            ORDER BY t.last_message_at DESC, t.id DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<MailThread> searchInFolderWithCursor(UUID orgId, UUID folderId, UUID userId,
+                                                boolean unreadOnly, boolean hasAttachment,
+                                                Instant fromAt, Instant toAt, String query,
+                                                Instant cursorAt, UUID cursorId, int limit);
 
     @Query("""
             SELECT t FROM MailThread t
