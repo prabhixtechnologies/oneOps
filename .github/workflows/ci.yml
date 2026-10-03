@@ -676,7 +676,7 @@ jobs:
             VITE_API_URL=https://api.prabhixtechnologies.com
             VITE_RAZORPAY_KEY_ID=${{ vars.RAZORPAY_KEY_ID }}
             VITE_GOOGLE_SSO_ENABLED=false
-            VITE_IDENTITY_ISSUER=https://api.prabhixtechnologies.com
+            VITE_IDENTITY_ISSUER=https://identity.prabhixtechnologies.com
             VITE_MAILROOM_URL=https://mail.prabhixtechnologies.com
           tags: |
             ${{ steps.meta.outputs.base }}/web:latest
@@ -698,7 +698,7 @@ jobs:
             APP=admin
             VITE_API_URL=https://api.prabhixtechnologies.com
             VITE_GOOGLE_SSO_ENABLED=false
-            VITE_IDENTITY_ISSUER=https://api.prabhixtechnologies.com
+            VITE_IDENTITY_ISSUER=https://identity.prabhixtechnologies.com
             VITE_ONEOPS_URL=https://oneops.prabhixtechnologies.com
             VITE_MAILROOM_URL=https://mail.prabhixtechnologies.com
           tags: |
