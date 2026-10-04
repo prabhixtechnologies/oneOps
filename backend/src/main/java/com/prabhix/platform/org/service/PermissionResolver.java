@@ -39,7 +39,7 @@ public class PermissionResolver {
     private static final String USER_KEYS_PREFIX = "pbx:perms:keys:user:";
     private static final String ORG_KEYS_PREFIX = "pbx:perms:keys:org:";
     private static final String ALL_KEYS = "pbx:perms:keys:all";
-    private static final Duration CACHE_TTL = Duration.ofMinutes(5);
+    private static final Duration CACHE_TTL = Duration.ofSeconds(60);
 
     private final OrganizationMembershipRepository membershipRepository;
     private final RoleRepository roleRepository;

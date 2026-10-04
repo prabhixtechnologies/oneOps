@@ -74,7 +74,7 @@ public class RolePermissionSynchronizer {
 
         if (changed) {
             // Cached permission sets were computed from the pre-reconciliation grants, so a
-            // signed-in user would keep hitting 403 until the five-minute TTL lapsed.
+            // signed-in user would keep hitting 403 until the one-minute TTL lapsed.
             permissionResolver.evictAll();
         }
     }

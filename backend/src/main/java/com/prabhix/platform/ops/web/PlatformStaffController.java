@@ -4,6 +4,7 @@ import com.prabhix.platform.common.error.ApiException;
 import com.prabhix.platform.common.error.ErrorCode;
 import com.prabhix.platform.observability.service.StructuredEventLogger;
 import com.prabhix.platform.observability.taxonomy.LogEventCode;
+import com.prabhix.platform.ops.client.IdentityAdminClient;
 import com.prabhix.platform.ops.domain.PlatformStaffRole;
 import com.prabhix.platform.ops.domain.StaffRole;
 import com.prabhix.platform.ops.service.PlatformStaffService;
@@ -44,6 +45,7 @@ public class PlatformStaffController {
 
     private final PlatformStaffService staff;
     private final TokenDenyList denyList;
+    private final IdentityAdminClient identity;
     private final UserRepository users;
     private final StructuredEventLogger eventLogger;
 
@@ -97,6 +99,7 @@ public class PlatformStaffController {
         }
 
         denyList.revokeUser(userId);
+        identity.revokeSessions(principal.userId(), userId, request.reason());
 
         // logNow rather than the buffered path: if this is being used during an incident, the row has
         // to survive the process being killed a second later.

@@ -8,6 +8,7 @@ import com.prabhix.platform.org.dto.OrgDtos.UpdateOrganizationRequest;
 import com.prabhix.platform.org.service.OrganizationDeletionService;
 import com.prabhix.platform.org.service.OrganizationService;
 import com.prabhix.platform.security.CurrentUser;
+import com.prabhix.platform.security.RecentAuthentication;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Authorize;
 import jakarta.validation.Valid;
@@ -33,6 +34,7 @@ public class OrganizationController {
 
     private final OrganizationService organizationService;
     private final OrganizationDeletionService organizationDeletionService;
+    private final RecentAuthentication recentAuthentication;
 
     @PostMapping
     @PreAuthorize(Authorize.AUTHENTICATED)
@@ -57,6 +59,9 @@ public class OrganizationController {
     @PreAuthorize(Authorize.ORG_UPDATE)
     public OrganizationView update(@RequestParam UUID id,
                                    @Valid @RequestBody UpdateOrganizationRequest request) {
+        if (request.billingEmail() != null) {
+            recentAuthentication.requireFresh();
+        }
         return organizationService.update(id, request);
     }
 
@@ -65,6 +70,7 @@ public class OrganizationController {
     public ResponseEntity<Void> delete(@CurrentUser PrabhixPrincipal principal,
                                        @RequestParam UUID id,
                                        @RequestParam(defaultValue = "false") boolean confirm) {
+        recentAuthentication.requireFresh();
         organizationDeletionService.delete(id, principal.userId(), confirm);
         return ResponseEntity.noContent().build();
     }

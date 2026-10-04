@@ -18,6 +18,8 @@ public enum ErrorCode {
     TOKEN_REVOKED(HttpStatus.UNAUTHORIZED),
     FORBIDDEN(HttpStatus.FORBIDDEN),
     PERMISSION_DENIED(HttpStatus.FORBIDDEN),
+    /** The access token is valid, but this action needs a proof from the last 15 minutes. */
+    STEP_UP_REQUIRED(HttpStatus.FORBIDDEN),
     ACCOUNT_LOCKED(HttpStatus.FORBIDDEN),
     ACCOUNT_DISABLED(HttpStatus.FORBIDDEN),
     EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN),

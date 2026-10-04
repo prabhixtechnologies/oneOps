@@ -4,6 +4,7 @@ import com.prabhix.platform.common.web.PageResponse;
 import com.prabhix.platform.org.dto.OrgDtos;
 import com.prabhix.platform.org.service.ApiKeyService;
 import com.prabhix.platform.security.CurrentUser;
+import com.prabhix.platform.security.RecentAuthentication;
 import com.prabhix.platform.security.PrabhixPrincipal;
 import com.prabhix.platform.security.rbac.Authorize;
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class ApiKeyController {
 
     private final ApiKeyService apiKeyService;
+    private final RecentAuthentication recentAuthentication;
 
     @GetMapping
     @PreAuthorize(Authorize.ORG_API_KEY_MANAGE)
@@ -36,6 +38,7 @@ public class ApiKeyController {
     @PreAuthorize(Authorize.ORG_API_KEY_MANAGE)
     public OrgDtos.CreatedApiKeyView create(@CurrentUser PrabhixPrincipal principal,
                                               @Valid @RequestBody OrgDtos.CreateApiKeyRequest request) {
+        recentAuthentication.requireFresh();
         return apiKeyService.create(
                 principal.requireOrganizationId(), principal.userId(), request);
     }

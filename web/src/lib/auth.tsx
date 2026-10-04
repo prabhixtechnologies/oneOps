@@ -267,6 +267,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void init();
   }, [refreshSession, loadSession, clearSession]);
 
+  useEffect(() => {
+    // Slides the Identity cookie while the tab is in use. Access tokens die in 15 minutes; without
+    // this, a quiet tab would not count as activity and the 90-day idle clock would keep running.
+    const slide = () => {
+      if (document.visibilityState === "hidden" || !accessTokenRef.current) return;
+      void refreshSession();
+    };
+    const timer = window.setInterval(slide, 10 * 60 * 1000);
+    window.addEventListener("focus", slide);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", slide);
+    };
+  }, [refreshSession]);
+
   const permissions = me?.permissions ?? [];
 
   const value = useMemo<AuthContextValue>(

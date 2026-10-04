@@ -1,5 +1,6 @@
 import { ZodError } from "zod";
 import { API_V1 } from "./config";
+import { beginStepUp, isOidcEnabled } from "./oidc";
 import { apiErrorSchema, type ApiError } from "./schemas/common";
 
 export class ApiClientError extends Error {
@@ -141,7 +142,11 @@ export async function apiRequest<T>(
     }
 
     if (!response.ok) {
-      throw await parseError(response);
+      const error = await parseError(response);
+      if (error.code === "STEP_UP_REQUIRED" && isOidcEnabled()) {
+        void beginStepUp(`${window.location.pathname}${window.location.search}`);
+      }
+      throw error;
     }
 
     if (response.status === 204 || response.headers.get("content-length") === "0") {
@@ -200,7 +205,11 @@ export async function apiUpload<T>(
     }
 
     if (!response.ok) {
-      throw await parseError(response);
+      const error = await parseError(response);
+      if (error.code === "STEP_UP_REQUIRED" && isOidcEnabled()) {
+        void beginStepUp(`${window.location.pathname}${window.location.search}`);
+      }
+      throw error;
     }
 
     const json: unknown = await response.json();
@@ -229,7 +238,11 @@ export async function apiDownload(
     }
 
     if (!response.ok) {
-      throw await parseError(response);
+      const error = await parseError(response);
+      if (error.code === "STEP_UP_REQUIRED" && isOidcEnabled()) {
+        void beginStepUp(`${window.location.pathname}${window.location.search}`);
+      }
+      throw error;
     }
 
     const blob = await response.blob();

@@ -17,6 +17,7 @@ import com.prabhix.platform.org.service.PermissionResolver;
 import com.prabhix.platform.ops.domain.StaffRole;
 import com.prabhix.platform.ops.service.PlatformStaffService;
 import com.prabhix.platform.security.PrabhixPrincipal;
+import com.prabhix.platform.security.RecentAuthentication;
 import com.prabhix.platform.security.tenant.ImpersonationAuditor;
 import com.prabhix.platform.security.tenant.TenantContext;
 import com.prabhix.platform.user.domain.User;
@@ -91,6 +92,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         "This session was signed out. Sign in again.");
             }
 
+            request.setAttribute(RecentAuthentication.TOKEN_ATTRIBUTE, identity);
             PrabhixPrincipal effective = authorizeIdentityToken(identity, request);
 
             var authentication = new UsernamePasswordAuthenticationToken(

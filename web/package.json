@@ -18,7 +18,7 @@
   "dependencies": {
     "@hookform/resolvers": "5.9.1",
     "@prabhixtechnologies/brand": "^1.1.1",
-    "@prabhixtechnologies/oidc-client": "^1.0.1",
+    "@prabhixtechnologies/oidc-client": "^1.0.2",
     "@prabhixtechnologies/oneops-api": "file:../packages/oneops-api",
     "@prabhixtechnologies/ui": "^1.0.1",
     "@radix-ui/react-accordion": "1.2.20",

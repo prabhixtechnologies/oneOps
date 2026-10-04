@@ -40,6 +40,7 @@ public class OrganizationMemberService {
     private final RoleRepository roleRepository;
     private final UserService userService;
     private final PermissionResolver permissionResolver;
+    private final MemberSessionRevocation sessionRevocation;
     private final PrabhixProperties properties;
     private final ApplicationEventPublisher events;
     private final EntitlementGate entitlements;
@@ -88,6 +89,7 @@ public class OrganizationMemberService {
         membershipRepository.save(membership);
 
         permissionResolver.evict(membership.getUserId(), orgId);
+        sessionRevocation.revoke(membership.getUserId(), "role_changed");
 
         events.publishEvent(AuditRequested.changed(orgId, actorId, "org.member.role_changed",
                 "organization_membership", membership.getId(),
@@ -103,6 +105,7 @@ public class OrganizationMemberService {
         membershipRepository.save(membership);
         adjustMemberCount(orgId, -1);
         permissionResolver.evict(membership.getUserId(), orgId);
+        sessionRevocation.revoke(membership.getUserId(), "member_suspended");
     }
 
     @Transactional
@@ -115,6 +118,7 @@ public class OrganizationMemberService {
         membershipRepository.save(membership);
         adjustMemberCount(orgId, -1);
         permissionResolver.evict(membership.getUserId(), orgId);
+        sessionRevocation.revoke(membership.getUserId(), "member_removed");
 
         events.publishEvent(new AuditRequested(orgId, actorId, actorEmail, "org.member.removed",
                 "organization_membership", membership.getId(), membership.getDisplayName(),
