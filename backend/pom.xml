@@ -62,7 +62,7 @@
         -->
         <ognl.version>3.3.5</ognl.version>
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
-        <awssdk.version>2.55.6</awssdk.version>
+        <awssdk.version>2.55.10</awssdk.version>
         <logstash.encoder.version>9.0</logstash.encoder.version>
     </properties>
 
