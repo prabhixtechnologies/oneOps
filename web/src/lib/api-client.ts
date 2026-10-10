@@ -36,6 +36,11 @@ let getOrgId: OrgProvider = () => null;
 let refreshTokens: RefreshHandler = async () => false;
 let onUnauthorized: LogoutHandler = () => undefined;
 
+/** The callback is already an authorize redirect. Starting another one reloads this page. */
+function onAuthCallback(): boolean {
+  return typeof window !== "undefined" && window.location.pathname.startsWith("/auth/callback");
+}
+
 export function configureApiClient(config: {
   getAccessToken: TokenProvider;
   getOrgId: OrgProvider;
@@ -143,7 +148,7 @@ export async function apiRequest<T>(
 
     if (!response.ok) {
       const error = await parseError(response);
-      if (error.code === "STEP_UP_REQUIRED" && isOidcEnabled()) {
+      if (error.code === "STEP_UP_REQUIRED" && isOidcEnabled() && !onAuthCallback()) {
         void beginStepUp(`${window.location.pathname}${window.location.search}`);
       }
       throw error;
@@ -206,7 +211,7 @@ export async function apiUpload<T>(
 
     if (!response.ok) {
       const error = await parseError(response);
-      if (error.code === "STEP_UP_REQUIRED" && isOidcEnabled()) {
+      if (error.code === "STEP_UP_REQUIRED" && isOidcEnabled() && !onAuthCallback()) {
         void beginStepUp(`${window.location.pathname}${window.location.search}`);
       }
       throw error;
@@ -239,7 +244,7 @@ export async function apiDownload(
 
     if (!response.ok) {
       const error = await parseError(response);
-      if (error.code === "STEP_UP_REQUIRED" && isOidcEnabled()) {
+      if (error.code === "STEP_UP_REQUIRED" && isOidcEnabled() && !onAuthCallback()) {
         void beginStepUp(`${window.location.pathname}${window.location.search}`);
       }
       throw error;
