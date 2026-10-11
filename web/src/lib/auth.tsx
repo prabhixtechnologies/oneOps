@@ -180,6 +180,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAccessToken(tokens.accessToken);
         return true;
       } catch (err) {
+        // A staff network change is a fresh proof, not a refused cookie. The client already
+        // opened the passkey or one-time-code page. Marking the session gone would drop the
+        // console on its own sign-in screen and refuse every later renewal.
+        if (err instanceof ApiClientError && err.code === "STEP_UP_REQUIRED") {
+          return false;
+        }
         if (err instanceof ApiClientError && (err.status === 401 || err.status === 403)) {
           sessionGone.current = true;
         }
@@ -252,7 +258,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // after signing in to OneOps, the cookie is already present to exchange. A visitor who is
         // not signed in pays one 401 for it.
         if (!(await refreshSession())) {
-          clearSession();
+          if (sessionGone.current) {
+            clearSession();
+          }
           return;
         }
         try {
