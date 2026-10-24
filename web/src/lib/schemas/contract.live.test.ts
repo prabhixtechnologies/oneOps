@@ -14,7 +14,6 @@
  * cannot catch this class of bug because they assert against fixtures written from the same wrong
  * assumption as the schema.
  */
-import { describe, expect, it, beforeAll } from "vitest";
 import type { ZodTypeAny } from "zod";
 import {
   aiAvailabilitySchema,

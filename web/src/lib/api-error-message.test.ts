@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { ApiClientError, getApiErrorMessage } from "@/lib/api-client";
 
 /**

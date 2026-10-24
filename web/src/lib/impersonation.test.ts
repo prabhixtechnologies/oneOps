@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * These decide whose data the console shows, so the cases that matter are the ones where it could

@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { parseMailLinkTarget } from "@/features/mail/mailLinkWarning";
 
 describe("parseMailLinkTarget", () => {

@@ -1,4 +1,3 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
 
 async function loadConfig(apiUrl?: string) {
   vi.resetModules();

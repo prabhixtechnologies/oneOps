@@ -5,7 +5,6 @@ import axe from "axe-core";
 import { writeHeapSnapshot } from "node:v8";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { beforeAll, describe, expect, it } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { AuthShell } from "@/components/layout/AuthShell";
 import { LoginPage } from "@/features/auth/LoginPage";

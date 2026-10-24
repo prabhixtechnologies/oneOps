@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { hardenLinks, sanitizeEmailHtml } from "./sanitize";
 
 describe("sanitizeEmailHtml", () => {
