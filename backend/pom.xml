@@ -12,7 +12,7 @@
           so this is a security floor, not a chase for new features. The JDK moved first, in its own
           step, so that a failure here has one candidate cause rather than two.
         -->
-        <version>4.1.1</version>
+        <version>4.1.2</version>
         <relativePath/>
     </parent>
 
@@ -62,7 +62,7 @@
         -->
         <ognl.version>3.3.5</ognl.version>
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
-        <awssdk.version>2.55.6</awssdk.version>
+        <awssdk.version>2.57.3</awssdk.version>
         <logstash.encoder.version>9.0</logstash.encoder.version>
     </properties>
 
