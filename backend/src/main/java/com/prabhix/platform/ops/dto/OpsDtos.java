@@ -103,6 +103,7 @@ public final class OpsDtos {
             List<AwsServiceCost> byService,
             Double totalUsd,
             Double mtdUsd,
+            Double grossMtdUsd,
             Boolean cached,
             Instant fetchedAt) {
     }
@@ -131,6 +132,7 @@ public final class OpsDtos {
     public record AwsSummaryCosts(
             Double totalUsd,
             Double mtdUsd,
+            Double grossMtdUsd,
             Integer days,
             List<AwsServiceCost> topServices,
             Boolean cached,

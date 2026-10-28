@@ -85,7 +85,16 @@ export default function InfraPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="AWS MTD (USD)" value={aws.isLoading ? "…" : `$${(aws.data?.costs?.mtdUsd ?? 0).toFixed(2)}`} />
+        <Metric
+          label="AWS gross MTD (USD)"
+          value={
+            aws.isLoading
+              ? "…"
+              : aws.data?.costs?.ok === false
+                ? "Unavailable"
+                : `$${(aws.data?.costs?.grossMtdUsd ?? aws.data?.costs?.mtdUsd ?? 0).toFixed(2)}`
+          }
+        />
         <Metric label="EC2 running" value={aws.isLoading ? "…" : String(aws.data?.instances?.running ?? 0)} />
         <Metric
           label="Revenue (Mobi+oneOps ₹)"
@@ -100,7 +109,25 @@ export default function InfraPage() {
           value={pnl.isLoading ? "…" : String(pnl.data?.contribution?.toFixed(2) ?? "—")}
         />
       </div>
+      {aws.data?.costs?.ok !== false && (
+        <p className="text-xs text-text-muted">
+          Gross is usage plus the savings-plan fee, the stack on the AWS billing chart. Net after
+          credits is ${(aws.data?.costs?.mtdUsd ?? 0).toFixed(2)}.
+        </p>
+      )}
       {pnl.data?.note && <p className="text-xs text-text-muted">{pnl.data.note}</p>}
+      {aws.data?.costs?.ok === false && (
+        <p className="text-xs text-destructive">
+          Cost Explorer: {aws.data.costs.error?.message ?? aws.data.costs.error?.code ?? "the cost call failed"}
+        </p>
+      )}
+      {(aws.data?.costs?.topServices ?? []).length > 0 && (
+        <p className="text-xs text-text-muted">
+          {(aws.data?.costs?.topServices ?? [])
+            .map((row) => `${row.service} $${row.amountUsd.toFixed(2)}`)
+            .join(" · ")}
+        </p>
+      )}
 
       <section className="space-y-3 rounded-lg border border-border p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Promote</h2>
@@ -170,7 +197,7 @@ export default function InfraPage() {
         ))}
       </ListSection>
 
-      <ListSection title="RDS" loading={rds.isLoading}>
+      <ListSection title="RDS" loading={rds.isLoading} note={sectionError(rds.data)}>
         {(rds.data?.instances ?? []).map((row) => (
           <div key={row.id ?? row.endpoint} className="flex items-center justify-between gap-3 px-4 py-3">
             <div>
@@ -184,7 +211,7 @@ export default function InfraPage() {
         ))}
       </ListSection>
 
-      <ListSection title="ElastiCache" loading={cache.isLoading}>
+      <ListSection title="ElastiCache" loading={cache.isLoading} note={sectionError(cache.data)}>
         {(cache.data?.clusters ?? []).map((row) => (
           <div key={row.id} className="flex items-center justify-between gap-3 px-4 py-3">
             <div>
@@ -198,7 +225,7 @@ export default function InfraPage() {
         ))}
       </ListSection>
 
-      <ListSection title="ECR (running image tags)" loading={ecr.isLoading}>
+      <ListSection title="ECR (newest tag per repository)" loading={ecr.isLoading}>
         {(ecr.data?.images ?? []).map((row) => (
           <div key={`${row.repository}-${row.digest ?? row.tag}`} className="flex items-center justify-between gap-3 px-4 py-3">
             <div>
@@ -275,6 +302,11 @@ export default function InfraPage() {
       </ListSection>
     </div>
   );
+}
+
+function sectionError(data?: { ok?: boolean; error?: Record<string, string> | null } | null) {
+  if (!data || data.ok !== false) return null;
+  return data.error?.message ?? data.error?.code ?? "This check failed.";
 }
 
 function ListSection({

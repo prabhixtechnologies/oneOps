@@ -556,10 +556,10 @@ prabhix:
     health:
       timeout-seconds: ${OPS_HEALTH_TIMEOUT:5}
       products:
-        identity: https://api.prabhixtechnologies.com/healthz
+        identity: https://identity.prabhixtechnologies.com/.well-known/openid-configuration
         oneops: https://oneops.prabhixtechnologies.com/healthz
         mobistack: https://mobistack.prabhixtechnologies.com/healthz
-        mailroom: https://mailroom.prabhixtechnologies.com/healthz
+        mailroom: https://mail.prabhixtechnologies.com/healthz
         store: https://store.prabhixtechnologies.com/healthz
     github:
       api-url: ${GITHUB_API_URL:https://api.github.com}

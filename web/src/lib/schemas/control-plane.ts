@@ -49,6 +49,7 @@ export const mobiWorkspaceSchema = z.object({
   active: z.boolean(),
   members: z.coerce.number().optional(),
   extraScreens: z.coerce.number().optional(),
+  joinCode: z.string().nullable().optional(),
 });
 
 export const awsSummarySchema = z.object({
@@ -56,8 +57,18 @@ export const awsSummarySchema = z.object({
   costs: z
     .object({
       mtdUsd: z.coerce.number().optional(),
+      grossMtdUsd: z.coerce.number().optional(),
       totalUsd: z.coerce.number().optional(),
       ok: z.boolean().optional(),
+      error: z.record(z.string(), z.string()).nullable().optional(),
+      topServices: z
+        .array(
+          z.object({
+            service: z.string(),
+            amountUsd: z.coerce.number(),
+          }),
+        )
+        .optional(),
     })
     .optional(),
   instances: z

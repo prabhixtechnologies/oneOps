@@ -58,7 +58,7 @@ export default function TenantsPage() {
               <div>
                 <div className="font-medium">{shop.name}</div>
                 <div className="text-xs text-text-muted">
-                  {[shop.city, `${shop.members ?? 0} members`].filter(Boolean).join(" · ")}
+                  {[shop.city, shop.joinCode, `${shop.members ?? 0} members`].filter(Boolean).join(" · ")}
                 </div>
               </div>
               <div className="flex items-center gap-2">

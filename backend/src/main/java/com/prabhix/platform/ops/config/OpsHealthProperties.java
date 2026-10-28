@@ -18,10 +18,10 @@ public record OpsHealthProperties(
 
     public static Map<String, String> defaultProducts() {
         Map<String, String> defaults = new LinkedHashMap<>();
-        defaults.put("identity", "https://api.prabhixtechnologies.com/healthz");
+        defaults.put("identity", "https://identity.prabhixtechnologies.com/.well-known/openid-configuration");
         defaults.put("oneops", "https://oneops.prabhixtechnologies.com/healthz");
         defaults.put("mobistack", "https://mobistack.prabhixtechnologies.com/healthz");
-        defaults.put("mailroom", "https://mailroom.prabhixtechnologies.com/healthz");
+        defaults.put("mailroom", "https://mail.prabhixtechnologies.com/healthz");
         defaults.put("store", "https://store.prabhixtechnologies.com/healthz");
         return defaults;
     }

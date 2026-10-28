@@ -87,6 +87,7 @@ public class PlatformAwsOpsService {
                     body.byService(),
                     body.totalUsd(),
                     body.mtdUsd(),
+                    body.grossMtdUsd(),
                     true,
                     body.fetchedAt());
         }
@@ -156,6 +157,7 @@ public class PlatformAwsOpsService {
                     byService,
                     round4(total),
                     round4(mtd),
+                    grossMonthToDate(ce, end),
                     false,
                     Instant.now());
 
@@ -236,6 +238,7 @@ public class PlatformAwsOpsService {
                 new OpsDtos.AwsSummaryCosts(
                         costs.totalUsd(),
                         costs.mtdUsd(),
+                        costs.grossMtdUsd(),
                         costs.days() != null ? costs.days() : days,
                         topServices,
                         costs.cached(),
@@ -288,17 +291,43 @@ public class PlatformAwsOpsService {
                              .credentialsProvider(DefaultCredentialsProvider.create())
                              .build()) {
             List<OpsDtos.AwsCacheRow> rows = new ArrayList<>();
-            var page = client.describeCacheClusters(b -> b.showCacheNodeInfo(true));
-            for (var cluster : page.cacheClusters()) {
-                rows.add(new OpsDtos.AwsCacheRow(
-                        cluster.cacheClusterId(),
-                        cluster.engine(),
-                        cluster.cacheClusterStatus(),
-                        cluster.cacheNodeType()));
+            SdkException failure = null;
+            try {
+                var page = client.describeCacheClusters(b -> b.showCacheNodeInfo(true));
+                for (var cluster : page.cacheClusters()) {
+                    rows.add(new OpsDtos.AwsCacheRow(
+                            cluster.cacheClusterId(),
+                            cluster.engine(),
+                            cluster.cacheClusterStatus(),
+                            cluster.cacheNodeType()));
+                }
+            } catch (SdkException ex) {
+                failure = ex;
+                log.warn("ElastiCache DescribeCacheClusters failed: {}", ex.getMessage());
+            }
+            try {
+                var serverless = client.describeServerlessCaches(b -> { });
+                for (var cache : serverless.serverlessCaches()) {
+                    rows.add(new OpsDtos.AwsCacheRow(
+                            cache.serverlessCacheName(),
+                            cache.engine(),
+                            cache.status(),
+                            "serverless"));
+                }
+                failure = null;
+            } catch (SdkException ex) {
+                if (failure == null) {
+                    failure = ex;
+                }
+                log.warn("ElastiCache DescribeServerlessCaches failed: {}", ex.getMessage());
+            }
+            if (failure != null && rows.isEmpty()) {
+                return new OpsDtos.AwsElastiCacheResponse(false,
+                        errorMap(awsErrorCode(failure), awsErrorMessage(failure)), properties.region(), List.of());
             }
             return new OpsDtos.AwsElastiCacheResponse(true, null, properties.region(), rows);
         } catch (SdkException ex) {
-            log.warn("ElastiCache DescribeCacheClusters failed: {}", ex.getMessage());
+            log.warn("ElastiCache client failed: {}", ex.getMessage());
             return new OpsDtos.AwsElastiCacheResponse(false,
                     errorMap(awsErrorCode(ex), awsErrorMessage(ex)), properties.region(), List.of());
         }
@@ -320,18 +349,41 @@ public class PlatformAwsOpsService {
                     continue;
                 }
                 try {
-                    var response = ecr.describeImages(b -> b.repositoryName(repo.trim())
-                            .filter(f -> f.tagStatus(software.amazon.awssdk.services.ecr.model.TagStatus.TAGGED))
-                            .maxResults(5));
-                    for (var detail : response.imageDetails()) {
-                        String tag = detail.imageTags() == null || detail.imageTags().isEmpty()
+                    software.amazon.awssdk.services.ecr.model.ImageDetail newest = null;
+                    String token = null;
+                    int seen = 0;
+                    do {
+                        var builder = software.amazon.awssdk.services.ecr.model.DescribeImagesRequest.builder()
+                                .repositoryName(repo.trim())
+                                .filter(f -> f.tagStatus(software.amazon.awssdk.services.ecr.model.TagStatus.TAGGED))
+                                .maxResults(100);
+                        if (token != null) {
+                            builder.nextToken(token);
+                        }
+                        var response = ecr.describeImages(builder.build());
+                        for (var detail : response.imageDetails()) {
+                            seen++;
+                            if (newest == null
+                                    || (detail.imagePushedAt() != null
+                                    && (newest.imagePushedAt() == null
+                                    || detail.imagePushedAt().isAfter(newest.imagePushedAt())))) {
+                                newest = detail;
+                            }
+                        }
+                        token = response.nextToken();
+                    } while (token != null && !token.isBlank() && seen < 400);
+                    if (newest != null) {
+                        String tag = newest.imageTags() == null || newest.imageTags().isEmpty()
                                 ? null
-                                : detail.imageTags().get(0);
+                                : newest.imageTags().stream()
+                                .filter(value -> "latest".equals(value))
+                                .findFirst()
+                                .orElse(newest.imageTags().get(0));
                         images.add(new OpsDtos.AwsEcrTag(
                                 repo.trim(),
                                 tag,
-                                detail.imagePushedAt(),
-                                detail.imageDigest()));
+                                newest.imagePushedAt(),
+                                newest.imageDigest()));
                     }
                 } catch (SdkException ex) {
                     log.warn("ECR describeImages {} failed: {}", repo, ex.getMessage());
@@ -448,6 +500,7 @@ public class PlatformAwsOpsService {
                 List.of(),
                 0.0,
                 0.0,
+                0.0,
                 false,
                 null);
     }
@@ -499,6 +552,41 @@ public class PlatformAwsOpsService {
             }
         }
         return null;
+    }
+
+    /**
+     * The billing-console stack: on-demand usage plus the savings-plan fee.
+     * Credits and the savings-plan offset are left out, which is why this is
+     * about the console's current-month figure while {@code mtdUsd} nets to zero.
+     */
+    private double grossMonthToDate(CostExplorerClient ce, LocalDate end) {
+        LocalDate monthStart = end.withDayOfMonth(1);
+        DateInterval month = DateInterval.builder()
+                .start(monthStart.format(ISO_DAY))
+                .end(end.plusDays(1).format(ISO_DAY))
+                .build();
+        GetCostAndUsageResponse response = ce.getCostAndUsage(GetCostAndUsageRequest.builder()
+                .timePeriod(month)
+                .granularity(Granularity.MONTHLY)
+                .metrics("UnblendedCost")
+                .groupBy(GroupDefinition.builder()
+                        .type(GroupDefinitionType.DIMENSION)
+                        .key("RECORD_TYPE")
+                        .build())
+                .build());
+        double gross = 0.0;
+        for (ResultByTime result : response.resultsByTime()) {
+            if (result.groups() == null) {
+                continue;
+            }
+            for (Group group : result.groups()) {
+                String kind = group.keys() == null || group.keys().isEmpty() ? "" : group.keys().get(0);
+                if ("Usage".equals(kind) || "SavingsPlanRecurringFee".equals(kind)) {
+                    gross += unblendedAmount(group.metrics());
+                }
+            }
+        }
+        return round4(gross);
     }
 
     private static double unblendedAmount(Map<String, MetricValue> metrics) {
