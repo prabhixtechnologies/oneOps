@@ -12,7 +12,7 @@
           so this is a security floor, not a chase for new features. The JDK moved first, in its own
           step, so that a failure here has one candidate cause rather than two.
         -->
-        <version>4.1.1</version>
+        <version>4.1.2</version>
         <relativePath/>
     </parent>
 
@@ -44,7 +44,7 @@
           SwaggerConfig cannot be introspected and the context refuses to start. Not a compile error,
           since springdoc is only ever on the classpath — the integration tests are what catch it.
         -->
-        <springdoc.version>3.1.1</springdoc.version>
+        <springdoc.version>3.2.0</springdoc.version>
         <!--
           Testcontainers is version-managed by the Boot parent from 4.x on, so the pin is gone and the
           modules inherit it. Worth knowing that 2.x renamed every module to carry a testcontainers-
@@ -62,7 +62,7 @@
         -->
         <ognl.version>3.3.5</ognl.version>
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
-        <awssdk.version>2.55.6</awssdk.version>
+        <awssdk.version>2.57.7</awssdk.version>
         <logstash.encoder.version>9.0</logstash.encoder.version>
     </properties>
 
