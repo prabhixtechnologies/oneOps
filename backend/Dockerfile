@@ -8,7 +8,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1 — build the Spring Boot fat JAR with a cacheable dependency layer.
 # ---------------------------------------------------------------------------
-FROM public.ecr.aws/docker/library/maven:3-eclipse-temurin-26 AS build
+FROM public.ecr.aws/docker/library/maven:3-eclipse-temurin-27 AS build
 WORKDIR /build
 
 # Local Identity starter — GitHub Packages is not available during a laptop build.
